@@ -1,0 +1,55 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "../Clique-trabajo"
+    ],
+    "allow": [
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git ls-tree *)",
+      "Bash(git branch *)",
+      "Bash(git fetch *)",
+      "Bash(git pull --ff-only *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git worktree *)",
+      "Bash(git rebase *)",
+      "Bash(git switch *)",
+      "Bash(git push -u origin ot/*)",
+      "Bash(git push origin ot/*)",
+      "Bash(git push --force-with-lease origin ot/*)",
+      "Bash(gh pr *)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm lint *)",
+      "Bash(pnpm typecheck *)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm build *)",
+      "Bash(pnpm --filter *)",
+      "Bash(python -m unittest *)",
+      "Bash(sha256sum -c *)",
+      "Bash(node --version)",
+      "Bash(pnpm --version)"
+    ],
+    "deny": [
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git push * main)",
+      "Bash(git push * main *)",
+      "Bash(git push origin main)",
+      "Bash(git reset --hard *)",
+      "Bash(git clean *)",
+      "PowerShell(git push --force *)",
+      "PowerShell(git push -f *)",
+      "PowerShell(git push * main)",
+      "PowerShell(git reset --hard *)",
+      "PowerShell(git clean *)",
+      "PowerShell(Remove-Item * -Recurse *)",
+      "Read(./.env)",
+      "Read(./.env.local)",
+      "Read(./**/.env)",
+      "Read(./**/.env.local)"
+    ]
+  }
+}

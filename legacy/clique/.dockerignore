@@ -1,0 +1,12 @@
+.git
+.gitignore
+.env
+data
+tests
+scripts
+README.md
+DEPLOY.md
+start.command
+**/__pycache__
+**/*.pyc
+.DS_Store

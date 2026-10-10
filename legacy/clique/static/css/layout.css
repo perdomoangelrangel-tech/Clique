@@ -1,0 +1,108 @@
+/* ==========================================================================
+   Layout foundations. Loaded LAST, so what is written here is the final word on how the pages fit the screen.
+
+   THE SCREEN YOU HAVE IS NOT THE SCREEN YOU BOUGHT
+   A laptop sold as "1920 x 1080" is rarely 1920 x 1080 to a web page. The page sees CSS pixels, and three things shrink them:
+   operating-system scaling (125% or 150% on most Windows laptops), browser zoom (every Ctrl +) and the browser's own bars. A 1920 x 1080
+   panel at 150% scaling is a 1280 x 720 page, minus about 110px of tabs and address bar: 1280 x ~610. So nothing here is sized for a
+   resolution. Everything is sized for the room it is actually in: the width and the HEIGHT of the visible page.
+
+   THE ONLY BREAKPOINTS (every media query in the site uses one of these; each is a place where the content stopped fitting)
+        360  tiny phone      the header sheds the Friends icon and "Add"
+        480  small phone     header and balances tighten
+        640  phone           grids go to one column, tables become cards
+        720  large phone     game headers wrap, the voice bar stacks, the poker table turns upright
+        820  tablet          the header switches between its phone and laptop layouts; chat shows one pane at a time
+       1000  small laptop    a side panel goes under (or above) its main column
+       1180  laptop          the wide side panel on the home page goes under; casino control panels get narrower
+       1280  laptop          the header's search box moves to its own bar; four columns of market slips become three
+       1500  wide            the header fits on one row
+     And one by height:  max-height 800px = a short screen. The header keeps only its top bar pinned, pinned panels give way,
+     and game boards shrink to fit what is left (the sizes are in games.css and games2.css; they all start from --stage-h).
+
+   THE HEIGHTS (custom properties on <html>; layout.js measures the real ones, tokens.css holds the first guesses)
+     --head-h   the whole sticky header     --bar-h    just its top bar      --stuck-h  the part of it that is pinned right now
+     --dock-h   the voice-call bar          --view-h   the visible height (100dvh)
+   ========================================================================== */
+
+/* ---------- the page-width container ---------- */
+.page, .page-narrow { margin-inline: auto; padding: clamp(18px, 3vw, 28px) max(var(--gutter), env(safe-area-inset-right)) 64px max(var(--gutter), env(safe-area-inset-left)); }
+.page { max-width: var(--wrap); }
+.page-narrow { max-width: 1100px; }
+body { padding-bottom: var(--dock-h); }                                   /* the voice bar never covers the end of a page */
+
+/* ---------- how much stage a game gets ----------
+   Everything that has to be seen whole while playing (a board, a table, a wheel) is sized from this: the visible height, minus the pinned
+   header, minus the card's own title row and footer. Between 380px and 600px: a short screen gets a smaller board instead of a cropped one,
+   and a big screen does not get a board bigger than the artwork was made for (600px is what every stage was drawn at). */
+:root { --stage-h: clamp(380px, calc(var(--view-h) - var(--stuck-h) - var(--dock-h) - 150px), 600px); }
+
+/* ---------- a panel that follows you down the page, but only if it fits ----------
+   layout.js adds .is-pinned to these while they are shorter than the visible space under the header. A panel that is taller than that
+   (a long bet slip on a short screen) is not pinned at all: it scrolls with the page, so its last button is never out of reach. */
+.side-sticky, .ex-side, .ed-prev, .pk-code, .pin { position: static; }
+.is-pinned { position: sticky; top: calc(var(--stuck-h) + var(--stick-gap)); }
+@media (max-width: 1000px) { .is-pinned { position: static; } }          /* in one column there is nothing to follow */
+
+/* ---------- two columns that become one ----------
+   One breakpoint (1000px) for every "main column + panel" and "two equal halves" page. Each page keeps its own column widths. The
+   panels are pinned or not by layout.js, never by guesswork. minmax(0, 1fr) everywhere, so a long word cannot stretch a column. */
+@media (max-width: 1000px) {
+  .wk, .pfo-grid, .pk-setup, .ln-grid, .gl-grid2, .rk-cols, .ed, .ex-grid, .fr-grid, .pk-cols { grid-template-columns: minmax(0, 1fr); }
+  .fr-side, .pk-code { order: -1; }
+}
+@media (max-width: 1180px) { .home .hero { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- a row of tabs or choices that is wider than the screen ----------
+   It scrolls sideways, and says so: a flat lime tab with an arrow sits on the edge where more is hidden (layout.js turns data-more on and
+   off as you scroll; a click on the tab scrolls that way). Nothing is ever cut off without a sign. */
+.strip { position: relative; }
+.strip[data-more~="l"]::before, .strip[data-more~="r"]::after {
+  display: grid; place-items: center; position: sticky; flex: none; align-self: stretch; z-index: 3; width: 24px; min-height: 100%;
+  background: var(--lime); color: var(--lime-ink); font: 800 18px/1 var(--f-display); cursor: pointer;
+  border: 0 solid #0E0C0A;
+}
+.strip[data-more~="l"]::before { content: '\2039'; left: 0; border-right-width: var(--bw); margin-right: -24px; }    /* the negative margins: the tabs lie over the row, they do not push it wider */
+.strip[data-more~="r"]::after { content: '\203A'; right: 0; border-left-width: var(--bw); margin-left: -24px; }
+[data-theme="light"] .strip[data-more~="l"]::before, [data-theme="light"] .strip[data-more~="r"]::after { background: var(--text); color: var(--inv); }
+.strip { overscroll-behavior-x: contain; }
+
+/* ---------- a board that is wider than a phone ----------
+   Boards that cannot shrink and stay readable (the roulette table) scroll inside their own frame, with the scroll bar always showing and a
+   line of text that says so. The page around them never scrolls sideways. */
+.board-scroll { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: auto; scrollbar-color: var(--text-3) rgba(0, 0, 0, .35); padding-bottom: 6px; }
+.board-scroll::-webkit-scrollbar { height: 12px; }
+.board-scroll::-webkit-scrollbar-track { background: rgba(0, 0, 0, .35); }
+.board-scroll::-webkit-scrollbar-thumb { background: var(--text-3); border: 2px solid transparent; background-clip: padding-box; }
+.board-hint { display: none; margin: 0 0 6px; font: 600 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: #CFC3A8; text-align: center; }
+@media (max-width: 640px) { .board-hint { display: block; } }
+
+/* ---------- windows, menus and pop-overs stay on screen ---------- */
+.modal-back { padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); overscroll-behavior: contain; }
+.modal-back { grid-template-columns: minmax(0, 1fr); }                                               /* (a grid column is as wide as its widest content unless told it may shrink) */
+.modal { max-width: min(480px, 100%); min-width: 0; }
+.modal.wide { max-width: min(640px, 100%); }
+.modal-actions { flex-wrap: wrap; }                                                                   /* three buttons on a 320px phone wrap onto a second line instead of leaving the window */
+/* a window taller than the screen scrolls, and its buttons stay pinned to the bottom edge so they are always within reach (ui.js adds .tall) */
+.modal-back.tall .modal-actions { position: sticky; bottom: 0; z-index: 2; margin-inline: -24px; margin-bottom: -22px; padding: 14px 24px 22px; background: var(--slip); border-top: 1.5px dashed var(--paper-line); }
+.menu, .pop-menu { max-width: calc(100vw - 2 * var(--gutter)); overflow-y: auto; overscroll-behavior: contain; }
+.menu { max-height: calc(var(--view-h) - var(--bar-h) - 20px); }
+.pop-menu { max-height: calc(var(--view-h) - var(--stuck-h) - 70px); }
+
+/* ---------- things pinned to the bottom of the screen make room for the voice bar ---------- */
+#toasts { bottom: calc(22px + var(--dock-h)); }
+.pk-play > #pk-bar.stick { bottom: calc(10px + var(--dock-h)); }
+
+/* ---------- words that somebody else typed never stretch a box ---------- */
+.wrap-any, .fr-name, .fr-tags .tag, .standing .grow, .msg-bubble, .cmt p, .pf-name, .pf-bio, .yl-who b, .circle-name { overflow-wrap: anywhere; }
+
+/* ---------- form controls and big numbers never push their box wider ---------- */
+.input, select.select, textarea.input, .gm-select { min-width: 0; max-width: 100%; }                  /* a select is as wide as its longest option unless told otherwise */
+.gm-ro input, .gm-input input, .bp-input input { width: 0; }                                         /* (flex: 1 then fills what is left; the box's own width no longer depends on the typed value) */
+.stat { container-type: inline-size; }
+.stat b { font-size: clamp(14px, 11cqw, 24px); overflow-wrap: anywhere; }                             /* $131,086,490.29 shrinks to fit its tile instead of overflowing it */
+.fr-who { grid-template-columns: minmax(0, 1fr); }
+.fr-tags .tag { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }         /* a long circle name is shortened, not allowed to widen the row */
+.slip-main, .slip-pick, .slip-body > * { min-width: 0; }
+.slip-q, .hot-row .t, .rel-row .t, .trade-head .q, .mp-title, .headline-slip h2, .crumbs { overflow-wrap: anywhere; }
+@media (max-width: 640px) { .section-head > .row { flex: 1 1 100%; min-width: 0; } #w-circle { width: 100%; } }      /* a header's buttons and pickers get a line to themselves on a phone */

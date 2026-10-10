@@ -1,0 +1,25 @@
+# Finales de línea: LF en todo el repo, también en Windows.
+* text=auto eol=lf
+
+# La app actual no se toca: git no convierte nada dentro de ella (su huella sha256 debe cuadrar en cualquier sistema).
+legacy/clique/** -text
+
+# Scripts propios de Windows
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Binarios
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.avif binary
+*.woff2 binary
+*.glb binary
+*.ktx2 binary
+*.mp4 binary
+*.webm binary
+
+# Blender (Git LFS, ADR-005)
+*.blend filter=lfs diff=lfs merge=lfs -text

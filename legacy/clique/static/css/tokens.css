@@ -1,0 +1,210 @@
+/* ==========================================================================
+   CLIQUE design tokens: "underground card room meets printed betting slip"
+   Everything else in the app consumes these variables. Change a value here, it changes everywhere.
+   ========================================================================== */
+
+@font-face { font-family: 'Bricolage Grotesque'; src: url('/fonts/bricolage-700.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Bricolage Grotesque'; src: url('/fonts/bricolage-800.woff2') format('woff2'); font-weight: 800; font-display: swap; }
+@font-face { font-family: 'Instrument Sans'; src: url('/fonts/instrument-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Instrument Sans'; src: url('/fonts/instrument-500.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Instrument Sans'; src: url('/fonts/instrument-600.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'JetBrains Mono'; src: url('/fonts/jbmono-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'JetBrains Mono'; src: url('/fonts/jbmono-500.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'JetBrains Mono'; src: url('/fonts/jbmono-700.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+
+/* Stand-ins for the web fonts while they download (and if they never do). Each one is a font already on the computer, stretched and
+   re-spaced to match the real font's width and line height, so text does not change size, wrap onto another line or get cut off when
+   the real font arrives. The numbers come from measuring each pair in a browser (widths within 1%, ascent and descent exact). */
+@font-face { font-family: 'Bricolage Grotesque Fallback'; src: local('Arial'), local('Helvetica Neue'), local('Liberation Sans'); size-adjust: 103.5%; ascent-override: 90%; descent-override: 26%; line-gap-override: 0%; }
+@font-face { font-family: 'Instrument Sans Fallback'; src: local('Arial'), local('Liberation Sans'); size-adjust: 100%; ascent-override: 97%; descent-override: 25%; line-gap-override: 0%; }
+@font-face { font-family: 'JetBrains Mono Fallback'; src: local('Menlo'), local('Courier New'), local('Liberation Mono'); size-adjust: 100%; ascent-override: 102%; descent-override: 30%; line-gap-override: 0%; }
+
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* type */
+  --f-display: 'Bricolage Grotesque', 'Bricolage Grotesque Fallback', 'Helvetica Neue', sans-serif;
+  --f-body: 'Instrument Sans', 'Instrument Sans Fallback', 'Helvetica Neue', sans-serif;
+  --f-mono: 'JetBrains Mono', 'JetBrains Mono Fallback', ui-monospace, Menlo, monospace;
+
+  /* the room: warm blacks */
+  --bg: #0E0C0A;
+  --bg-2: #141110;
+  --card: #1C1815;
+  --card-2: #26211C;
+  --line: #5A4E41;
+  --line-soft: #3A322A;
+  --line-input: #8C8171;
+  --text: #F2EADB;
+  --text-2: #BDB19C;
+  --text-3: #A09482;
+
+  /* the slip: paper */
+  --paper: #EFE6D2;
+  --paper-2: #E2D6BB;
+  --paper-ink: #1A1612;
+  --paper-mute: #6A5E49;
+  --paper-line: #B3A582;
+
+  /* the two colours */
+  --lime: #C6F432;
+  --lime-ink: #10140A;
+  --lime-deep: #4C6300;
+  --lime-shadow: #566F0B;
+  --verm: #FF4B2B;
+  --verm-ink: #170805;
+  --verm-deep: #B8200A;
+  --verm-shadow: #8A2210;
+
+  /* the table */
+  --felt: #1E3B2C;
+  --felt-2: #2F6B47;
+  --ink: #0E0C0A;
+  --shadow-c: #050403;
+
+  /* roles */
+  --pos: var(--lime);               /* wins, YES, gains (text on dark) */
+  --neg: var(--verm);               /* losses, NO (text on dark) */
+  --focus: var(--lime);
+  --inv: var(--bg);                 /* text on an inverted (text-coloured) chip */
+  --slip: var(--paper);
+  --slip-ink: var(--paper-ink);
+  --grain-rgb: 255, 255, 255;
+  --grain-opacity: .055;
+
+  /* shape */
+  --r-0: 0;
+  --r-1: 3px;                       /* cards, inputs, buttons */
+  --r-2: 6px;                       /* modals, popovers */
+  --r-pill: 999px;                  /* tags and chips only */
+  --bw: 1.5px;
+
+  /* hard shadows (no blur, ever) */
+  --sh-1: 3px 3px 0 var(--shadow-c);
+  --sh-2: 5px 5px 0 var(--shadow-c);
+  --sh-3: 8px 8px 0 var(--shadow-c);
+
+  /* layout: the widths. The heights below are only first guesses; layout.js measures the real ones (layout.css explains them) */
+  --wrap: 1360px;
+  --gutter: clamp(14px, 3vw, 24px);     /* side padding of every page-width container: 14px on phones, 24px from 800px up */
+
+  /* patterns: hard-edged, never soft */
+  --halftone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Ccircle cx='4' cy='4' r='1.4' fill='%230E0C0A' fill-opacity='.55'/%3E%3C/svg%3E");
+  --halftone-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Ccircle cx='4' cy='4' r='1.4' fill='%23EFE6D2' fill-opacity='.35'/%3E%3C/svg%3E");
+  --stripes: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3E%3Cpath d='M-2 2 2-2M0 14 14 0M12 16 16 12' stroke='%230E0C0A' stroke-width='4' stroke-opacity='.9'/%3E%3C/svg%3E");
+  --checker: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Crect width='12' height='12' fill='%230E0C0A'/%3E%3Crect x='12' y='12' width='12' height='12' fill='%230E0C0A'/%3E%3C/svg%3E");
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.6 0 0 0 -.25'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* layout: the heights (written to <html> by layout.js as the page changes; these are where they start) */
+:root {
+  --head-h: 116px;                      /* the whole sticky header, as tall as it is at this width */
+  --bar-h: 70px;                        /* just its top bar */
+  --stuck-h: var(--head-h);             /* the part of the header that stays pinned: all of it, or only the bar on a short screen */
+  --dock-h: 0px;                        /* the voice-call bar along the bottom, while there is one */
+  --stick-gap: 16px;                    /* air between the header and a panel pinned under it */
+  --view-h: 100vh;                      /* the height you can actually see (phone browser bars come and go, 100vh does not follow them) */
+}
+@supports (height: 100dvh) { :root { --view-h: 100dvh; } }
+@media (max-height: 800px) { :root { --stuck-h: var(--bar-h); } }      /* a short screen: only the top bar stays pinned (shell.css) */
+
+/* paper mode: the same room in daylight */
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #E4D9BF;
+  --bg-2: #D9CCAE;
+  --card: #F2EBD8;
+  --card-2: #E9DFC6;
+  --line: #1A1612;
+  --line-soft: #B3A582;
+  --line-input: #5C5040;
+  --text: #1A1612;
+  --text-2: #4A4033;
+  --text-3: #5F5340;
+  --pos: var(--lime-deep);
+  --neg: var(--verm-deep);
+  --focus: #1A1612;
+  --slip: #FBF6E9;
+  --shadow-c: #1A1612;
+  --grain-rgb: 0, 0, 0;
+  --grain-opacity: .07;
+}
+
+/* a surface that is always a printed slip, whatever the theme */
+.paper {
+  background: var(--slip);
+  color: var(--slip-ink);
+  --text: var(--slip-ink);
+  --text-2: var(--paper-mute);
+  --text-3: var(--paper-mute);
+  --bg-2: var(--paper-2);
+  --card: var(--paper-2);
+  --card-2: #D9CCAE;
+  --line: #1A1612;
+  --line-soft: var(--paper-line);
+  --line-input: #5C5040;
+  --pos: var(--lime-deep);
+  --neg: var(--verm-deep);
+  --focus: #1A1612;
+  --inv: var(--paper);
+}
+
+/* ---------- base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-padding-top: calc(var(--stuck-h) + 12px); scroll-padding-bottom: calc(var(--dock-h) + 12px); }   /* a focused field or an anchor scrolls to just under the header, never behind it */
+body {
+  margin: 0; background: var(--bg); color: var(--text); font-family: var(--f-body); font-size: 15px; line-height: 1.45;
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
+/* film grain over everything */
+body::after {
+  content: ''; position: fixed; inset: 0; z-index: 9000; pointer-events: none;
+  background-image: var(--grain); background-size: 180px 180px; opacity: var(--grain-opacity);
+  filter: invert(0); mix-blend-mode: normal;
+}
+[data-theme="light"] body::after { filter: invert(1); }
+::selection { background: var(--lime); color: var(--lime-ink); }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; padding: 0; }
+input, select, textarea { font: inherit; color: inherit; }
+img, svg { display: block; }
+h1, h2, h3, h4, h5 { font-family: var(--f-display); font-weight: 800; letter-spacing: -.03em; line-height: 1.02; margin: 0; }
+p { margin: 0; }
+.hidden { display: none !important; }
+.muted { color: var(--text-2); }
+.ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row { display: flex; align-items: center; gap: 8px; }
+.grow { flex: 1 1 auto; min-width: 0; }
+.relative { position: relative; }
+.stack { display: flex; flex-direction: column; gap: 16px; }
+
+/* numbers are tickers: mono, tabular, slashed zero */
+.num, .mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums slashed-zero; font-feature-settings: 'zero' 1; letter-spacing: -.02em; }
+.up { color: var(--pos); } .down { color: var(--neg); }
+
+/* small caps labels: PORTFOLIO, CASH, VOL. */
+.lbl { font-family: var(--f-body); font-size: 11px; font-weight: 600; letter-spacing: .13em; text-transform: uppercase; color: var(--text-3); }
+
+/* custom focus ring */
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 1px; }
+.paper :focus-visible { outline-color: #1A1612; }
+
+/* custom scrollbars */
+* { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-track { background: var(--bg-2); }
+::-webkit-scrollbar-thumb { background: var(--line); border: 2.5px solid var(--bg-2); }
+::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+
+/* numbers that roll (see roll() in util.js) */
+.rl { display: inline-block; overflow: hidden; vertical-align: bottom; height: 1.18em; line-height: 1.18; }
+.rl > i { display: inline-block; font-style: normal; animation: rollIn .42s cubic-bezier(.2, .9, .25, 1.15) var(--d, 0ms) both; }
+@keyframes rollIn { from { transform: translateY(105%); } to { transform: none; } }
+.flash-up { animation: flashUp .9s steps(1, end); } .flash-down { animation: flashDown .9s steps(1, end); }
+@keyframes flashUp { 0%, 40% { color: var(--lime); } }
+@keyframes flashDown { 0%, 40% { color: var(--verm); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}

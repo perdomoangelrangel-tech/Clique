@@ -1,0 +1,26 @@
+# app actual
+legacy/clique/data/
+**/__pycache__/
+*.pyc
+# node
+node_modules/
+dist/
+.turbo/
+coverage/
+playwright-report/
+test-results/
+# secretos
+.env
+.env.*
+!.env.example
+# supabase local
+supabase/.branches/
+supabase/.temp/
+# blender: respaldos automáticos
+*.blend1
+*.blend2
+# sistema
+.DS_Store
+Thumbs.db
+# carpetas de trabajo de agentes (viven fuera del repo, por si acaso)
+Clique-trabajo/
