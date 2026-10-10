@@ -8,9 +8,9 @@
   Página de prueba de OT-006 (E6 · Arte 3D). No es parte de la app.
   Cómo abrirla: desde la raíz del repositorio, `python -m http.server 8000`
   y luego http://localhost:8000/docs/arte/prueba-ficha.html
-  Carga apps/web/public/3d/ficha.glb (meshopt) y pinta cada ficha en tiempo de
-  ejecución según contratos/arte3d.md. Los colores de material y de luz son
-  valores de la paleta v2 (OT-003); en la app salen de packages/tokens.
+  Carga static/3d/ficha.glb (meshopt) y pinta cada ficha en tiempo de
+  ejecución según equipo/contratos/arte3d.md. Los colores de material y de luz son
+  valores de la paleta v2; en la app salen de static/css/tokens.css.
   Arranca en 2D y pasa a 3D solo cuando el modelo cargó (ADR-005): sin WebGL,
   sin red o con "menos movimiento", se queda en 2D.
 -->
@@ -45,10 +45,10 @@
 <body class="sin-3d">
 <canvas id="escena" role="img" aria-label="Cuatro fichas de Clique girando: lima, bermellón, oro y papel"></canvas>
 <div id="respaldo" role="img" aria-label="Cuatro fichas de Clique: lima, bermellón, oro y papel">
-  <img src="../../apps/web/public/3d/ficha-lima-2d.webp" alt="">
-  <img src="../../apps/web/public/3d/ficha-bermellon-2d.webp" alt="">
-  <img src="../../apps/web/public/3d/ficha-oro-2d.webp" alt="">
-  <img src="../../apps/web/public/3d/ficha-papel-2d.webp" alt="">
+  <img src="../../static/3d/ficha-lima-2d.webp" alt="">
+  <img src="../../static/3d/ficha-bermellon-2d.webp" alt="">
+  <img src="../../static/3d/ficha-oro-2d.webp" alt="">
+  <img src="../../static/3d/ficha-papel-2d.webp" alt="">
 </div>
 <section class="hud">
   <h1>Ficha 3D · prueba</h1>
@@ -67,7 +67,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-// Paleta v2 (contratos/arte3d.md, secciones 3 y 8): cuerpo e incrustaciones por variante
+// Paleta v2 (equipo/contratos/arte3d.md, secciones 3 y 8): cuerpo e incrustaciones por variante
 const VARIANTES = [
   { nombre: 'lima',      cuerpo: 0xC6F432, insertos: 0xEFE6D2 },
   { nombre: 'bermellon', cuerpo: 0xFF4B2B, insertos: 0xEFE6D2 },
@@ -124,7 +124,7 @@ if (!renderer) {
   const llave = new THREE.DirectionalLight(LUZ_LLAVE, 2.6); llave.position.set(-0.4, 0.8, 0.5); escena.add(llave);
   const contra = new THREE.DirectionalLight(LUZ_CONTRA, 1.2); contra.position.set(0.5, 0.3, -0.6); escena.add(contra);
 
-  const url = new URL('../../apps/web/public/3d/ficha.glb', location.href).href;
+  const url = new URL('../../static/3d/ficha.glb', location.href).href;
   const cargador = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   // Para medir fuera del repositorio se puede incrustar el GLB en base64 (window.FICHA_GLB_B64)
   const traerGLB = window.FICHA_GLB_B64

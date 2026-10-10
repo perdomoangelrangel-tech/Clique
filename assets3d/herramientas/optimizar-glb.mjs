@@ -3,7 +3,7 @@
 // Uso (Node 22, en una carpeta con las dependencias instaladas):
 //   npm i @gltf-transform/core@4.5.1 @gltf-transform/extensions@4.5.1 @gltf-transform/functions@4.5.1 meshoptimizer@1.3.0
 //   node optimizar-glb.mjs entrada.glb salida.glb
-//   Ficha: node optimizar-glb.mjs assets3d/ficha/ficha-exportada.glb apps/web/public/3d/ficha.glb
+//   Ficha: node optimizar-glb.mjs assets3d/ficha/ficha-exportada.glb static/3d/ficha.glb
 //   (con esas versiones el resultado es idéntico byte por byte)
 //
 // Pasos: quita escenas vacías, nombra la escena y el nodo raíz como el archivo,

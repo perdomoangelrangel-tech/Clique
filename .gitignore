@@ -24,4 +24,3 @@ Clique-trabajo/
 trabajo/
 # los permisos de cada computadora no se comparten
 .claude/settings.local.json
-# bitácora combinada: se genera con equipo/combinar_bitacoras.sh

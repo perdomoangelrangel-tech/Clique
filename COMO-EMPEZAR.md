@@ -1,35 +1,36 @@
 # Cómo empezar (para el dueño)
 
-Esta guía es para ti, no para los agentes. Son los pasos para tener Clique en tu computadora y lanzar la primera orden.
+Esta guía es para ti, no para los agentes. Clique se trabaja como Ches-Hex: un agente por encargo (E1 a E7), cada uno en su rama fija, todos en la misma ventana de VS Code.
 
 ## Una sola vez
 
-1. **Instala Git for Windows:** https://git-scm.com/download/win (deja las opciones por defecto). Trae "Git Bash", que los agentes usan para algunas verificaciones.
-2. **Instala Node 22 LTS** desde https://nodejs.org. Luego, en una terminal: `npm install -g pnpm`.
-3. **Instala Python 3** desde https://www.python.org/downloads/ si no lo tienes (marca "Add python.exe to PATH"). Sirve para correr la app actual.
-4. **Opcional pero recomendado: GitHub CLI** desde https://cli.github.com y luego `gh auth login`. Con eso los agentes abren los PR solos.
-5. **Clona el repositorio en VS Code:** abre VS Code → "Clone Git Repository" → pega `https://github.com/perdomoangelrangel-tech/Clique.git` → elige la carpeta `Documentos`. Se crea `Documentos/Clique`. Ábrela.
+1. **Python 3.11 o más** (ya lo tienes: 3.11.9) y **Node** (ya lo tienes: lo usan los ganchos).
+2. **Recomendado: GitHub CLI.** En PowerShell `winget install GitHub.cli`, cierra y abre VS Code, y corre `gh auth login`. Con eso E7 abre los PR solo.
+3. **Abre la carpeta correcta en VS Code:** Archivo → Abrir carpeta → `Downloads\Clique\Clique-1`. Es la única que se abre. Su raíz se queda en `main`; cada agente trabaja en su subcarpeta `_ramas\<su rama>`.
+4. **Fusiona el PR de arranque** en GitHub (el cerebro te pasa el enlace): es el que pone la app en la raíz, la carpeta `equipo/` y los ganchos en `main`. **Hasta que lo fusiones, no lances a nadie**: las conversaciones abren en `main` y ahí sigue la ronda 0.
+5. **Trae lo nuevo:** abre un chat de Claude en `Clique-1` y pídele `git pull --ff-only`. Después **cierra ese chat y abre uno nuevo**: los ganchos se cargan al abrir la conversación.
 
-Tu carpeta vieja `Downloads/Clique` queda como respaldo; no trabajes ahí.
+## Lanzar a los agentes
 
-## Lanzar la primera orden
+Los mensajes están en el chat del cerebro (y en `equipo/EQUIPO.md` están los encargos). Para cada agente:
 
-1. En VS Code abre el panel de Claude y escribe: `/orden OT-001`
-2. El agente lee las reglas y abre una ventana nueva de VS Code para esa orden. En la ventana nueva abre Claude y vuelve a escribir `/orden OT-001`.
-3. El agente revisa tus herramientas, corre la app actual y sus pruebas, y te va contando. Si te pide instalar algo, hazlo y dile "listo".
-4. Cuando termine, escribe `/entregar`. Te mostrará la entrega y el enlace del PR.
-5. Avísale al cerebro (el chat del proyecto Clique en Claude): "OT-001 lista para revisión".
-6. Cuando el cerebro la apruebe, fusiona el PR en GitHub (botón "Merge pull request") y en la ventana principal escribe `/cerrar OT-001`.
+1. En la ventana de `Clique-1`, abre un **chat nuevo** de Claude.
+2. Pega su mensaje. **Una sola vez.**
+3. El agente lee su orden, crea su subcarpeta y te dice en cinco líneas qué va a hacer. **Contéstale "adelante"** si suena bien.
 
-## Lanzar las siguientes
+Puedes tenerlos a todos trabajando a la vez.
 
-- `/estado` te dice qué órdenes están listas para lanzarse.
-- Para cada una, en la ventana principal: `/orden OT-00X`. Se abre su ventana; ahí abre Claude y vuelve a escribir `/orden OT-00X`.
-- Puedes tener varias ventanas trabajando a la vez (por ejemplo OT-002, OT-004 y OT-006).
-- Si el cerebro deja correcciones, vuelve a la ventana de esa orden y escribe `/orden OT-00X`: el agente las lee y las resuelve.
+## Tu rutina
+
+- **Cuando un agente se detiene con una pregunta:** contéstale si sabes; si no, pásala al cerebro.
+- **Cuando un agente termina un entregable:** no tienes que hacer nada. E7 lo junta en `integracion` y lo verifica.
+- **Para saber en qué va todo:** escribe `/estado` en cualquier chat.
+- **Cuando el cerebro te diga que una ronda está lista:** fusiona en GitHub el PR de `integracion` a `main` (botón "Merge pull request"). Es lo único que tú fusionas.
+- **Si el cerebro deja una orden nueva** para un agente, ve a su chat y escribe `/orden E<n>`.
+- **Cambios en Supabase:** el cerebro te pide tu "sí" antes de cada uno. Los agentes no escriben en la base de producción.
 
 ## Si algo sale mal
 
-- Un agente se detiene con una pregunta: contéstale si sabes, o pásale la pregunta al cerebro.
-- No sabes en qué va todo: escribe `/estado` en cualquier ventana.
-- Un agente quiere hacer algo que te da miedo (borrar, pagar, publicar, subir a `main`): dile que no y pregúntale al cerebro.
+- **Un gancho bloquea a un agente:** es a propósito, porque iba a tocar algo que no es suyo o algo peligroso. El mensaje le dice qué hacer en su lugar.
+- **Un agente quiere hacer algo que te da miedo** (borrar, pagar, publicar, subir a `main`): dile que no y pregúntale al cerebro.
+- **Git dice que hay un candado (`.lock`):** otro agente está trabajando al mismo tiempo; que espere unos segundos y reintente.

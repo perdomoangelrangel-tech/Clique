@@ -1,6 +1,6 @@
 # ADR-001 — Rehacer la base en TypeScript sobre Supabase
 
-- **Estado:** Aceptado por el dueño el 2026-10-10
+- **Estado:** Sustituido por ADR-006 el 2026-10-10 (el dueño decidió mejorar la app original en su lugar)
 - **Fecha:** 2026-10-09
 - **Decide:** cerebro, con aprobación del dueño
 

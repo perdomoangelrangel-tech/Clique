@@ -28,7 +28,7 @@ El reto es doble: que se vea de lujo y que corra fluido en celulares de gama med
 
 **El resultado manda:** el servidor decide primero y la animación aterriza en ese resultado. Ninguna física 3D decide nada.
 
-**Dónde viven los archivos:** los `.blend` en `assets3d/` con Git LFS. Las exportaciones listas para la web en `apps/web/public/3d/` y `apps/web/public/renders/`. La especificación (nombres, escalas, materiales, presupuestos, cómo exportar) es el contrato `coordinacion/contratos/arte3d.md`.
+**Dónde viven los archivos:** los `.blend` en `assets3d/` con Git LFS. Las exportaciones listas para la web en `static/3d/` y `static/renders/`. La especificación (nombres, escalas, materiales, presupuestos, cómo exportar) es el contrato `equipo/contratos/arte3d.md`. El 10 de octubre el dueño aprobó los cuadros de `docs/arte/` como la estética de toda la app.
 
 **Quién:** el rol `arte3d`. Lo puede ejecutar el cerebro con el conector de Blender de la computadora del dueño, o un agente en VS Code que tenga Blender configurado.
 

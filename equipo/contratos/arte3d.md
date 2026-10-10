@@ -1,4 +1,4 @@
-**Estado:** Propuesto · **Dueño:** E6 · Arte 3D · **Creado en:** OT-006 (2026-10-10)
+**Estado:** Propuesto · **Dueño:** E6 · Arte 3D · **Creado en:** ronda 0, OT-006 (2026-10-10)
 
 # Contrato de arte 3D
 
@@ -36,12 +36,12 @@ Cómo se hace, se nombra, se exporta y se usa todo el 3D de Clique. Lo siguen E6
 - **Archivos:**
   - Cuadros de estilo y escenas: `assets3d/<tema>/<nn-nombre>.blend` (Git LFS), con texturas empacadas y rutas relativas (`//tex/`, salida `//render/`).
   - Modelos: `assets3d/<modelo>/<modelo>.blend` y su exportación cruda `<modelo>-exportada.glb`.
-  - Renders: `docs/arte/<nn-nombre>-<ancho>x<alto>.webp` para la dirección de arte y `apps/web/public/renders/` para lo que use la app.
-  - Web: `apps/web/public/3d/<modelo>.glb` y un respaldo 2D por variante: `apps/web/public/3d/<modelo>-<variante>-2d.webp`.
+  - Renders: `docs/arte/<nn-nombre>-<ancho>x<alto>.webp` para la dirección de arte y `static/renders/` para lo que use la app.
+  - Web: `static/3d/<modelo>.glb` y un respaldo 2D por variante: `static/3d/<modelo>-<variante>-2d.webp`.
 
 ## 3. Paleta v2 → materiales
 
-Cada material sale de un valor de la paleta v2 (OT-003). Los materiales naturales que no existen en la paleta (madera, latón) usan un neutro cálido derivado de sala, mesa u oro. Ese valor y su origen se anotan aquí.
+Cada material sale de un valor de la paleta v2 (la de `static/css/tokens.css`, que mantiene E4). Los materiales naturales que no existen en la paleta (madera, latón) usan un neutro cálido derivado de sala, mesa u oro. Ese valor y su origen se anotan aquí.
 
 | Material | Valor | De dónde sale |
 | --- | --- | --- |
@@ -92,16 +92,16 @@ En la web (three.js), la ficha llega como `MeshPhysicalMaterial` con capa (`KHR_
 | Concepto | Presupuesto | `ficha.glb` |
 | --- | --- | --- |
 | GLB por pantalla | ≤ 1.5 MB | 50,704 bytes (22,169 con gzip, 20,727 con brotli) |
-| Un modelo suelto (orden OT-006) | ≤ 300 KB y ≤ 8 mil triángulos | 6,508 triángulos, 4 primitivas (cuerpo, incrustaciones, centro, tinta) |
+| Un modelo suelto | ≤ 300 KB y ≤ 8 mil triángulos | 6,508 triángulos, 4 primitivas (cuerpo, incrustaciones, centro, tinta) |
 | Texturas | ≤ 1024 px, KTX2 | Ninguna: el logotipo y las marcas son geometría. |
 | Triángulos en escena | ≤ 50 mil | 26,032 con cuatro fichas en la página de prueba |
-| Cuadros por segundo | 60 en Android de gama media | Ver la bitácora de OT-006 |
+| Cuadros por segundo | 60 en Android de gama media | La página de prueba marca los cuadros por segundo; medido por el dueño el 10-oct (`equipo/historia/ronda-0/bitacoras/OT-006.md`) |
 
 ## 7. Exportar para la web
 
 1. En Blender: Archivo → Exportar → glTF 2.0 (`.glb`). Solo lo seleccionado, +Y arriba, aplicar modificadores, materiales exportados, **sin Draco**, sin cámaras ni luces. Guarda esa exportación cruda junto al `.blend`.
 2. Optimiza con `assets3d/herramientas/optimizar-glb.mjs` (versiones fijas en su encabezado). El script quita escenas vacías, deja los materiales de una cara, aplica dedup, weld y prune, y comprime con **meshopt** (`EXT_meshopt_compression` y `KHR_mesh_quantization`). Con las mismas versiones, el resultado sale idéntico byte por byte.
-3. Se usa meshopt y no Draco: el decodificador de meshopt es un módulo pequeño que Vite empaqueta con la app. Draco necesita descargar aparte un decodificador de cientos de KB.
+3. Se usa meshopt y no Draco: el decodificador de meshopt es un módulo pequeño que se sirve con la app desde `static/vendor/`. Draco necesita descargar aparte un decodificador de cientos de KB.
 4. Anota en la bitácora el peso en bytes, el peso con gzip y los triángulos.
 
 ## 8. Usar la ficha en la app
@@ -114,7 +114,7 @@ const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 // chip_body = color de la ficha; chip_insert = incrustaciones del canto.
 ```
 
-- **Colores:** salen de `packages/tokens`, nunca escritos a mano.
+- **Colores:** salen de los tokens de `static/css/tokens.css` (E4), nunca escritos a mano.
   - Cuerpo: lima-400, bermellón-500, oro-400 o papel.
   - Incrustaciones: papel, o tinta en la ficha papel.
 - **Pilas grandes** (más de 20 fichas):

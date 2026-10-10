@@ -1,30 +1,12 @@
 # Clique
 
-Apuestas sociales con dinero ficticio entre amigos: mercados sobre la vida del grupo, un casino premium de juegos originales, póker en vivo, ranking semanal por círculo y castigo votado para el último. En reconstrucción para uso comercial en México.
+App social de apuestas con fichas ficticias entre amigos: mercados de predicción sobre la vida del grupo, casino de juegos propios, póker, ranking semanal por círculo y castigo votado para el último. Con estética de club privado de cartas.
 
-> Todo es dinero ficticio. Nada se cambia por dinero real ni por premios con valor real.
-
-## Estructura
-
-| Carpeta | Qué hay |
-| --- | --- |
-| `legacy/clique/` | La app actual en Python. Funciona y es la especificación de la nueva. No se modifica. |
-| `coordinacion/` | Órdenes de trabajo, bitácoras, decisiones (ADR), contratos entre agentes y el tablero. |
-| `.claude/` | Roles de agente y comandos (`/orden`, `/bitacora`, `/entregar`, `/estado`, `/cerrar`). |
-| `docs/` | Plan maestro y documentación. |
-| `apps/`, `packages/`, `supabase/`, `assets3d/` | La versión nueva (se crean con las órdenes de la Fase 0). |
-
-## Empezar
-
-- Dueño: lee [COMO-EMPEZAR.md](COMO-EMPEZAR.md).
-- Agentes: lee [CLAUDE.md](CLAUDE.md) y [coordinacion/PROTOCOLO.md](coordinacion/PROTOCOLO.md).
-
-## La app actual
-
-```bash
-cd legacy/clique
-python server.py                                   # http://localhost:3000
-python -m unittest discover -s tests -t .          # 1,142 pruebas
-```
-
-Más detalles en [legacy/clique/README.md](legacy/clique/README.md) (en inglés).
+- **Correr la app:** `python server.py` → http://localhost:3000 (Python 3.12, sin dependencias externas)
+- **Pruebas:** `python -m unittest discover -s tests -t .`
+- **Cómo se reparte el trabajo:** [`equipo/LEEME.md`](equipo/LEEME.md)
+- **Decisiones firmadas:** [`equipo/DECISIONES.md`](equipo/DECISIONES.md)
+- **La economía, regla por regla:** [`ECONOMY.md`](ECONOMY.md)
+- **El documento original de la app (en inglés):** [`docs/README-original.md`](docs/README-original.md)
+- **Para el dueño:** [`COMO-EMPEZAR.md`](COMO-EMPEZAR.md)
+- **Para los agentes:** [`CLAUDE.md`](CLAUDE.md)

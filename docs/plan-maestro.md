@@ -4,6 +4,8 @@ El documento completo, con diagramas, referentes y fuentes, es "Clique — Diagn
 
 Este archivo es el resumen que los agentes necesitan para trabajar.
 
+> **Cambio del 10-oct (D1, ADR-006):** la app original se mejora en su lugar, en la raíz del repositorio, en vez de reescribirse en TypeScript. Donde el documento completo hable de monorepo, React o reescribir, manda `equipo/decisiones/ADR-006-mejorar-el-original.md`. Las fases y las funciones siguen igual.
+
 ## Diagnóstico en una línea
 
 Núcleo sólido (1,142 pruebas, economía auditada, identidad fuerte) sobre una base que no escala ni está lista para negocio: archivo JSON con candado global, solo inglés, celular secundario, sin git, sin moderación, sin legal.
@@ -27,9 +29,9 @@ Núcleo sólido (1,142 pruebas, economía auditada, identidad fuerte) sobre una 
 
 | Fase | Semanas (estimado) | Qué entrega | Compuerta para pasar |
 | --- | --- | --- | --- |
-| 0 · Cimientos | 1–2 | Git y GitHub, protocolo de agentes, monorepo, CI, Supabase, tokens v2, base de traducciones | CI en verde y primer PR de un agente fusionado |
-| 1 · Núcleo en Supabase | 3–8 | Cuentas, círculos, libro contable, mercados, cierre semanal; interfaz nueva para celular, en español, instalable | Paridad en economía y mercados; 20 amigos en beta |
-| 2 · Casino y comunidad | 9–14 | 13 juegos portados y verificables; chat y amigos; moderación, panel de admin, push, rachas, misiones, compartir | Retención a 7 días de 20% o más en beta cerrada |
+| 0 · Cimientos | 1–2 | Git y GitHub, equipo de agentes con ganchos, CI en Linux y Windows, esquema y libro en Postgres (etapa A), tokens v2, base de traducciones | CI en verde y `cimiento-2` fusionado a `main` |
+| 1 · Núcleo en Supabase | 3–8 | La capa de datos con Postgres detrás (etapas B y C de ADR-006): cuentas, círculos, libro contable, mercados, cierre semanal; interfaz para celular, en español, instalable | Paridad en economía y mercados; 20 amigos en beta |
+| 2 · Casino y comunidad | 9–14 | Los 14 juegos verificables; chat y amigos; moderación, panel de admin, push, rachas, misiones, compartir | Retención a 7 días de 20% o más en beta cerrada |
 | 3 · En vivo | 15–20 | Servidor de juego para póker y Crash; voz con LiveKit; Plinko; liga global | 500 usuarios simultáneos en prueba de carga |
 | 4 · Lanzamiento | 21–26 | Cobros (cosméticos, pase, Clique+); apps en tiendas; términos y aviso de privacidad; analítica | Dictamen legal, aviso de privacidad y clasificación 18+ |
 
@@ -55,8 +57,8 @@ Núcleo sólido (1,142 pruebas, economía auditada, identidad fuerte) sobre una 
 
 ## Arreglos a lo que ya existe
 
-- R1 Base de datos en Supabase (ADR-001, ADR-003).
-- R2 Git, ramas e integración continua (OT-001, OT-002).
+- R1 Base de datos en Supabase (ADR-003, ADR-006).
+- R2 Git, ramas e integración continua (ronda 0 y orden 1 de E1).
 - R3 Quitar el buscador de mercados y la cinta de precios de las páginas del casino: a 1366×768 tapan el botón de apostar.
 - R4 Agrupar los avisos: hoy se apilan y tapan la pantalla al entrar.
 - Reemplazar "Add funds" (contraseña compartida que crea dinero) por el panel de administración con roles.

@@ -1,8 +1,8 @@
 """Texturas de los cuadros de estilo de OT-006: caras y reverso de cartas, boleto de papel y pósters.
 
-Uso:  python generar_texturas.py <carpeta_de_trabajo> <legacy/clique/static/casino-icons>
+Uso:  python generar_texturas.py <carpeta_de_trabajo> <static/casino-icons>
 La carpeta de trabajo debe tener fonts/ con estas fuentes en .ttf (convertidas desde los
-.woff2 de legacy/clique/static/fonts con fontTools): bricolage-700, bricolage-800,
+.woff2 de static/fonts con fontTools): bricolage-700, bricolage-800,
 instrument-500, instrument-600, jbmono-500, jbmono-700. Escribe en <carpeta>/tex/.
 Colores: paleta v2 (OT-003). Las texturas ya van empacadas dentro de los .blend; esta versión
 usa semillas fijas, así que dos corridas dan el mismo archivo (la primera versión, con la que se

@@ -1,6 +1,6 @@
 # ADR-002 — Trabajo con agentes: una orden, una rama, una bitácora
 
-- **Estado:** Aceptado
+- **Estado:** Sustituido por la forma de trabajo de `equipo/EQUIPO.md` y `equipo/COORDINACION.md` (decisión D7, 2026-10-10)
 - **Fecha:** 2026-10-09
 
 ## Contexto
