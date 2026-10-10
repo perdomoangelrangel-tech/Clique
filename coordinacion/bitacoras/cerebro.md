@@ -4,6 +4,21 @@ Decisiones, revisiones y cambios de plan. Lo más nuevo arriba.
 
 ---
 
+## 2026-10-10 (tarde) — Todos los agentes a la vez
+
+**Contexto:** el dueño fusionó el PR #1 (agentes E0 a E7) y clonó el repositorio en `Downloads\Clique\Clique-1` (el nombre `Clique` chocaba en Windows con la carpeta `clique` de la app original). Pidió que todos los agentes puedan trabajar ya.
+
+**Hecho:**
+- Dependencias separadas en "para empezar" y "para entregar": OT-002, OT-003 (parte A), OT-004, OT-005 y la nueva OT-007 empiezan ya, en paralelo con OT-001. Solo las entregas de OT-003, OT-004 y OT-005 esperan a que OT-002 esté fusionada.
+- `packages/tokens` pasa de OT-002 a OT-003 para que E4 pueda empezar sin chocar.
+- Nueva OT-007 para E5: inventario de pantallas y rutas de la API del legacy, navegación de la app nueva y todos los textos en es-MX (la "base de traducciones" de la Fase 0).
+- `/orden` y `/entregar` leen las dos columnas de dependencias.
+- En la computadora del dueño: el `CLAUDE.md` de `Downloads\Clique` ya no manda a clonar en Documentos; las copias viejas de `coordinacion/`, `docs/` y `COMO-EMPEZAR.md` se movieron a `_viejo/`.
+
+**Riesgo aceptado:** se lanzan seis ventanas antes de que OT-001 pruebe el ciclo en Windows. Si `/orden` falla igual en todas, se corrige una vez en `orden.md`.
+
+---
+
 ## 2026-10-10 — Aprobaciones del dueño, repositorio y Supabase
 
 **Decisiones del dueño:**

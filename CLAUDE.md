@@ -27,6 +27,7 @@ coordinacion/AGENTES.md   quién es quién: E0 cerebro, E1 plataforma, E2 datos,
 .claude/agents/           roles: plataforma, datos, motor, frontend, diseno, arte3d, qa
 .claude/commands/         /orden, /bitacora, /entregar, /estado, /cerrar
 docs/                     plan maestro y documentación del producto
+  producto/               pantallas, rutas de la API, navegación y textos es-MX   ← OT-007
 legacy/clique/            la app actual en Python: ES LA ESPECIFICACIÓN. No se modifica.
 legacy/clique.sha256      huella de cada archivo del legacy (para comprobar que nadie lo cambió)
 legacy-tools/             scripts que ejecutan el legacy para generar casos de referencia ← OT-005

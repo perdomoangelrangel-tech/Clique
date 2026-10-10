@@ -22,7 +22,7 @@ Vas a trabajar en la orden **$ARGUMENTS** de Clique. Sigue estos pasos en orden 
 
 ## 3. Revisa dependencias
 
-En el tablero, si alguna orden de "Depende de" no está "Hecha" (salvo lo que la orden permita explícitamente) o la orden está "Bloqueada", explícale al dueño qué falta y detente.
+Lee el campo **Depende de** de la orden y las columnas "Para empezar" y "Para entregar" del tablero. Si algo que se necesita **para empezar** no está "Hecha", o la orden está "Bloqueada", explícale al dueño qué falta y detente. Lo que solo se necesita **para entregar** no te detiene: trabaja en todo lo demás y anótalo en la bitácora; `/entregar` lo vuelve a revisar.
 
 ## 4. Asegura tu lugar de trabajo
 

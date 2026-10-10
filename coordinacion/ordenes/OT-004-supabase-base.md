@@ -3,7 +3,7 @@
 - **Fase:** 0
 - **Agente:** E2 · Datos
 - **Rama:** `ot/004-supabase-base`
-- **Depende de:** OT-001
+- **Depende de:** — para empezar; OT-002 fusionada para agregar los scripts de la raíz y para entregar
 - **Contratos que usa:** ADR-001, ADR-003
 - **Contratos que crea:** `coordinacion/contratos/esquema.md`
 
@@ -36,7 +36,7 @@ Proyecto de Supabase: `Clique`, ref `rrmifvptjajfvxxdqqek`, región us-east-1, p
 
 ## Archivos y carpetas permitidos
 
-`supabase/`, `coordinacion/contratos/esquema.md`, `coordinacion/bitacoras/OT-004.md`, `.env.example`, `package.json` de la raíz (solo la dependencia `supabase` y los scripts `db:*`).
+`supabase/`, `coordinacion/contratos/esquema.md`, `coordinacion/bitacoras/OT-004.md`, `.env.example`, `package.json` de la raíz (solo la dependencia `supabase` y los scripts `db:*`) y `pnpm-lock.yaml` (solo lo que cambie `pnpm add`).
 
 ## Criterios de aceptación
 
@@ -53,4 +53,8 @@ Proyecto de Supabase: `Clique`, ref `rrmifvptjajfvxxdqqek`, región us-east-1, p
 
 ## Correcciones
 
-(Vacío.)
+**2026-10-10 · E0 — Empiezas ya, en paralelo con OT-001 y OT-002**
+
+- No esperes a OT-001: comprueba tú mismo `git`, `node` y si hay Docker Desktop (`docker --version`), y anótalo en la bitácora.
+- Mientras OT-002 no esté fusionada no hay `package.json` en la raíz: usa la CLI con `npx supabase@<versión estable>` (anota la versión) para `init`, migraciones y pruebas. Cuando OT-002 se fusione: `git fetch origin && git rebase origin/main`, `pnpm add -D supabase -w` con esa misma versión y los scripts `db:reset`, `db:test` y `db:push` en la raíz. Después `/entregar`.
+- Si no hay Docker, pide la rama de base de datos en la nube como dice el alcance: escríbelo como "Pregunta para el cerebro" y avísale al dueño. Mientras tanto escribe las migraciones y las pruebas pgTAP.

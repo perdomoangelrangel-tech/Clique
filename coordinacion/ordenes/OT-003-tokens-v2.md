@@ -3,7 +3,7 @@
 - **Fase:** 0
 - **Agente:** E4 · Diseño
 - **Rama:** `ot/003-tokens-v2`
-- **Depende de:** OT-002
+- **Depende de:** — para empezar (parte A); OT-002 fusionada para la parte B y para entregar
 - **Contratos que usa:** `contratos/comandos.md`
 - **Contratos que crea:** `coordinacion/contratos/tokens.md`
 
@@ -59,7 +59,7 @@ La identidad se queda: "sala de cartas clandestina con boleto de apuesta impreso
 
 ## Archivos y carpetas permitidos
 
-`packages/tokens/`, `apps/web/src/` (solo la ruta `/diseno` y la importación de tokens), `apps/web/public/fonts/`, `coordinacion/contratos/tokens.md`, `coordinacion/bitacoras/OT-003.md`.
+`packages/tokens/` (incluido su `package.json`), `apps/web/src/` (solo la ruta `/diseno` y la importación de tokens), `apps/web/public/fonts/`, `coordinacion/contratos/tokens.md`, `coordinacion/bitacoras/OT-003.md`, `pnpm-lock.yaml` de la raíz en la parte B (solo lo que cambie pnpm).
 
 ## Criterios de aceptación
 
@@ -80,4 +80,11 @@ pnpm dev   # abrir /diseno
 
 ## Correcciones
 
-(Vacío.)
+**2026-10-10 · E0 — Empiezas ya, en dos partes**
+
+Para que todos los agentes trabajen a la vez, esta orden ya no espera a OT-002:
+
+- **Parte A (desde ya, sin monorepo):** crea `packages/tokens/` completo y autosuficiente: `package.json` con nombre `@clique/tokens`, `tokens.json`, el script que genera `dist/tokens.css` y `dist/tokens.ts`, y la prueba de contraste en `packages/tokens/test/contraste.test.ts` (Vitest instalado como dependencia de desarrollo del propio paquete). Corre todo desde `packages/tokens` con `pnpm --dir packages/tokens` (o `npm`); no subas el lockfile que se genere dentro del paquete (`pnpm-lock.yaml` o `package-lock.json`): en la parte B el único lockfile es el de la raíz. Copia las fuentes `.woff2` y su licencia a `packages/tokens/fonts/`. Escribe `contratos/tokens.md`. Sube la rama seguido.
+- **Parte B (cuando OT-002 esté fusionada en `main`):** `git fetch origin && git rebase origin/main`, conecta el paquete al workspace (scripts y convención de `contratos/comandos.md`), haz que el build de tokens corra solo antes de `typecheck` y `test`, crea la página `/diseno` en `apps/web`, copia las fuentes a `apps/web/public/fonts/` y toma las capturas. Después `/entregar`.
+- OT-002 ya no crea `packages/tokens`: la carpeta es tuya desde el inicio.
+- Mientras esperas la parte B, si terminaste la A, anótalo en la bitácora ("Esperando OT-002") y avísale al dueño.

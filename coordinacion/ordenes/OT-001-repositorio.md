@@ -13,7 +13,7 @@ Que la computadora del dueño tenga el repositorio clonado y todas las herramien
 
 ## Contexto
 
-El cerebro ya creó el repositorio en GitHub (https://github.com/perdomoangelrangel-tech/Clique) con la app actual en `legacy/clique`, la huella `legacy/clique.sha256` y todo el sistema de agentes. La carpeta vieja `Downloads/Clique` queda como respaldo; desde ahora se trabaja en el clon.
+El cerebro ya creó el repositorio en GitHub (https://github.com/perdomoangelrangel-tech/Clique) con la app actual en `legacy/clique`, la huella `legacy/clique.sha256` y todo el sistema de agentes. El dueño ya lo clonó en `C:\Users\legma\Downloads\Clique\Clique-1` (carpeta principal); las carpetas de trabajo de las órdenes quedan en `C:\Users\legma\Downloads\Clique\Clique-trabajo\`. Lo demás de `Downloads\Clique` (`clique/`, `_viejo/`, `_ot006/`) no se toca.
 
 ## Alcance
 
@@ -58,4 +58,8 @@ python -m unittest discover -s tests -t .
 
 ## Correcciones
 
-(Vacío.)
+**2026-10-10 · E0 — Ya hay clon y los demás agentes trabajan a la vez**
+
+- No vuelvas a clonar: el repositorio ya está en `Downloads\Clique\Clique-1`. Anota en la bitácora la ruta y `git log --oneline -1` de `main`.
+- Los demás agentes (E1 con OT-002, E2, E3, E4 y E5) arrancan al mismo tiempo que tú, cada uno en su carpeta de `Clique-trabajo`. No toques sus carpetas ni sus ramas. Si ves que algo de la computadora les va a fallar (por ejemplo falta Node, pnpm o Python, o `code` no abre ventanas desde la terminal), anótalo como aviso `@todos` y avísale al dueño de inmediato.
+- Comprueba también que `git worktree list` muestra las carpetas de los demás y que el comando `code` existe en la terminal (lo usa `/orden` para abrir ventanas).

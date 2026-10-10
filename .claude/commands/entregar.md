@@ -5,6 +5,7 @@ description: Verifica, pide revisión a qa, cierra la bitácora, sube la rama y 
 Vas a entregar la orden de la rama actual. No declares nada como hecho sin haberlo comprobado.
 
 1. **Identifica la orden** por la rama (`ot/NNN-nombre`). Lee su versión más nueva con `git fetch origin` y `git show origin/main:coordinacion/ordenes/<archivo>`, y lee tu bitácora.
+   Revisa lo que la orden necesita **para entregar** (campo "Depende de" y columna "Para entregar" del tablero en `origin/main`). Si falta algo, por ejemplo que OT-002 esté fusionada, no entregues: anota en la bitácora "Esperando OT-NNN para entregar", sube la rama y díselo al dueño.
 2. **Actualiza con `main`:** `git rebase origin/main`. Si hay conflictos en archivos de otra orden, detente y pregunta.
 3. **Corre las verificaciones:**
    - Cada comando de "Cómo verificar" de la orden.

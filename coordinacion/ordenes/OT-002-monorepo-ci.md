@@ -3,7 +3,7 @@
 - **Fase:** 0
 - **Agente:** E1 · Plataforma
 - **Rama:** `ot/002-monorepo-ci`
-- **Depende de:** OT-001
+- **Depende de:** — (empieza ya, en paralelo con OT-001. Si a la computadora le falta Node 22 o pnpm, pídele al dueño que lo instale como dice OT-001 y espera.)
 - **Contratos que usa:** ADR-001 (stack)
 - **Contratos que crea:** `coordinacion/contratos/comandos.md` (los comandos estándar del repo)
 
@@ -22,7 +22,7 @@ Es el cimiento para que los agentes trabajen en paralelo sin romperse unos a otr
 - pnpm workspaces en la raíz (`package.json`, `pnpm-workspace.yaml`), Node 22 LTS fijado (`.nvmrc` y `engines`).
 - `apps/web`: Vite + React + TypeScript estricto, con una pantalla que diga "Clique" y un texto en español servido por i18n (`i18next` con `es-MX` por defecto y `en` de respaldo). React Router con una ruta.
 - `packages/engine`: paquete TypeScript puro, sin dependencias en tiempo de ejecución, con dos funciones de ejemplo y sus pruebas en Vitest: `round2` (al centavo, mitad hacia arriba, como `legacy/clique/backend/util.py`) y `floorCents` (al centavo hacia abajo, como `legacy/clique/backend/lmsr.py`, que se usa en pagos).
-- `packages/tokens`: paquete vacío con su `package.json` (lo llena OT-003).
+- `pnpm-workspace.yaml` incluye `apps/*` y `packages/*`. **No crees `packages/tokens`:** lo crea OT-003 (E4), que trabaja en paralelo. Si al hacer rebase ya existe, inclúyelo en el workspace tal como está.
 - Convención de pruebas: cada paquete pone sus pruebas en `test/**/*.test.ts` y Vitest las encuentra ahí (OT-005 y OT-003 dependen de esto). Los paquetes que generan archivos (`build`) se construyen antes de `typecheck` y `test` (por ejemplo con `dependsOn` o un script `pretest`), para que un clon limpio pase.
 - TypeScript base compartido (`tsconfig.base.json`), ESLint y Prettier compartidos.
 - Scripts en la raíz: `pnpm dev`, `pnpm build`, `pnpm test`, `pnpm lint`, `pnpm typecheck`, `pnpm test:legacy`.
@@ -36,7 +36,7 @@ Es el cimiento para que los agentes trabajen en paralelo sin romperse unos a otr
 
 ## Archivos y carpetas permitidos
 
-Raíz (archivos de configuración), `apps/web/`, `packages/engine/`, `packages/tokens/`, `.github/`, `coordinacion/contratos/comandos.md`, `coordinacion/bitacoras/OT-002.md`, `README.md` (solo la sección de comandos).
+Raíz (archivos de configuración), `apps/web/`, `packages/engine/` (salvo `fixtures/`, que es de OT-005), `.github/`, `coordinacion/contratos/comandos.md`, `coordinacion/bitacoras/OT-002.md`, `README.md` (solo la sección de comandos).
 
 ## Criterios de aceptación
 
@@ -66,4 +66,8 @@ pnpm test:legacy
 
 ## Correcciones
 
-(Vacío.)
+**2026-10-10 · E0 — Todos los agentes trabajan en paralelo**
+
+- Esta orden ya no espera a OT-001: la lanzas en cuanto quieras.
+- `packages/tokens` pasa a ser de OT-003 (E4), que empieza al mismo tiempo. Tú solo dejas el workspace listo para recibirlo (`packages/*`).
+- E2 (OT-004), E3 (OT-005) y E4 (OT-003) van a hacer rebase sobre tu rama cuando se fusione: sé claro en `contratos/comandos.md` con el nombre de cada script y dónde van las pruebas, y avísales en tu bitácora (`@E2 @E3 @E4`) cuando el PR esté abierto.

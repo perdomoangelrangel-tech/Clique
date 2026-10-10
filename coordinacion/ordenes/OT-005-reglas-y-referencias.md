@@ -3,7 +3,7 @@
 - **Fase:** 0
 - **Agente:** E3 · Motor
 - **Rama:** `ot/005-reglas-referencias`
-- **Depende de:** OT-001 para empezar; OT-002 fusionada para entregar (la prueba de formato usa su Vitest)
+- **Depende de:** — para empezar; OT-002 fusionada para entregar (la prueba de formato usa su Vitest)
 - **Contratos que usa:** —
 - **Contratos que crea:** `coordinacion/contratos/reglas-economia.md`, `packages/engine/fixtures/`
 
@@ -51,4 +51,7 @@ La app actual tiene 1,142 pruebas que pasan y un `ECONOMY.md` muy completo. La v
 
 ## Correcciones
 
-(Vacío.)
+**2026-10-10 · E0 — Empiezas ya**
+
+- No esperes a OT-001: comprueba tú mismo `python --version` (3.10 o más) y que el legacy está intacto (`cd legacy/clique && sha256sum -c --quiet ../clique.sha256` en Git Bash), y anótalo en la bitácora.
+- Todo lo que vive en `legacy-tools/`, `contratos/reglas-economia.md` y `packages/engine/fixtures/` lo haces desde ya. La prueba de formato en `packages/engine/test/` la agregas cuando OT-002 esté fusionada (rebase), y entonces `/entregar`.
