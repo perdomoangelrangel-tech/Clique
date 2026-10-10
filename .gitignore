@@ -22,5 +22,6 @@ supabase/.temp/
 # sistema
 .DS_Store
 Thumbs.db
-# carpetas de trabajo de agentes (viven fuera del repo, por si acaso)
+# carpetas de trabajo de los agentes: una por orden, dentro de la carpeta principal
+/trabajo/
 Clique-trabajo/

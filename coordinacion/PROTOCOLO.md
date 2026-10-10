@@ -8,21 +8,21 @@ Cómo trabajan juntos el dueño, el cerebro y los agentes. Si algo aquí choca c
 | --- | --- | --- | --- |
 | **Dueño** (tú) | VS Code y el chat con el cerebro | Aprueba fases y decisiones. Lanza cada agente con `/orden OT-NNN`. Fusiona los PR aprobados y corre `/cerrar`. | Escribir código |
 | **Cerebro** | Proyecto "Clique" en Claude, con acceso al repositorio de GitHub y a Supabase | Escribe las órdenes y sus correcciones, mantiene `TABLERO.md`, `AGENTES.md`, `decisiones/` y `bitacoras/cerebro.md`. Sube esos cambios por PR desde ramas `cerebro/*`, que el dueño fusiona con un clic. Revisa los PR, corre las pruebas de aceptación y los asesores de Supabase. | Programar dentro de las ramas de los agentes |
-| **Agentes** | Claude en VS Code, una ventana por orden | Ejecutan una orden en su rama, con su bitácora, y abren un PR. | Tocar `main`, otras ramas o contratos |
+| **Agentes** | Claude en VS Code: un chat por orden, todos en la misma ventana y la misma carpeta | Ejecutan una orden en su rama, con su bitácora, y abren un PR. | Tocar `main`, otras ramas o contratos |
 
 Cada agente tiene un código fijo de E1 a E7, según `coordinacion/AGENTES.md`. Sus roles están en `.claude/agents/`: `plataforma` (E1), `datos` (E2), `motor` (E3), `diseno` (E4), `frontend` (E5) y `arte3d` (E6) ejecutan órdenes; `qa` (E7) solo revisa. El cerebro es E0.
 
 ## El ciclo de una orden
 
 1. **El cerebro escribe la orden** en `coordinacion/ordenes/OT-NNN-nombre.md`, la marca "Lista" en el tablero y lo sube a `main`.
-2. **El dueño la lanza.** En la ventana principal de VS Code abre Claude y escribe `/orden OT-NNN`.
-3. **El agente prepara su lugar de trabajo.** Actualiza `main` desde GitHub, crea la rama `ot/NNN-nombre` desde `origin/main` en una carpeta aparte, `../Clique-trabajo/OT-NNN` (git worktree), y la abre en una ventana nueva de VS Code. Ahí el dueño abre Claude y vuelve a escribir `/orden OT-NNN`.
+2. **El dueño la lanza.** En VS Code, con la carpeta principal abierta, abre un chat nuevo de Claude y pega el mensaje del agente (`AGENTES.md`), o escribe `/orden OT-NNN`.
+3. **El agente prepara su lugar de trabajo.** Crea la rama `ot/NNN-nombre` desde `origin/main` en la subcarpeta `trabajo/OT-NNN` de la misma carpeta principal (git worktree: no es un clon y no se abre otra ventana). Desde ahí trabaja en el mismo chat.
 4. **El agente trabaja.** Lee la orden y sus "Correcciones" desde `origin/main` (siempre la versión más nueva), los contratos y las bitácoras relacionadas. Hace commits pequeños. Anota en su bitácora con `/bitacora` y sube la rama seguido (`git push`), así el cerebro ve el avance en GitHub.
 5. **El agente entrega** con `/entregar`: corre las verificaciones, pide revisión al subagente `qa`, completa la sección "Entrega" de la bitácora, sube la rama y abre el PR. Le muestra al dueño la sección "Entrega" completa y el enlace del PR.
-6. **El cerebro revisa** el PR en GitHub. Si falta algo, escribe "Correcciones" al final de la orden (PR `cerebro/*`, que el dueño fusiona) y el dueño vuelve a escribir `/orden OT-NNN` en la ventana de esa orden. Si está bien, lo aprueba.
-7. **El dueño fusiona** el PR en GitHub y corre `/cerrar OT-NNN` en la ventana principal. El cerebro marca la orden como "Hecha" en el tablero.
+6. **El cerebro revisa** el PR en GitHub. Si falta algo, escribe "Correcciones" al final de la orden (PR `cerebro/*`, que el dueño fusiona) y el dueño vuelve a escribir `/orden OT-NNN` en el chat de esa orden. Si está bien, lo aprueba.
+7. **El dueño fusiona** el PR en GitHub y corre `/cerrar OT-NNN` en un chat de Claude. El cerebro marca la orden como "Hecha" en el tablero.
 
-Varias órdenes pueden correr a la vez, cada una en su ventana. Solo se lanzan las que tienen sus dependencias "Hechas" (o lo que la orden diga explícitamente).
+Varias órdenes pueden correr a la vez, cada una en su chat y en su subcarpeta `trabajo/OT-NNN`. La raíz de la carpeta principal siempre está en `main` y nadie la edita: una carpeta de git solo puede tener una rama a la vez, por eso cada orden tiene la suya dentro de `trabajo/`. Solo se lanzan las que tienen sus dependencias "Hechas" (o lo que la orden diga explícitamente).
 
 ## Estados del tablero
 
@@ -37,7 +37,7 @@ Siempre por escrito, nunca de memoria:
 - **Bitácora propia** (`coordinacion/bitacoras/OT-NNN.md`, en su rama). Cada entrada tiene "Preguntas para el cerebro" y "Avisos para otros agentes". Un aviso empieza con el código del agente (por ejemplo `@E5`), `@OT-NNN` o `@todos`.
 - **Al iniciar cada sesión** el agente corre `/estado` y busca avisos dirigidos a su código, a su orden o a `@todos`.
 - **Contratos** (`coordinacion/contratos/`). Son los acuerdos que permiten trabajar en paralelo: esquema de datos, API, tokens, reglas de economía, especificación de arte 3D. Quien crea un contrato es su dueño; los demás lo usan tal cual. Un cambio requiere un ADR aprobado por el cerebro.
-- **Las bitácoras de otras ramas** se leen así: si su carpeta de trabajo existe (la ruta sale en `git worktree list`), en `<carpeta>/coordinacion/bitacoras/OT-NNN.md`; si no, con `git fetch origin` y `git show origin/ot/NNN-nombre:coordinacion/bitacoras/OT-NNN.md`.
+- **Las bitácoras de otras ramas** se leen así: si su carpeta de trabajo existe, en `trabajo/OT-NNN/coordinacion/bitacoras/OT-NNN.md`; si no, con `git fetch origin` y `git show origin/ot/NNN-nombre:coordinacion/bitacoras/OT-NNN.md`.
 
 ## Cuándo parar y preguntar
 

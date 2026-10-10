@@ -2,9 +2,9 @@
 description: Verifica, pide revisión a qa, cierra la bitácora, sube la rama y abre el PR de la orden actual
 ---
 
-Vas a entregar la orden de la rama actual. No declares nada como hecho sin haberlo comprobado.
+Vas a entregar tu orden. No declares nada como hecho sin haberlo comprobado. Todos los comandos de este procedimiento corren dentro de tu carpeta de trabajo `trabajo/OT-NNN` (`cd trabajo/OT-NNN && ...`), nunca en la raíz, que está en `main`. Al pedir la revisión a `qa`, dale el número de orden y la ruta de tu carpeta.
 
-1. **Identifica la orden** por la rama (`ot/NNN-nombre`). Lee su versión más nueva con `git fetch origin` y `git show origin/main:coordinacion/ordenes/<archivo>`, y lee tu bitácora.
+1. **Identifica la orden** por la rama de tu carpeta (`ot/NNN-nombre`). Lee su versión más nueva con `git fetch origin` y `git show origin/main:coordinacion/ordenes/<archivo>`, y lee tu bitácora.
    Revisa lo que la orden necesita **para entregar** (campo "Depende de" y columna "Para entregar" del tablero en `origin/main`). Si falta algo, por ejemplo que OT-002 esté fusionada, no entregues: anota en la bitácora "Esperando OT-NNN para entregar", sube la rama y díselo al dueño.
 2. **Actualiza con `main`:** `git rebase origin/main`. Si hay conflictos en archivos de otra orden, detente y pregunta.
 3. **Corre las verificaciones:**

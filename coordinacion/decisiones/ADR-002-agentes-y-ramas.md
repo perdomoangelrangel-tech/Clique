@@ -10,7 +10,7 @@ El dueño no programa. El trabajo lo hacen agentes de Claude en VS Code, varios 
 ## Decisión
 
 - Cada unidad de trabajo es una **orden** (`coordinacion/ordenes/OT-NNN-*.md`) con alcance, archivos permitidos y criterios de aceptación verificables.
-- Cada orden vive en su **rama** `ot/NNN-nombre` y en su **carpeta de trabajo** aparte (`git worktree` en `../Clique-trabajo/OT-NNN`), abierta en su propia ventana de VS Code.
+- Cada orden vive en su **rama** `ot/NNN-nombre` y en su **carpeta de trabajo** `trabajo/OT-NNN`, una subcarpeta de la carpeta principal (`git worktree`, ignorada por git). Todos los agentes trabajan en la misma carpeta y la misma ventana de VS Code, cada uno en su chat. (Enmienda del 2026-10-10, a pedido del dueño: antes cada orden tenía carpeta y ventana aparte en `../Clique-trabajo/`.)
 - Cada orden tiene su **bitácora** (`coordinacion/bitacoras/OT-NNN.md`): la memoria del agente entre sesiones y su canal hacia el cerebro y los demás agentes.
 - Los acuerdos entre agentes son **contratos** (`coordinacion/contratos/`). Solo cambian con un ADR.
 - El **tablero** lo edita solo el cerebro en `main`.

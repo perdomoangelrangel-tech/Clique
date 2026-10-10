@@ -15,7 +15,9 @@ Decisiones, revisiones y cambios de plan. Lo más nuevo arriba.
 - `/orden` y `/entregar` leen las dos columnas de dependencias.
 - En la computadora del dueño: el `CLAUDE.md` de `Downloads\Clique` ya no manda a clonar en Documentos; las copias viejas de `coordinacion/`, `docs/` y `COMO-EMPEZAR.md` se movieron a `_viejo/`.
 
-**Riesgo aceptado:** se lanzan seis ventanas antes de que OT-001 pruebe el ciclo en Windows. Si `/orden` falla igual en todas, se corrige una vez en `orden.md`.
+**Cambio pedido por el dueño (15:22):** nada de ventanas ni carpetas aparte. Todos los agentes trabajan en la carpeta `Clique-1`, cada uno en su chat, y su rama vive en la subcarpeta `trabajo/OT-NNN` (git worktree ignorado por git; no es un clon). Se enmendó ADR-002 y se ajustaron `/orden`, `/cerrar`, `/estado`, PROTOCOLO, AGENTES y COMO-EMPEZAR. OT-001 ya había arrancado en `../Clique-trabajo/OT-001`: termina ahí y se borra al cerrarla.
+
+**Riesgo aceptado:** varios agentes corren git a la vez sobre el mismo repositorio; si alguno choca con un `.lock`, espera y reintenta (escrito en `/orden`).
 
 ---
 

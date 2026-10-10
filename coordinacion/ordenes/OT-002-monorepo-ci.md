@@ -70,4 +70,5 @@ pnpm test:legacy
 
 - Esta orden ya no espera a OT-001: la lanzas en cuanto quieras.
 - `packages/tokens` pasa a ser de OT-003 (E4), que empieza al mismo tiempo. Tú solo dejas el workspace listo para recibirlo (`packages/*`).
+- Todos los agentes trabajan en subcarpetas `trabajo/OT-NNN` dentro de la carpeta principal (son otras ramas). ESLint, Prettier, TypeScript, Vitest y Vite deben ignorar `trabajo/` (y `Clique-trabajo/`) para que no lean el código de otras órdenes; agrégalo a sus listas de exclusión y compruébalo.
 - E2 (OT-004), E3 (OT-005) y E4 (OT-003) van a hacer rebase sobre tu rama cuando se fusione: sé claro en `contratos/comandos.md` con el nombre de cada script y dónde van las pruebas, y avísales en tu bitácora (`@E2 @E3 @E4`) cuando el PR esté abierto.

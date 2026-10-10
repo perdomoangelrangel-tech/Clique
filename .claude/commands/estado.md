@@ -6,7 +6,7 @@ Haz un resumen del estado del proyecto Clique. Solo lee; no modifiques nada.
 
 1. Lee `coordinacion/TABLERO.md`.
 2. Reúne la bitácora de cada orden, de la fuente más reciente que exista:
-   - la carpeta de trabajo de esa orden, si existe (sus rutas salen en `git worktree list`): `<carpeta>/coordinacion/bitacoras/OT-NNN.md`;
+   - la carpeta de trabajo de esa orden, si existe: `trabajo/OT-NNN/coordinacion/bitacoras/OT-NNN.md` (las rutas exactas salen en `git worktree list`);
    - si no, la rama remota: `git fetch origin` y `git show origin/<rama>:coordinacion/bitacoras/OT-NNN.md`;
    - si no, la copia en la carpeta actual.
    Usa `git worktree list` y `git branch -a` para encontrar las ramas `ot/*`.

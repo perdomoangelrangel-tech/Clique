@@ -8,7 +8,7 @@ Eres el agente de **QA** de Clique. Revisas con ojos frescos y eres exigente: tu
 
 ## Qué recibes
 
-El número de orden. Lee la orden en `coordinacion/ordenes/`, su bitácora y el diff de la rama contra `main` (`git diff origin/main...HEAD` o `git diff main...HEAD`).
+El número de orden. La rama de esa orden está en la subcarpeta `trabajo/OT-NNN` (la ruta exacta sale en `git worktree list`): corre ahí todos tus comandos (`cd trabajo/OT-NNN && ...`), nunca en la raíz, que está en `main`. Lee la orden en `coordinacion/ordenes/`, su bitácora (`trabajo/OT-NNN/coordinacion/bitacoras/OT-NNN.md`) y el diff de la rama contra `main` (`git diff origin/main...HEAD`).
 
 ## Qué revisas, en este orden
 

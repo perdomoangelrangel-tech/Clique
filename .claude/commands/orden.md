@@ -12,6 +12,8 @@ Vas a trabajar en la orden **$ARGUMENTS** de Clique. Sigue estos pasos en orden 
 - Orden: `git show origin/main:coordinacion/ordenes/<archivo>` (el archivo cuyo nombre empieza con `$ARGUMENTS`; búscalo con `git ls-tree --name-only origin/main coordinacion/ordenes/`). Si no existe, dilo y detente.
 - Tablero: `git show origin/main:coordinacion/TABLERO.md`.
 
+Después actualiza la raíz, que siempre está en `main`, para que comandos y roles estén al día: `git pull --ff-only` (si falla por un `.lock`, espera unos segundos y reintenta).
+
 ## 2. Lee el contexto
 
 1. `CLAUDE.md` y `coordinacion/PROTOCOLO.md` completos.
@@ -26,20 +28,23 @@ Lee el campo **Depende de** de la orden y las columnas "Para empezar" y "Para en
 
 ## 4. Asegura tu lugar de trabajo
 
-- Mira la rama actual con `git branch --show-current`.
-- **Si ya estás en la rama de la orden** (la del campo **Rama**): si no tienes cambios sin guardar, `git rebase origin/main` para traer lo nuevo. Sigue al paso 5.
-- **Si no**, estás en la ventana principal. Prepara la carpeta de trabajo (las rutas `../Clique-trabajo/...` son relativas a la carpeta principal del repositorio, la primera línea de `git worktree list`):
-  1. `git switch main` y `git pull --ff-only`.
-  2. Si la rama no existe: `git worktree add ../Clique-trabajo/$ARGUMENTS -b <rama> origin/main`. Si ya existe en GitHub o local: `git worktree add ../Clique-trabajo/$ARGUMENTS <rama>`. Si la carpeta ya existe, úsala.
-  3. Ábrela en una ventana nueva: `code ../Clique-trabajo/$ARGUMENTS`.
-  4. Dile al dueño: "Se abrió una ventana nueva para $ARGUMENTS. Abre Claude ahí y escribe `/orden $ARGUMENTS`." y **detente**. No trabajes desde la ventana principal.
+Todos los agentes comparten **una sola carpeta**: la carpeta principal del repositorio (la que el dueño abrió en VS Code; es la primera línea de `git worktree list`). La raíz de esa carpeta está siempre en `main` y **nadie edita ahí**. Cada orden tiene su subcarpeta `trabajo/$ARGUMENTS`, con su rama ya puesta; ahí vive todo tu trabajo, incluida tu bitácora. No es un clon: comparte el mismo repositorio y no se descarga nada. No se abren ventanas nuevas: sigues en este mismo chat.
+
+1. Si `trabajo/$ARGUMENTS` ya existe, úsala.
+2. Si no:
+   - Si la rama no existe: `git worktree add trabajo/$ARGUMENTS -b <rama> origin/main`.
+   - Si la rama ya existe (local o en GitHub): `git worktree add trabajo/$ARGUMENTS <rama>`.
+   - Caso viejo: si `git worktree list` muestra la rama en `../Clique-trabajo/$ARGUMENTS` (protocolo anterior), esa orden sigue en su ventana aparte hasta cerrarse: díselo al dueño y detente.
+3. Desde ahora **todo** ocurre dentro de `trabajo/$ARGUMENTS`: lee y edita archivos con rutas que empiecen ahí, y corre cada comando como `cd trabajo/$ARGUMENTS && <comando>` (git, pnpm, python). Nunca cambies de rama con `git switch` en la raíz ni dentro de la carpeta de otra orden.
+4. Si tu carpeta ya existía y no tienes cambios sin guardar: `cd trabajo/$ARGUMENTS && git fetch origin && git rebase origin/main`.
+5. Si git dice que otro proceso tiene un candado (un archivo `.lock`), es otro agente trabajando al mismo tiempo: espera unos segundos y reintenta. No borres el `.lock`.
 
 ## 5. Abre la sesión en la bitácora
 
 - Si no existe `coordinacion/bitacoras/$ARGUMENTS.md`, créala desde `coordinacion/bitacoras/_plantilla.md` con el estado "En curso".
 - Corre `/estado` (o haz lo mismo que describe) y anota los avisos dirigidos a tu rol, a `$ARGUMENTS` o a `@todos`.
 - Agrega una entrada "Sesión N — fecha y hora" con el objetivo y tu plan en 3 a 7 pasos.
-- Commit `docs(bitacora): inicio de sesión [$ARGUMENTS]` y `git push -u origin <rama>`.
+- Commit `docs(bitacora): inicio de sesión [$ARGUMENTS]` y `git push -u origin <rama>` (los dos dentro de `trabajo/$ARGUMENTS`).
 
 ## 6. Trabaja
 

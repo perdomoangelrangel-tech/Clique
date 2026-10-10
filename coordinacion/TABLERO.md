@@ -18,9 +18,9 @@ Lo edita solo el cerebro (E0), por PR desde ramas `cerebro/*`. Última actualiza
 
 ## Cómo se lanzan
 
-**Todos a la vez, desde ya.** El dueño los lanza uno por uno desde la carpeta principal (`Downloads\Clique\Clique-1`), con el mensaje de cada agente que está en `AGENTES.md`:
+**Todos a la vez, desde ya, en una sola carpeta y una sola ventana.** El dueño abre `Downloads\Clique\Clique-1` en VS Code y, por cada agente, abre un chat nuevo de Claude y pega su mensaje de `AGENTES.md`. Cada agente trabaja en su subcarpeta `trabajo/OT-NNN` (su rama y su bitácora viven ahí):
 
-1. E1 con OT-001 y, en otra ventana, E1 con OT-002.
+1. E1 con OT-001 (ya va en curso, con el protocolo anterior) y, en otro chat, E1 con OT-002.
 2. E2 con OT-004.
 3. E3 con OT-005.
 4. E4 con OT-003 (parte A).

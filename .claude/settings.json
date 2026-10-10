@@ -1,8 +1,5 @@
 {
   "permissions": {
-    "additionalDirectories": [
-      "../Clique-trabajo"
-    ],
     "allow": [
       "Bash(git status *)",
       "Bash(git diff *)",

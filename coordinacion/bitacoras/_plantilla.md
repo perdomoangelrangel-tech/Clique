@@ -1,7 +1,7 @@
 # Bitácora OT-NNN — Título
 
 **Estado:** En curso | En revisión | Correcciones | Hecha | Bloqueada (motivo)
-**Rama:** `ot/NNN-nombre` · **Agente:** E# · Rol · **Carpeta:** `../Clique-trabajo/OT-NNN`
+**Rama:** `ot/NNN-nombre` · **Agente:** E# · Rol · **Carpeta:** `trabajo/OT-NNN`
 
 ---
 

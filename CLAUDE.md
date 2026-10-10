@@ -17,6 +17,7 @@ Lee esto completo al iniciar cada sesión. Después lee `coordinacion/PROTOCOLO.
 CLAUDE.md                 este archivo
 COMO-EMPEZAR.md           guía para el dueño (no para agentes)
 coordinacion/             cómo nos organizamos (léelo)
+trabajo/                  una subcarpeta por orden, con su rama (la crea /orden; git la ignora)
   PROTOCOLO.md            reglas de trabajo entre cerebro, dueño y agentes
   TABLERO.md              estado de las órdenes (solo lo edita el cerebro)
   ordenes/                una orden de trabajo (OT) por archivo
@@ -49,7 +50,7 @@ supabase/                 migraciones SQL, funciones, pruebas de base        ←
 
 ## Reglas de oro
 
-1. **Nunca trabajes en `main` ni subas a `main`.** Una orden = una rama `ot/NNN-nombre` = una bitácora. A `main` todo entra por PR que el dueño fusiona: el código de los agentes desde ramas `ot/*` y los cambios de coordinación del cerebro (tablero, órdenes, decisiones) desde ramas `cerebro/*`.
+1. **Nunca trabajes en `main` ni subas a `main`.** Una orden = una rama `ot/NNN-nombre` = una carpeta `trabajo/OT-NNN` = una bitácora. La raíz de la carpeta principal está en `main`: no edites ahí. A `main` todo entra por PR que el dueño fusiona: el código de los agentes desde ramas `ot/*` y los cambios de coordinación del cerebro (tablero, órdenes, decisiones) desde ramas `cerebro/*`.
 2. **El dinero solo se mueve dentro de Postgres**, con funciones SQL en una sola transacción que escriben en el libro contable. Nunca desde el navegador ni sumando saldos en TypeScript (ADR-003).
 3. **El navegador nunca decide resultados** de juegos ni de mercados. Las animaciones 3D solo muestran un resultado que el servidor ya decidió.
 4. **Las fichas compradas viven aparte** (ADR-004): no cuentan para el ranking semanal, no se transfieren, no se cambian por dinero y la compra está apagada hasta el dictamen legal.
