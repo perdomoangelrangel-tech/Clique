@@ -70,5 +70,10 @@ pnpm test:legacy
 
 - Esta orden ya no espera a OT-001: la lanzas en cuanto quieras.
 - `packages/tokens` pasa a ser de OT-003 (E4), que empieza al mismo tiempo. Tú solo dejas el workspace listo para recibirlo (`packages/*`).
+- Lo que encontró OT-001 en la computadora del dueño (léelo en `coordinacion/bitacoras/OT-001.md`):
+  - Tiene Node v25, no 22, y no tiene pnpm ni gh. Antes de instalar nada, confirma con `node --version` y `pnpm --version`. Si faltan, dale al dueño los comandos de winget de esa bitácora (el id correcto es `OpenJS.NodeJS.22`) y espera.
+  - Fija la versión de pnpm con `packageManager` en el `package.json` de la raíz y con `engines`.
+  - El trabajo `legacy` del CI corre en `ubuntu-latest`. En Windows, 4 pruebas del legacy fallan por el sistema operativo; ese resultado está documentado y no es un error tuyo.
+  - Decide si el entorno del legacy instala `tzdata`, para que corra la prueba de horario de verano, y anótalo en `contratos/comandos.md`.
 - Todos los agentes trabajan en subcarpetas `trabajo/OT-NNN` dentro de la carpeta principal (son otras ramas). ESLint, Prettier, TypeScript, Vitest y Vite deben ignorar `trabajo/` (y `Clique-trabajo/`) para que no lean el código de otras órdenes; agrégalo a sus listas de exclusión y compruébalo.
 - E2 (OT-004), E3 (OT-005) y E4 (OT-003) van a hacer rebase sobre tu rama cuando se fusione: sé claro en `contratos/comandos.md` con el nombre de cada script y dónde van las pruebas, y avísales en tu bitácora (`@E2 @E3 @E4`) cuando el PR esté abierto.

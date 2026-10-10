@@ -8,19 +8,19 @@ Lo edita solo el cerebro (E0), por PR desde ramas `cerebro/*`. Última actualiza
 
 | OT | Título | Agente (ver AGENTES.md) | Para empezar | Para entregar | Rama | Estado |
 | --- | --- | --- | --- | --- | --- | --- |
-| [OT-001](ordenes/OT-001-repositorio.md) | Verificar la computadora y el clon | E1 · Plataforma | — | — | `ot/001-verificacion` | Lista |
+| [OT-001](ordenes/OT-001-repositorio.md) | Verificar la computadora y el clon | E1 · Plataforma | — | — | `ot/001-verificacion` | En revisión: aprobada, falta fusionar el PR #4 |
 | [OT-002](ordenes/OT-002-monorepo-ci.md) | Monorepo TypeScript e integración continua | E1 · Plataforma | — | — | `ot/002-monorepo-ci` | Lista |
 | [OT-003](ordenes/OT-003-tokens-v2.md) | Tokens de diseño v2 | E4 · Diseño | — (parte A) | OT-002 fusionada (parte B) | `ot/003-tokens-v2` | Lista |
 | [OT-004](ordenes/OT-004-supabase-base.md) | Supabase: esquema base y libro contable | E2 · Datos | — | OT-002 fusionada | `ot/004-supabase-base` | Lista |
 | [OT-005](ordenes/OT-005-reglas-y-referencias.md) | Mapa de reglas y casos de referencia | E3 · Motor | — | OT-002 fusionada | `ot/005-reglas-referencias` | Lista |
-| [OT-006](ordenes/OT-006-direccion-de-arte.md) | Dirección de arte del casino premium en Blender | E6 · Arte 3D (la ejecuta E0) | — | — | `ot/006-direccion-de-arte` | En curso |
+| [OT-006](ordenes/OT-006-direccion-de-arte.md) | Dirección de arte del casino premium en Blender | E6 · Arte 3D (la ejecuta E0) | — | — | `ot/006-direccion-de-arte` | En revisión: PR #3; falta anotar los cuadros por segundo del dueño |
 | [OT-007](ordenes/OT-007-mapa-pantallas-textos.md) | Mapa de pantallas, navegación y textos en español | E5 · Frontend | — | — | `ot/007-mapa-pantallas` | Lista |
 
 ## Cómo se lanzan
 
 **Todos a la vez, desde ya, en una sola carpeta y una sola ventana.** El dueño abre `Downloads\Clique\Clique-1` en VS Code y, por cada agente, abre un chat nuevo de Claude y pega su mensaje de `AGENTES.md`. Cada agente trabaja en su subcarpeta `trabajo/OT-NNN` (su rama y su bitácora viven ahí):
 
-1. E1 con OT-001 (ya va en curso, con el protocolo anterior) y, en otro chat, E1 con OT-002.
+1. E1 con OT-002 (OT-001 ya se entregó). Antes: Node 22, pnpm y gh instalados en la computadora (ver la bitácora de OT-001).
 2. E2 con OT-004.
 3. E3 con OT-005.
 4. E4 con OT-003 (parte A).

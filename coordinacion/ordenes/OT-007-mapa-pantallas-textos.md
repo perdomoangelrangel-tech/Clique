@@ -69,4 +69,8 @@ cd legacy/clique && sha256sum -c --quiet ../clique.sha256 && echo "legacy intact
 
 ## Correcciones
 
-(Vacío.)
+**2026-10-10 · E0 — Referencia visual**
+
+- El dueño aprobó como estética de toda la app los cuadros de OT-006 (`docs/arte/*.webp`): club privado de cartas, boleto de papel sobre mesa de fieltro, latón y luz cálida.
+- En `navegacion.md`, piensa el lobby del casino como el cuadro 3: pósters de juego como objetos físicos. Anota qué pantallas llevarían un render o 3D (ruleta, fichas, cartas) y cuáles son solo papel.
+- Los textos deben sonar a ese lugar (sobrios, premium, en tuteo), sin prometer dinero real.

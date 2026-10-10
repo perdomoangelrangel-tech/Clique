@@ -4,6 +4,22 @@ Decisiones, revisiones y cambios de plan. Lo más nuevo arriba.
 
 ---
 
+## 2026-10-10 (16:30) — OT-001 aprobada, OT-006 entregada, estética aprobada
+
+**Hecho:**
+- **OT-001 (E1):** revisada y aprobada. Abrí el PR #4 porque la computadora no tiene `gh`.
+  - Hallazgos: Node v25 (no 22), sin pnpm ni gh; `core.autocrlf` en `false`; legacy intacto.
+  - Pruebas del legacy: 1,130 de 1,142 pasan. Las 4 que fallan son de Windows y se pasaron como correcciones a OT-002.
+- **OT-006 (E6, la hice yo):** entregada en el PR #3.
+  - Tres cuadros de estilo y `ficha.glb` de 50.7 KB y 6,508 triángulos, con respaldo 2D por variante.
+  - Contrato `arte3d.md` en estado "Propuesto". QA (E7) encontró 13 puntos y todos quedaron resueltos.
+  - Los `.blend` no se pudieron subir desde la nube: el almacenamiento de Git LFS está bloqueado ahí. Los subió el dueño desde su computadora con un paquete de git.
+- **Estética aprobada.** El dueño vio los cuadros y dijo: "esa es la estética que quiero para todo". Queda como referencia visual en OT-003 (E4) y OT-007 (E5).
+
+**Pendiente:** el número de cuadros por segundo de la página de prueba en la computadora del dueño. Después, fusionar los PR #2, #4 y #3, en ese orden.
+
+---
+
 ## 2026-10-10 (tarde) — Todos los agentes a la vez
 
 **Contexto:** el dueño fusionó el PR #1 (agentes E0 a E7) y clonó el repositorio en `Downloads\Clique\Clique-1` (el nombre `Clique` chocaba en Windows con la carpeta `clique` de la app original). Pidió que todos los agentes puedan trabajar ya.
