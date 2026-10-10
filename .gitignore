@@ -1,14 +1,9 @@
-# app actual
-legacy/clique/data/
+# datos locales de la app (la base en archivo mientras llega Supabase)
+/data/
 **/__pycache__/
 *.pyc
-# node
+# node (ganchos y herramientas)
 node_modules/
-dist/
-.turbo/
-coverage/
-playwright-report/
-test-results/
 # secretos
 .env
 .env.*
@@ -22,5 +17,10 @@ supabase/.temp/
 # sistema
 .DS_Store
 Thumbs.db
-# carpetas de trabajo de agentes (viven fuera del repo, por si acaso)
+# árboles de trabajo de cada encargo (git worktree), dentro de la carpeta principal
+/_ramas/
+# restos del protocolo anterior
 Clique-trabajo/
+trabajo/
+# los permisos de cada computadora no se comparten
+.claude/settings.local.json

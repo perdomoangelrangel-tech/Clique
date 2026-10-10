@@ -1,9 +1,6 @@
 # Finales de línea: LF en todo el repo, también en Windows.
 * text=auto eol=lf
 
-# La app actual no se toca: git no convierte nada dentro de ella (su huella sha256 debe cuadrar en cualquier sistema).
-legacy/clique/** -text
-
 # Scripts propios de Windows
 *.cmd text eol=crlf
 *.bat text eol=crlf
@@ -23,3 +20,6 @@ legacy/clique/** -text
 
 # Blender (Git LFS, ADR-005)
 *.blend filter=lfs diff=lfs merge=lfs -text
+
+# Bitácora: cada rama solo agrega al final; al fusionar se juntan las dos versiones en vez de chocar.
+equipo/BITACORA.md merge=union

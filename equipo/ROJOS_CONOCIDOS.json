@@ -1,0 +1,33 @@
+{
+  "_que_es": "Pruebas que fallan por una razón conocida: cada una con dueño, porqué y desde cuándo. Lo mantiene E7. Una prueba en rojo que no está aquí es un error nuevo.",
+  "rojos": [
+    {
+      "prueba": "tests.test_speed.FilesAreServedFast.test_the_page_lists_the_scripts_it_will_need",
+      "donde": "solo Windows",
+      "dueno": "E1",
+      "porque": "backend/assets.py arma rutas de URL con os.path: en Windows salen con \\ (\\js\\api.js). También rompe la lista de precarga que sirve la app.",
+      "desde": "10-oct (OT-001)"
+    },
+    {
+      "prueba": "tests.test_speed.FilesAreServedFast.test_preload_follows_imports_all_the_way_down",
+      "donde": "solo Windows",
+      "dueno": "E1",
+      "porque": "La misma causa: rutas con \\ en backend/assets.py.",
+      "desde": "10-oct (OT-001)"
+    },
+    {
+      "prueba": "tests.test_speed.TheDatabaseIsWrittenCarefully.test_pile_ups_share_a_write_and_the_last_change_always_wins",
+      "donde": "solo Windows",
+      "dueno": "E2",
+      "porque": "os.replace en backend/store.py falla con PermissionError si otro hilo tiene db.json abierto para leer.",
+      "desde": "10-oct (OT-001)"
+    },
+    {
+      "prueba": "tests.test_profile.UploadingOverHttp.test_what_the_server_refuses_over_http",
+      "donde": "solo Windows, intermitente",
+      "dueno": "E1",
+      "porque": "server.py rechaza (413/415) sin leer el cuerpo y cierra; Windows manda RST y a veces el cliente no alcanza a leer la respuesta.",
+      "desde": "10-oct (OT-001)"
+    }
+  ]
+}
