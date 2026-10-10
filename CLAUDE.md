@@ -23,6 +23,7 @@ coordinacion/             cómo nos organizamos (léelo)
   bitacoras/              una bitácora por orden + la del cerebro
   decisiones/             ADR: decisiones de arquitectura aprobadas
   contratos/              acuerdos entre agentes: esquema, API, tokens, reglas, arte 3D
+coordinacion/AGENTES.md   quién es quién: E0 cerebro, E1 plataforma, E2 datos, E3 motor, E4 diseño, E5 frontend, E6 arte 3D, E7 QA
 .claude/agents/           roles: plataforma, datos, motor, frontend, diseno, arte3d, qa
 .claude/commands/         /orden, /bitacora, /entregar, /estado, /cerrar
 docs/                     plan maestro y documentación del producto
@@ -47,7 +48,7 @@ supabase/                 migraciones SQL, funciones, pruebas de base        ←
 
 ## Reglas de oro
 
-1. **Nunca trabajes en `main` ni subas a `main`.** Una orden = una rama `ot/NNN-nombre` = una bitácora. A `main` solo entra código por PR que el dueño fusiona; el cerebro escribe directo solo en `coordinacion/` (tablero, órdenes, decisiones).
+1. **Nunca trabajes en `main` ni subas a `main`.** Una orden = una rama `ot/NNN-nombre` = una bitácora. A `main` todo entra por PR que el dueño fusiona: el código de los agentes desde ramas `ot/*` y los cambios de coordinación del cerebro (tablero, órdenes, decisiones) desde ramas `cerebro/*`.
 2. **El dinero solo se mueve dentro de Postgres**, con funciones SQL en una sola transacción que escriben en el libro contable. Nunca desde el navegador ni sumando saldos en TypeScript (ADR-003).
 3. **El navegador nunca decide resultados** de juegos ni de mercados. Las animaciones 3D solo muestran un resultado que el servidor ya decidió.
 4. **Las fichas compradas viven aparte** (ADR-004): no cuentan para el ranking semanal, no se transfieren, no se cambian por dinero y la compra está apagada hasta el dictamen legal.
@@ -63,7 +64,8 @@ supabase/                 migraciones SQL, funciones, pruebas de base        ←
 
 - Documentación, bitácoras, commits, PR y textos de la interfaz: español de México.
 - Código (variables, funciones, tablas, columnas): inglés.
-- Commits: `tipo(ámbito): descripción en español [OT-NNN]`. Tipos: feat, fix, refactor, test, docs, chore.
+- Commits: `tipo(ámbito): descripción en español [OT-NNN · E#]`. Tipos: feat, fix, refactor, test, docs, chore.
+- Tu código de agente (E1 a E7) está en `coordinacion/AGENTES.md`. Úsalo en tu bitácora, tus commits y tus avisos.
 
 ## Definición de terminado
 

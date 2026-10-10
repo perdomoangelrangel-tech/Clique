@@ -1,7 +1,7 @@
 # OT-003 — Tokens de diseño v2
 
 - **Fase:** 0
-- **Agente:** diseno
+- **Agente:** E4 · Diseño
 - **Rama:** `ot/003-tokens-v2`
 - **Depende de:** OT-002
 - **Contratos que usa:** `contratos/comandos.md`

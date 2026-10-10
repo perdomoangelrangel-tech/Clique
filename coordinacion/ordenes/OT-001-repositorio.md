@@ -1,7 +1,7 @@
 # OT-001 — Clonar el repositorio y verificar la computadora del dueño
 
 - **Fase:** 0
-- **Agente:** plataforma
+- **Agente:** E1 · Plataforma
 - **Rama:** `ot/001-verificacion`
 - **Depende de:** —
 - **Contratos que usa:** —

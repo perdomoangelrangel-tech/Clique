@@ -1,9 +1,9 @@
 # OT-006 — Dirección de arte del casino premium en Blender
 
 - **Fase:** 0
-- **Agente:** arte3d
+- **Agente:** E6 · Arte 3D (la ejecuta E0, el cerebro, con el conector de Blender)
 - **Rama:** `ot/006-direccion-de-arte`
-- **Depende de:** OT-001. Usa los valores de color de OT-003 (están en esa orden aunque no esté fusionada).
+- **Depende de:** —. Usa los valores de color de OT-003 (están en esa orden aunque no esté fusionada).
 - **Contratos que usa:** ADR-005, valores de color de OT-003
 - **Contratos que crea:** `coordinacion/contratos/arte3d.md`
 

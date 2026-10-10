@@ -1,7 +1,7 @@
 # OT-005 — Mapa de reglas y casos de referencia
 
 - **Fase:** 0
-- **Agente:** motor
+- **Agente:** E3 · Motor
 - **Rama:** `ot/005-reglas-referencias`
 - **Depende de:** OT-001 para empezar; OT-002 fusionada para entregar (la prueba de formato usa su Vitest)
 - **Contratos que usa:** —
