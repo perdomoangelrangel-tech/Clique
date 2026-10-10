@@ -1,7 +1,7 @@
 # OT-002 — Monorepo TypeScript e integración continua
 
 - **Fase:** 0
-- **Agente:** plataforma
+- **Agente:** E1 · Plataforma
 - **Rama:** `ot/002-monorepo-ci`
 - **Depende de:** OT-001
 - **Contratos que usa:** ADR-001 (stack)

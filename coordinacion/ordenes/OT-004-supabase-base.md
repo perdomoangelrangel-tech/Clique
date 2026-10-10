@@ -1,7 +1,7 @@
 # OT-004 — Supabase: esquema base y libro contable
 
 - **Fase:** 0
-- **Agente:** datos
+- **Agente:** E2 · Datos
 - **Rama:** `ot/004-supabase-base`
 - **Depende de:** OT-001
 - **Contratos que usa:** ADR-001, ADR-003

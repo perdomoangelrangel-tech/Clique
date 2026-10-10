@@ -1,9 +1,9 @@
 # OT-006 — Dirección de arte del casino premium en Blender
 
 - **Fase:** 0
-- **Agente:** arte3d
+- **Agente:** E6 · Arte 3D (la ejecuta E0, el cerebro, con el conector de Blender)
 - **Rama:** `ot/006-direccion-de-arte`
-- **Depende de:** OT-001. Usa los valores de color de OT-003 (están en esa orden aunque no esté fusionada).
+- **Depende de:** —. Usa los valores de color de OT-003 (están en esa orden aunque no esté fusionada).
 - **Contratos que usa:** ADR-005, valores de color de OT-003
 - **Contratos que crea:** `coordinacion/contratos/arte3d.md`
 
@@ -26,7 +26,7 @@ Lee ADR-005 completo. La interfaz es papel impreso sobre una mesa 3D real. Refer
 - Renders de cada cuadro en `docs/arte/` a 1920×1080 y en recorte de celular 1080×2340, en WebP.
 - **Ficha lista para la web:** `apps/web/public/3d/ficha.glb` con Draco o meshopt y texturas KTX2 de hasta 1024 px. Peso máximo 300 KB, hasta 8 mil triángulos. Incluye 4 variantes de color de la paleta (lima, bermellón, oro, papel) como materiales o con color por instancia.
 - Una página de prueba mínima (`docs/arte/prueba-ficha.html` o una ruta temporal si OT-002 ya está en `main`) que muestre la ficha girando con three.js y el contador de cuadros por segundo.
-- `coordinacion/contratos/arte3d.md`: escala (1 unidad = 1 cm), orientación, nombres de objetos y materiales, recetas PBR (fieltro, terciopelo, latón, cerámica, papel, lino, madera lacada) con sus valores, presupuestos de ADR-005, cómo exportar (ajustes de glTF), y cómo nombrar renders.
+- `coordinacion/contratos/arte3d.md`: escala real en metros (1 unidad = 1 m, como glTF; una ficha mide 0.039), orientación, nombres de objetos y materiales, recetas PBR (fieltro, terciopelo, latón, cerámica, papel, lino, madera lacada) con sus valores, presupuestos de ADR-005, cómo exportar (ajustes de glTF), y cómo nombrar renders.
 
 **No incluye**
 

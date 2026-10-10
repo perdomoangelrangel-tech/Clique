@@ -7,7 +7,7 @@ Vas a trabajar en la orden **$ARGUMENTS** de Clique. Sigue estos pasos en orden 
 
 ## 1. Trae lo más nuevo de GitHub
 
-`git fetch origin`. El cerebro escribe órdenes, correcciones y el tablero directo en `main`, así que **lee siempre desde `origin/main`**, no desde tu copia local:
+`git fetch origin`. El cerebro sube órdenes, correcciones y el tablero a `main` (por PR), así que **lee siempre desde `origin/main`**, no desde tu copia local:
 
 - Orden: `git show origin/main:coordinacion/ordenes/<archivo>` (el archivo cuyo nombre empieza con `$ARGUMENTS`; búscalo con `git ls-tree --name-only origin/main coordinacion/ordenes/`). Si no existe, dilo y detente.
 - Tablero: `git show origin/main:coordinacion/TABLERO.md`.
@@ -16,7 +16,7 @@ Vas a trabajar en la orden **$ARGUMENTS** de Clique. Sigue estos pasos en orden 
 
 1. `CLAUDE.md` y `coordinacion/PROTOCOLO.md` completos.
 2. La orden completa, incluida su sección **Correcciones** (si tiene, son lo primero que hay que resolver).
-3. El rol que indica el campo **Agente** de la orden: lee `.claude/agents/<rol>.md` completo y adopta ese rol durante toda la sesión.
+3. El agente que indica el campo **Agente** de la orden (código E# y rol; ver `coordinacion/AGENTES.md`): lee `.claude/agents/<rol>.md` completo y adopta ese rol y ese código durante toda la sesión.
 4. Los ADR y contratos que la orden menciona.
 5. Si ya existe tu bitácora `coordinacion/bitacoras/$ARGUMENTS.md` (en tu rama), léela completa: ahí está lo que hiciste antes.
 

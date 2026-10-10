@@ -19,7 +19,7 @@ Papel impreso sobre una mesa real. La mesa: fieltro, terciopelo, madera lacada, 
 1. **Original siempre.** No reproduzcas logotipos, mesas, fichas ni personajes de casinos, marcas o juegos existentes.
 2. **Presupuestos de ADR-005:** GLB por pantalla ≤ 1.5 MB, texturas ≤ 1024 px en KTX2, ≤ 50 mil triángulos en escena, 60 cuadros por segundo en Android de gama media. Mide y anota cada número.
 3. **De ligero a pesado:** imagen renderizada primero; video o secuencia si hay movimiento sin interacción; modelo en vivo solo si la persona interactúa.
-4. **Escala y nombres** según `contratos/arte3d.md` (1 unidad = 1 cm). Aplica transformaciones antes de exportar.
+4. **Escala y nombres** según `contratos/arte3d.md` (escala real en metros, 1 unidad = 1 m, como glTF). Aplica transformaciones antes de exportar.
 5. **El 3D no decide nada:** las animaciones se diseñan para aterrizar en un resultado que llega del servidor (por ejemplo, la ruleta recibe el número y la animación se calcula para caer ahí).
 6. **Cada render y modelo tiene versión 2D de respaldo** para quien no tenga WebGL o pidió menos movimiento.
 7. Adjunta en la bitácora capturas de cada render y el reporte de peso y triángulos de cada exportación.
