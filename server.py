@@ -12,6 +12,7 @@ import queue
 import re
 import signal
 import socket
+import subprocess
 import sys
 import threading
 import time
@@ -222,6 +223,52 @@ def api_logout(req):
 def api_me(req):
     return {"user": me_json(req.user) if req.user else None, "categories": config.CATEGORIES,
             "minBet": config.MIN_BET, "startBalance": config.START_BALANCE, "week": week_key()}
+
+
+STARTED = time.time()
+
+
+def _version():
+    """The commit this copy runs: the host says it (Render, or CLIQUE_COMMIT), else git on this computer."""
+    for name in ("CLIQUE_COMMIT", "RENDER_GIT_COMMIT"):
+        if os.environ.get(name):
+            return os.environ[name][:12]
+    try:
+        out = subprocess.run(["git", "rev-parse", "--short=12", "HEAD"], cwd=config.ROOT, capture_output=True, text=True, timeout=5)
+        return out.stdout.strip() or "unknown"
+    except (OSError, subprocess.SubprocessError):
+        return "unknown"
+
+
+VERSION = _version()
+
+
+def _database_check():
+    """Can the folder that holds the database be read and written? Uses a small file of its own, never db.json."""
+    probe = os.path.join(os.path.dirname(store.path), ".health")
+    stamp = str(time.time_ns())
+    can = {"read": False, "write": False}
+    try:
+        with open(probe, "w", encoding="utf-8") as f:
+            f.write(stamp)
+        can["write"] = True
+        with open(probe, "r", encoding="utf-8") as f:
+            can["read"] = f.read() == stamp
+        os.remove(probe)
+    except OSError:
+        pass
+    return can
+
+
+@route("GET", "/api/salud", auth=False, mutates=False)
+def api_health(req):
+    """For the host and for monitoring: which version runs, for how long, and whether the database answers. Nothing about people."""
+    database = _database_check()
+    health = {"ok": database["read"] and database["write"], "version": VERSION,
+              "uptimeSeconds": int(time.time() - STARTED), "database": database}
+    if not health["ok"]:
+        raise ApiError(503, "The database cannot be read or written", health)
+    return health
 
 
 @route("POST", "/api/wallet/voucher")
@@ -1348,14 +1395,15 @@ class Handler(BaseHTTPRequestHandler):
                 unread = False                                  # the connection and the answer is lost before the client reads it
             if unread:                                          # too big to read (or the client stopped sending): the leftover bytes
                 self.close_connection = True                    # would be mistaken for the next request, so end this connection
-            self._json(e.status, {"error": e.message, **(e.data or {})}, {"Connection": "close"} if unread else None)
+            self._json(e.status, {"error": e.message, "code": getattr(e, "code", None), **(e.data or {})},   # code: E3's list (contratos/errores.md)
+                       {"Connection": "close"} if unread else None)
         except (BrokenPipeError, ConnectionResetError):
             pass
         except Exception:
             traceback.print_exc()
             self.close_connection = True
             try:
-                self._json(500, {"error": "Something went wrong on the server"}, {"Connection": "close"})
+                self._json(500, {"error": "Something went wrong on the server", "code": "server_error"}, {"Connection": "close"})
             except Exception:
                 pass
 

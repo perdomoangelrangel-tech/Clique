@@ -127,6 +127,34 @@ class HttpFlow(unittest.TestCase):
             server.DRAIN_LIMIT = old
             conn.close()
 
+    def test_health_says_version_uptime_and_whether_the_database_answers(self):
+        st, d = Client(self.port).call("GET", "/api/salud")
+        self.assertEqual(st, 200)
+        self.assertEqual(set(d), {"ok", "version", "uptimeSeconds", "database"})     # nothing about people
+        self.assertEqual((d["ok"], d["database"]), (True, {"read": True, "write": True}))
+        self.assertTrue(d["version"])
+        self.assertGreaterEqual(d["uptimeSeconds"], 0)
+        self.assertFalse(os.path.exists(os.path.join(os.path.dirname(store.path), ".health")), "the probe cleans up")
+
+    def test_health_is_503_when_the_database_folder_cannot_be_written(self):
+        blocker = os.path.join(tempfile.mkdtemp(), "a-file")
+        with open(blocker, "w") as f:
+            f.write("not a folder")
+        old = store.path
+        store.path = os.path.join(blocker, "db.json")                 # its folder is a file: nothing can be written there
+        try:
+            st, d = Client(self.port).call("GET", "/api/salud")
+        finally:
+            store.path = old
+        self.assertEqual((st, d["ok"], d["database"]["write"]), (503, False, False))
+        self.assertIn("error", d)
+
+    def test_an_error_answer_carries_error_and_code(self):
+        st, d = Client(self.port).call("GET", "/api/markets")
+        self.assertEqual(st, 401)
+        self.assertIn("error", d)
+        self.assertIn("code", d)                # the stable code from equipo/contratos/errores.md (null until it has one)
+
     def test_live_updates_only_reach_members(self):
         owner, member, stranger = Client(self.port), Client(self.port), Client(self.port)
         for c, n in ((owner, "dora"), (member, "eddy"), (stranger, "fred")):
