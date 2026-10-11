@@ -1,183 +1,182 @@
-# Putting Clique online
+# Poner Clique en línea
 
-Goal: your friends open a link on their phones and play, live, any time. Everything is play money; there are no payments anywhere in the site.
+Objetivo: tus amigos abren un enlace en el teléfono y juegan en vivo a cualquier hora. Todo es con fichas ficticias; la compra
+de fichas está apagada (`PURCHASES_ENABLED=false`, D3) y **no se abre al público** sin verificación de edad, aviso de privacidad
+y la revisión de un abogado (D10). Esto es un **servidor de prueba** para el grupo.
 
-## What a host has to give Clique
+## Qué necesita Clique de un servicio
 
-Clique is one Python program that keeps its data in one file (`db.json`). So the host must:
+Clique es un solo programa de Python que guarda sus datos en un archivo (`db.json`). Por eso el servicio tiene que:
 
-1. **keep the program running** (not "wake up when someone visits"),
-2. give it a **disk that survives restarts and redeploys** (a "volume"), because balances and bets live in that file,
-3. run **exactly one copy**.
+1. **mantener el programa encendido** (no "despertarlo cuando alguien entra"),
+2. darle un **disco que sobreviva a reinicios y despliegues**, porque ahí viven los saldos y las apuestas,
+3. correr **una sola copia**.
 
-That rules out free tiers (they erase the disk or put the site to sleep, so everyone's money would reset) and Vercel (it has no disk and no long-running programs). **Railway** is the easiest one that does all three, at roughly $5 a month. Check their pricing page, it changes.
+Eso descarta los planes gratuitos (borran el disco o duermen el sitio, y el dinero de todos volvería a cero) y Vercel (no tiene
+disco ni programas que se queden corriendo).
 
-Settings you will type into the host (see `.env.example`):
+**Elegimos Render** (render.com): el repositorio trae `render.yaml`, así que el despliegue es un Blueprint que se crea desde su
+página, sin instalar nada en tu computadora; revisa solo la salud del sitio en `/api/salud` y le dice a Clique qué commit corre.
+Fly.io también serviría, pero pide instalar su programa de terminal y escribir comandos.
 
-| Variable | Needed? | What it does |
+**Cuesta dinero y pide tarjeta.** El disco de Render solo existe en los planes de pago (Starter o más, más el disco por GB).
+Revisa los precios de hoy en render.com/pricing antes de empezar: cambian. **Tú decides si se paga**; ningún agente crea la cuenta.
+
+## Las variables
+
+Las escribes en la página de Render (el servicio → **Environment**). Todas están en `.env.example`, con su explicación.
+
+| Variable | ¿Hace falta? | Qué hace |
 | --- | --- | --- |
-| `ADMIN_PASSWORD` | **Yes** | Your funds password. 10+ characters, your own. The site refuses to start online without it. |
-| `WEEK_TIMEZONE` | Optional | The time zone weeks are measured in. Default `America/Mexico_City` (it follows daylight saving where there is any). Any name like `Europe/Madrid` or `UTC` works. The older `WEEK_TZ_OFFSET_HOURS` (a fixed number such as `-6`) still works if you already set it. |
-| `START_BALANCE` | Optional | Cash every new account starts with. Default 1000. |
-| `MIDWEEK_BONUS` | Optional | Given to everybody in the weekly account every Wednesday at 12:00 (the site's time zone). Default 500, `0` turns it off. |
-| `FUNDS_VOTE_HOURS` | Optional | The longest a vote on funds added with the "Add funds" box stays open. Default 24. |
-| `WEEKLY_ALLOCATION` | Optional | What the weekly account is set to when a week starts. Default 1000, `0` turns it off (`WEEKLY_BONUS` is the older name and still works). |
-| `WEEKLY_REWARDS`, `PARTICIPATION_REWARD` | Optional | Weekly rewards by final position, like `400,250,150,100,50`, and the amount for everybody else who played. |
-| `WEEKLY_MIN_POLL_BETS`, `WEEKLY_MIN_CASINO_BETS` | Optional | The weekly minimum: poll bets and casino rounds needed in a week to stay in the challenge. Default 1 and 25; anybody who misses it loses the week automatically. `0` and `0` turns it off. It starts with the first week that closes after this version is deployed (everybody gets a week's notice). |
-| `STORE_OVERRIDES` | Optional | JSON to change a Store price or take a product off sale, for example `{"frame_gold": {"price": 900}}`. |
-| `LOANS_ENABLED`, `LOAN_MAX_PCT_OF_ALLOCATION`, `LOAN_FEE`, `LOAN_ALLOC_REPAY_PCT`, `GOALS_ENABLED`, `REWARD_SCALE`, `TRANSFERS_ENABLED`, `TRANSFER_ACCOUNTS`, `TRANSFER_DAILY_LIMIT`, `TRANSFER_WEEKLY_DAILY_LIMIT`, `TRANSFER_WEEKLY_RECEIVER_PCT` | Optional | Loans, ranks, challenges, milestones and friend transfers. The defaults are the published rules (see ECONOMY.md, sections 7 to 11). Resetting a forgotten **transfer password** sends a code by email, so it needs the email service below. |
-| `ICE_SERVERS`, or `TURN_URL` + `TURN_SECRET` | Optional | Only if voice calls do not connect for some friends (see "Voice rooms" below). |
-| `RESEND_API_KEY` or `BREVO_API_KEY` or `SMTP_HOST`, and `EMAIL_FROM` | Needed for resetting passwords by email | See "Email: forgotten passwords" below. |
-| `RANK_BY` | Optional | `netWorth` (default) or `cash`: who counts as "least currency" each week. |
-| `SEASON_RESET` | Optional | Change it to a new label to start a new season (see below). |
+| `ADMIN_PASSWORD` | **Sí** | Tu contraseña de fondos. 10 caracteres o más, tuya. En línea, el sitio no arranca sin ella. |
+| `WEEK_TIMEZONE` | Ya viene | La zona horaria de las semanas. `render.yaml` pone `America/Mexico_City` (sigue el horario de verano donde lo hay). Sirve cualquier nombre como `UTC`. La antigua `WEEK_TZ_OFFSET_HOURS` (un número fijo como `-6`) sigue funcionando. |
+| `PURCHASES_ENABLED` | Ya viene | `false`. La venta de fichas sigue apagada hasta el dictamen legal (D3). No la cambies. |
+| `START_BALANCE` | Opcional | Lo que trae cada cuenta nueva. 1000 si no se pone. |
+| `MIDWEEK_BONUS` | Opcional | Lo que recibe cada quien en su cuenta semanal los miércoles a las 12:00. 500 si no se pone; `0` lo apaga. |
+| `FUNDS_VOTE_HOURS` | Opcional | Lo más que dura abierta la votación de fondos agregados con "Agregar fondos". 24 si no se pone. |
+| `WEEKLY_ALLOCATION` | Opcional | A cuánto se pone la cuenta semanal cuando empieza la semana. 1000 si no se pone; `0` lo apaga (`WEEKLY_BONUS` es el nombre viejo). |
+| `WEEKLY_REWARDS`, `PARTICIPATION_REWARD` | Opcional | Premios semanales por lugar, como `400,250,150,100,50`, y lo que recibe cualquier otro que jugó. |
+| `WEEKLY_MIN_POLL_BETS`, `WEEKLY_MIN_CASINO_BETS` | Opcional | El mínimo semanal: apuestas en mercados y rondas de casino para seguir en el reto. 1 y 25 si no se ponen; quien no llega pierde la semana. `0` y `0` lo apagan. |
+| `STORE_OVERRIDES` | Opcional | JSON para cambiar un precio de la Tienda o quitar un producto, por ejemplo `{"frame_gold": {"price": 900}}`. |
+| `LOANS_ENABLED`, `GOALS_ENABLED`, `TRANSFERS_ENABLED` y sus límites | Opcional | Préstamos, rangos, retos, logros y transferencias. Los valores normales son las reglas publicadas (ECONOMY.md, secciones 7 a 11). |
+| `ICE_SERVERS`, o `TURN_URL` + `TURN_SECRET` | Opcional | Solo si las llamadas de voz no conectan para algunos (ver "Salas de voz"). |
+| `RESEND_API_KEY` o `BREVO_API_KEY` o `SMTP_HOST`, y `EMAIL_FROM` | Para recuperar contraseñas por correo | Ver "Correo". |
+| `RANK_BY` | Opcional | `netWorth` (normal) o `cash`: quién cuenta como "el de menos" cada semana. |
+| `SEASON_RESET` | Opcional | Cámbiala a una etiqueta nueva para empezar temporada (ver "El día a día"). |
+| `CLIQUE_COMMIT` | No | El commit que corre, para `/api/salud`. Render ya da `RENDER_GIT_COMMIT` y Clique lo usa. |
 
-Every economic setting (rewards, the Exchange, voice, poll editing) is listed with its default at the end of **[ECONOMY.md](ECONOMY.md)**.
+Todos los números de la economía están, con su valor normal, al final de **[ECONOMY.md](ECONOMY.md)**.
 
-`CLIQUE_ENV`, `DATA_DIR` and `HOST` are already set inside the `Dockerfile`. `PORT` is given by the host.
+`CLIQUE_ENV=production`, `DATA_DIR=/data` y `HOST=0.0.0.0` ya vienen en el `Dockerfile`. `PORT` lo pone Render.
 
-## Part 1: put the code on GitHub (private)
+**Nunca escribas un valor real en un archivo del repositorio.** El repositorio es público mientras no lo cambies; los valores
+van solo en la página de Render.
 
-Why: Railway reads your code from GitHub, and every time you push a change it updates the site.
+## Parte 1: crear la cuenta y el servicio en Render
 
-1. Open the Terminal panel in the Claude app (or the Terminal app).
-2. Run these one at a time:
+Los nombres de los botones pueden cambiar un poco: Render cambia sus pantallas de vez en cuando.
 
-   ```bash
-   cd /Users/emilianogonzalez/Claude/clique
-   git init -b main
-   git add .
-   git status
-   ```
+1. Entra a <https://render.com> y **regístrate con GitHub** (el usuario dueño del repositorio `Clique`). Agrega la tarjeta
+   cuando te la pida: el disco y el plan Starter son de pago.
+2. Arriba: **New → Blueprint**. Si no aparece `perdomoangelrangel-tech/Clique`, da permiso a Render para ver ese repositorio.
+3. Elige el repositorio y la rama **`integracion`** (la que E7 junta cada día; `render.yaml` ya la nombra). Render lee
+   `render.yaml` y te muestra lo que va a crear: un servicio web `clique-prueba` (Docker, plan Starter, una copia) y un disco
+   `clique-datos` de 1 GB montado en `/data`.
+4. Te pide el valor de **`ADMIN_PASSWORD`**: pega tu contraseña de fondos (10 caracteres o más, que no esté en ningún archivo).
+5. **Apply** (o **Deploy Blueprint**). Render construye la imagen con el `Dockerfile` y arranca el sitio. Tarda unos minutos.
+6. Cuando el servicio diga **Live**, abre su enlace (algo como `https://clique-prueba.onrender.com`) y luego
+   `https://clique-prueba.onrender.com/api/salud`. Debe decir `"ok": true` y `"database": {"read": true, "write": true}`.
 
-3. Read the list `git status` prints. You should see `Dockerfile`, `server.py`, `backend/`, `static/`, `DEPLOY.md`... You must **not** see a `data/` folder or a `.env` file (that is where real accounts and passwords live). If you do, stop and ask.
-4. Then:
+`render.yaml` trae `autoDeploy: false`: cada despliegue nuevo se hace a mano con **Manual Deploy → Deploy latest commit**.
+Si prefieres que se despliegue solo con cada cambio en `integracion`, cámbialo en **Settings → Auto-Deploy**.
 
-   ```bash
-   git commit -m "Clique: first version"
-   ~/bin/gh repo create clique --private --source=. --push
-   ```
+## Parte 2: probar antes de avisarle a nadie
 
-   `--private` matters: only you can see the code. (If `gh` says you are not logged in, run `~/bin/gh auth login` and follow the prompts yourself.)
+1. Abre el enlace, **crea una cuenta**, haz un círculo y una apuesta.
+2. Abre **Logs** y revisa que **no** diga `WARNING: /data is not a mounted volume`. Si lo dice, el disco no está montado en `/data`.
+3. En Render da **Manual Deploy → Deploy latest commit**. Cuando vuelva, entra otra vez: tu cuenta, tu círculo y tu apuesta
+   tienen que seguir ahí. Si desaparecieron, el disco no está en `/data`: arréglalo antes de invitar a nadie.
+4. Usa **Agregar fondos** con tu contraseña de fondos una vez, para ver que funciona. El dinero se agrega cuando los demás votan
+   (les sale un aviso; si no hay nadie más en el sitio, se agrega en seguida).
+5. Manda el enlace a tus amigos. Haz tus círculos **privados** y da el código de invitación solo a ellos. Cualquiera con el enlace
+   puede crear una cuenta y ver y apostar en las apuestas **públicas**; los círculos privados y sus apuestas no los ve.
 
-## Part 2: Railway
+## Actualizar un sitio que ya corre
 
-The button names may be slightly different, Railway changes its screens now and then.
+Cada arranque guarda antes una copia de `db.json` en `/data/backups` (las últimas 15) y corre, una sola vez, los pasos de datos
+que falten. Hasta hoy son cuatro, y todos están en el registro como `Data migration ran: …`:
 
-1. Go to <https://railway.com> and **sign in with GitHub**. Add a payment method when asked.
-2. **New Project → Deploy from GitHub repo**. If `clique` is not in the list, click **Configure GitHub App** and allow Railway to see that one repository.
-3. Pick `clique`. Railway finds the `Dockerfile` and starts building.
-4. **The first run will crash. That is expected.** The log says `Refusing to start: set the ADMIN_PASSWORD...`. It is the safety check, it means nobody can use a password from the source code.
-5. Click the service, open the **Variables** tab, and add:
-   - `ADMIN_PASSWORD` = your own funds password
-   - optionally `WEEK_TIMEZONE` (the default is Mexico City)
-   - optionally `START_BALANCE`
-6. **Attach the volume** (this is what keeps your data). Right-click the service tile on the project canvas (or press `Cmd+K`) → **Attach volume** (or **Volume**), and set the mount path to exactly `/data`.
-7. **Settings → Networking → Generate Domain.** You get a link like `clique-production.up.railway.app`. If it asks which port, use the one the logs print after `localhost:`.
-8. Optional but good: **Settings → Deploy → Healthcheck Path** = `/api/me`. Make sure the number of replicas stays at **1**.
-9. Wait for the deploy to turn green (**Deployments** tab → Active), then open your link.
+- **split_accounts**: parte cada saldo en dos (hasta $1,000 se queda en la cuenta semanal y lo demás pasa a la acumulada). No se
+  crea ni se pierde un centavo, y queda su asiento en el libro.
+- **retire_horses**: retira el juego de caballos y devuelve completa cualquier apuesta en una carrera sin resolver.
+- **add_goals**: solo agrega: lugares vacíos para préstamos, retos y transferencias, y el avance que los registros viejos ya
+  muestran. Lo que se desbloquee no se paga hasta que la persona lo reclame; la experiencia empieza en 0 para todos.
+- **add_game_goals**: llena los números de cada juego (rondas, victorias, mejor multiplicador) desde el historial.
 
-## Part 3: test before you tell anyone
+Para ver el resultado antes, con una copia del `db.json` real en tu computadora:
+`python scripts/preview_migration.py ruta/a/db.json` (imprime los saldos antes y después, revisa que el total sea idéntico y no
+cambia nada). Para deshacer: detén el sitio, pon el archivo más nuevo de `/data/backups` como `/data/db.json` y despliega la
+versión anterior del código.
 
-1. Open the link, **sign up**, make a circle and a bet.
-2. Open the **Logs** tab and check there is **no** `WARNING: /data is not a mounted volume`. If there is, step 6 was missed.
-3. In Railway press **Redeploy**. When it is back, log in again. Your account, circle and bet must still be there. If they are gone, the volume is not attached at `/data`: fix that before inviting anyone.
-4. Use **Add funds** with your funds password once to make sure it works. The money is added only after the other people have voted (they get a pop-up; with nobody else on the site it is added at once).
-5. Send your friends the link. Make your circles **Private** and give out the invite code only to them. Anyone who has the link can create an account, and they can see and bet on every **public** bet (the "Everyone on the site" kind). Private circles and their bets stay invisible to them.
+En el mismo disco viven `db.json` (cuentas y libro), `market.json` (precios e historia de la bolsa) y `uploads/` (fotos de perfil).
+Si se pierde el disco, se pierde todo junto.
 
-## Updating a site that is already running to the two-account version
+## Correo: contraseñas olvidadas
 
-The first start on the new code splits every balance in two (up to $1,000 stays in the weekly account; anything above moves to the
-accumulated account; not a cent is created or lost), writes a ledger entry for it, and saves a copy of `db.json` into
-`/data/backups` first. Nothing else is needed from you, and starting again later does nothing more. What to expect:
+Cada persona tiene que dar un correo y confirmarlo con un código de 6 dígitos; desde entonces, **"¿Olvidaste tu contraseña?"
+manda un código a ese correo**.
 
-1. If you have a copy of the live `db.json` on your computer, preview the result with `python3 scripts/preview_migration.py path/to/db.json`.
-   It prints everyone's balances before and after, checks that the total is identical, and changes nothing.
-2. After the deploy, open **Logs**: you should see one line saying the accounts were migrated. Open the site: the header shows two
-   balances (**Weekly** and **Saved**), and the **Statement** page shows the opening entries.
-3. To undo it, stop the site, put the newest file from `/data/backups` back as `/data/db.json`, and deploy the previous version of the code.
+**El sitio no manda correo solo: necesita un servicio de correo.** Mientras no haya uno, el sitio sigue pidiendo el correo pero
+nadie puede confirmarlo, y "¿Olvidaste tu contraseña?" dice que el correo no está encendido (la recuperación con la contraseña de
+fondos sigue funcionando). Elige UNO, agrega sus variables en **Environment** y deja que se reinicie:
 
-Everything new lives on the same `/data` volume: `db.json` (accounts, ledger), `market.json` (the stock market's prices and history)
-and `uploads/` (profile pictures). If the volume is lost, all of it goes together.
-
-## Updating a site that already has the two accounts: loans, ranks, challenges, milestones and transfers
-
-The first start on this code runs one more step (schema 4, "add_goals"), after saving a copy of `db.json` into `/data/backups`. It only **adds**
-things: no balance, bet, position or record changes. It adds empty containers for loans, challenges and transfers, and gives each person the
-progress the old records reliably show (poll bets, casino rounds, weeks taken part in, games tried, share trades, polls proposed, circles). Anything
-that unlocks is **not paid until the person claims it**; XP starts at 0 for everybody, so nobody is ranked for the past. Preview it with
-`python3 scripts/preview_migration.py path/to/db.json` (it lists, per person, how many milestone tiers would unlock) and look for the line
-"Data migration ran: add_goals" in **Logs** after the deploy. Undoing it is the same as above: put the newest file from `/data/backups` back.
-
-### Goals about one game (schema 5)
-
-The next start after that update runs one more additive step, "add_game_goals" (a backup of `db.json` is saved first, as always). It fills in each
-person's per-game numbers (rounds played, wins, best multiplier, money won) from the round history the old records still hold, and nothing else.
-Anything that unlocks is not paid until claimed. Look for "Data migration ran: add_game_goals" in **Logs**. Weekly challenges already assigned for the
-current week keep their original six goals (a week's challenges never change once made); the game-specific ones start with the next Monday's.
-
-## Email: forgotten passwords
-
-Everybody now has to give an email address (new accounts at sign-up, everybody who already had an account in a window that appears
-when they next open the site and cannot be closed until they add one). They confirm it with a 6-digit code, and from then on
-**"Forgot your password?" on the log-in page sends a 6-digit code to that address**, which they type in with a new password.
-
-**The site cannot send email by itself: it needs an email service, and you have to set one up.** Until you do, a hosted copy
-still asks everybody for an address, but nobody can confirm it and "Forgot your password?" says email is not switched on yet
-(the funds-password reset, where whoever runs the site sets a new password, keeps working). Pick ONE of these and add its
-variables in Railway (Variables tab), then let it redeploy:
-
-| Service | Variables | Good to know |
+| Servicio | Variables | Bueno saber |
 | --- | --- | --- |
-| **Resend** (resend.com) | `RESEND_API_KEY`, `EMAIL_FROM` | Sends over the web, so it works on hosts that block ordinary email ports. Until you verify a domain you own (a few DNS records they show you), it only sends from its own test address and **only to the address you signed up with**, so friends will not get their codes. With a verified domain, set `EMAIL_FROM` to something like `Clique <noreply@yourdomain.com>`. |
-| **Brevo** (brevo.com) | `BREVO_API_KEY`, `EMAIL_FROM` | Also sends over the web, with a free allowance. You verify a single sender address (any email you own) in Brevo, and use that as `EMAIL_FROM`; you do not need your own domain to start. |
-| **Any SMTP server** (Gmail with an app password, your own) | `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURITY` (`starttls`, `ssl` or `none`), `EMAIL_FROM` | Railway may block the ordinary email ports on some plans; if codes never arrive and the Logs tab says the server "could not be reached", use Resend or Brevo instead. |
+| **Resend** (resend.com) | `RESEND_API_KEY`, `EMAIL_FROM` | Manda por la web, así que funciona aunque el servicio bloquee los puertos de correo. Hasta que verifiques un dominio tuyo, solo manda **a la dirección con la que te registraste**: tus amigos no recibirían sus códigos. Con dominio verificado, `EMAIL_FROM` queda como `Clique <noreply@tudominio.com>`. |
+| **Brevo** (brevo.com) | `BREVO_API_KEY`, `EMAIL_FROM` | También por la web, con un cupo gratis. Verificas una sola dirección de remitente (cualquier correo tuyo) y la usas como `EMAIL_FROM`; no necesitas dominio. |
+| **Cualquier servidor SMTP** (Gmail con contraseña de aplicación, uno propio) | `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURITY` (`starttls`, `ssl` o `none`), `EMAIL_FROM` | Algunos servicios bloquean los puertos de correo; si los códigos no llegan y el registro dice que el servidor "could not be reached", usa Resend o Brevo. |
 
-These services change their rules and free plans from time to time, so read what their sign-up pages say today. **I could not try a
-real service from here**: the requests Clique makes follow each service's documentation and are checked against a stand-in
-server, but the first real code you send is the real test. To try it: sign up a test account with your own address, and see whether
-the code arrives; the **Logs** tab shows `Email to a***@gmail.com was not sent: ...` with the reason if it did not.
+Estos servicios cambian sus reglas y planes; lee lo que dicen hoy al registrarte. **No se probó con un servicio real**: las
+peticiones siguen la documentación de cada uno y se prueban contra un servidor de mentira. La primera prueba real es crear una
+cuenta con tu correo y ver si llega el código; si no, **Logs** dice `Email to a***@gmail.com was not sent: …` y por qué.
 
-How it is kept safe: an address only counts once it is confirmed; codes last 15 to 30 minutes, work once, die after five wrong tries
-and are stored scrambled; asking for a code always gets the same answer whether or not the address belongs to anybody; one
-address can only be confirmed on one account; changing a confirmed address needs the account's password; everybody logged in to
-an account is signed out when its password is reset, and the owner is emailed when it happens. On your own computer
-(`python3 server.py`) no service is needed: each email is printed in the Terminal window instead.
+Cómo se cuida: un correo cuenta solo cuando se confirma; los códigos duran de 15 a 30 minutos, sirven una vez, mueren tras cinco
+intentos fallidos y se guardan revueltos; pedir un código da la misma respuesta exista o no la cuenta; un correo se confirma en una
+sola cuenta; cambiar un correo confirmado pide la contraseña; al restablecer la contraseña se cierran todas las sesiones de esa
+cuenta y se avisa por correo. En tu computadora (`python server.py`) no hace falta servicio: cada correo se imprime en la terminal.
 
-## Voice rooms
+## Salas de voz
 
-Every circle has a voice room. The audio goes straight between friends' browsers (WebRTC); the server only introduces them. Two things to know:
+Cada círculo tiene una sala de voz. El audio va directo entre los navegadores (WebRTC); el servidor solo los presenta.
 
-- **It needs `https`** (browsers only allow the microphone on secure pages). Railway's link is already `https`.
-- **Most home connections work with the default free STUN servers. Some do not** (a few offices, some mobile carriers): those friends will join but won't hear anyone. The fix is a **TURN relay**, a small server that passes the audio along. You can rent one or run `coturn`; then set `TURN_URL` (like `turn:turn.example.com:3478`) and `TURN_SECRET` (coturn's `static-auth-secret`), or put the servers in `ICE_SERVERS` as JSON. Without a TURN server of your own, Clique still works; only those people are left out. This was **not** tested here with a real TURN server.
-- Phones stop calls when the screen locks or you switch apps: that is the phone, not Clique. The call resumes when you come back.
+- **Necesita `https`** (los navegadores solo dan el micrófono en páginas seguras). El enlace de Render ya es `https`.
+- **Casi todas las conexiones de casa funcionan con los servidores STUN gratuitos. Algunas no** (ciertas oficinas, algunas
+  compañías de celular): esas personas entran pero no oyen a nadie. Se arregla con un **relevo TURN** (rentado, o `coturn`
+  propio): pon `TURN_URL` (como `turn:turn.ejemplo.com:3478`) y `TURN_SECRET`, o los servidores en `ICE_SERVERS` como JSON.
+  Sin TURN, Clique funciona igual; solo esas personas se quedan fuera. **No se probó con un TURN real.**
+- Los teléfonos cortan la llamada al bloquear la pantalla o cambiar de app: es el teléfono, no Clique. Se retoma al volver.
 
-## Day to day
+## El día a día
 
-- **Change the site:** edit, then `git add . && git commit -m "what changed" && git push`. Railway redeploys by itself and the site is down for a few seconds.
-- **Change the funds password:** edit `ADMIN_PASSWORD` in Variables. Railway restarts the site.
-- **New season** (everyone back to the starting balance, accounts and circles kept, markets and history cleared): set `SEASON_RESET` to a new label such as `2026-w42` and the site redeploys. It does the reset once, remembers the label, and ignores it on later redeploys. Use a different label next time. A copy of the old data is saved first.
-- **On your own computer** the same thing is `python3 scripts/seed.py new-season` (stop the server first). `wipe` deletes accounts too.
-- **Backups:** every start saves a copy of `db.json` into `/data/backups` (last 15). That is on the same volume, so it protects against mistakes but not against losing the volume. Check whether your Railway plan includes volume backups. For play money among friends, many people accept the risk.
-- **Logs:** the service's **Logs** tab. Errors print there.
+- **Cambiar el sitio:** los cambios llegan a `integracion` por E7; luego **Manual Deploy → Deploy latest commit** en Render (o
+  solo, si encendiste Auto-Deploy). El sitio se cae unos segundos.
+- **Cambiar la contraseña de fondos:** edita `ADMIN_PASSWORD` en **Environment**. Render reinicia el sitio.
+- **Temporada nueva** (todos vuelven al saldo inicial; cuentas y círculos se quedan; mercados e historial se borran): pon en
+  `SEASON_RESET` una etiqueta nueva como `2026-s42`. Se hace una vez, recuerda la etiqueta y la ignora en los siguientes
+  despliegues. Usa otra la próxima vez. Antes guarda una copia de los datos.
+- **En tu computadora** lo mismo es `python scripts/seed.py new-season` (con el servidor detenido). `wipe` borra también las cuentas.
+- **Respaldos:** cada arranque guarda una copia de `db.json` en `/data/backups` (las últimas 15). Está en el mismo disco: protege de
+  errores, no de perder el disco. Render hace instantáneas diarias de los discos; revisa en la página del disco cómo restaurar una.
+- **Salud:** `https://<tu enlace>/api/salud` dice el commit, cuánto lleva encendido y si la base se puede leer y escribir. Render
+  la consulta solo y reinicia el sitio si deja de responder.
+- **Registro:** la pestaña **Logs** del servicio. Ahí salen los errores.
 
-## If something is wrong
+## Si algo sale mal
 
-| What you see | Why |
+| Lo que ves | Por qué |
 | --- | --- |
-| Crash with `Refusing to start: set the ADMIN_PASSWORD` | Add the variable (step 5), or it is shorter than 10 characters. |
-| Everything resets after a deploy | The volume is not attached at `/data`. |
-| Friends see the page but live updates are slow or stuck | Make sure there is only one replica, and use the HTTPS link Railway gives. |
-| Weekly punishment happens at the wrong hour | Fix `WEEK_TIMEZONE` (or the older `WEEK_TZ_OFFSET_HOURS`). |
-| The site stops with `Unknown WEEK_TIMEZONE` | The name is not a real time zone. Use one like `America/Mexico_City` or `UTC`. |
-| Voice: some friends join but hear nothing | They are behind a strict network and need a TURN server (see "Voice rooms"). |
-| The stock prices look frozen right after a restart | The market replays the time the site was off (up to 3 days) within a few seconds; give it a moment. |
-| Build fails on the Python version | Open the `Dockerfile` and change `python:3.12-slim` to `python:3.9-slim`. The tests were run on 3.9. |
+| Se cae con `Refusing to start: set the ADMIN_PASSWORD` | Falta la variable, o tiene menos de 10 caracteres. |
+| Todo se borra después de un despliegue | El disco no está montado en `/data`. |
+| `/api/salud` responde 503 | La carpeta de la base no se puede escribir: revisa el disco en la página del servicio. |
+| Ven la página pero lo en vivo va lento o se traba | Revisa que haya una sola copia, y usa el enlace `https`. |
+| El castigo semanal pasa a la hora equivocada | Corrige `WEEK_TIMEZONE`. |
+| El sitio se detiene con `Unknown WEEK_TIMEZONE` | El nombre no es una zona horaria real. Usa una como `America/Mexico_City` o `UTC`. |
+| Voz: algunos entran pero no oyen nada | Están en una red estricta y necesitan un TURN (ver "Salas de voz"). |
+| Los precios de la bolsa se ven congelados al reiniciar | La bolsa repasa el tiempo que estuvo apagada (hasta 3 días) en unos segundos; espera un momento. |
 
-## Honest limits
+## Probarlo en tu computadora con Docker
 
-- **Voice rooms are for small groups** (8 people by default): each person connects to each other person. A bigger room would need a media server.
-- **The stock exchange is a game, not a market:** one shared simulation, no price impact from your orders, and a hidden pull back towards a "fair value". See ECONOMY.md.
-- **One copy only.** The whole database is in the program's memory and in one file. That is fine for a group of friends. Saving after each action takes about 25 ms even with a deliberately bloated database (12 players with full histories and 400 markets, 578 KB), so you will not feel it.
-- **No Postgres.** It would mean rewriting most of the backend for benefits you do not need yet. Revisit if you ever want more than one copy running, or hundreds of active players.
-- **Sign-ups are open** to anyone with the link, and public bets are visible to every account. If strangers show up, ask for a sign-up code to be added. Whoever proposes a public bet is the only one who can settle it, so only bet on public bets from people you trust.
-- **Other hosts:** Render needs a paid instance plus a "Disk" mounted at `/data`; Fly.io needs `fly launch` and `fly volumes create` with the volume at `/data`. Same variables, same Dockerfile.
+Si tienes Docker instalado: `docker build -t clique .` y luego
+`docker run -p 3000:3000 -e ADMIN_PASSWORD=prueba-local-123 clique`, y abre <http://localhost:3000/api/salud>.
+El CI hace exactamente esto en cada cambio (el trabajo `contenedor`).
+
+## Límites honestos
+
+- **Las salas de voz son para grupos chicos** (8 personas por omisión): cada quien se conecta con cada quien.
+- **La bolsa es un juego, no un mercado:** una simulación compartida, sin impacto de tus órdenes en el precio. Ver ECONOMY.md.
+- **Una sola copia.** Toda la base está en la memoria del programa y en un archivo. Para un grupo de amigos sobra; guardar tras
+  cada acción tarda unos 25 ms incluso con una base inflada a propósito. El paso a Postgres (ADR-006, etapa B) quitará este límite.
+- **El registro está abierto** a quien tenga el enlace, y las apuestas públicas se ven desde cualquier cuenta. Solo quien propone
+  una apuesta pública puede resolverla: apuesta en las públicas solo de gente de confianza.
+- **Otros servicios:** Railway o Fly.io sirven con el mismo `Dockerfile` y las mismas variables, siempre con un disco montado en
+  `/data` y una sola copia.

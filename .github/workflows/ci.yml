@@ -85,3 +85,18 @@ jobs:
           node-version: 22
       - run: node herramientas/ganchos.test.mjs && node herramientas/ganchos.en-vivo.test.mjs
         shell: bash
+
+  contenedor:                              # el Dockerfile construye, arranca y responde en /api/salud
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --build-arg CLIQUE_COMMIT=${{ github.sha }} -t clique .
+      - run: |
+          docker run -d --name clique -p 3000:3000 -e ADMIN_PASSWORD=prueba-local-123 clique
+          for i in $(seq 30); do
+            if curl -fsS http://localhost:3000/api/salud; then echo; exit 0; fi
+            sleep 1
+          done
+          docker logs clique
+          exit 1

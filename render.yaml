@@ -1,0 +1,29 @@
+# Despliegue de prueba en Render (Blueprint): Render → New → Blueprint → este repositorio.
+# Los pasos completos están en DEPLOY.md. Aquí no va ningún valor secreto: los que dicen sync: false
+# los pega el dueño en la página de Render cuando crea el Blueprint.
+services:
+  - type: web
+    name: clique-prueba
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    # Un disco persistente exige un plan de pago (Starter o más). Sin disco, cada despliegue borra la base.
+    plan: starter
+    region: oregon
+    # Una sola copia: la base es un archivo y vive en la memoria del programa. Con disco, Render no deja más de una.
+    numInstances: 1
+    healthCheckPath: /api/salud
+    autoDeploy: false            # se despliega a mano desde la página; cambia a true para desplegar con cada push
+    branch: integracion
+    disk:
+      name: clique-datos
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: ADMIN_PASSWORD      # obligatoria: tu contraseña de fondos, 10 caracteres o más
+        sync: false
+      - key: WEEK_TIMEZONE
+        value: America/Mexico_City
+      - key: PURCHASES_ENABLED   # D3: la venta de fichas sigue apagada
+        value: "false"
+      # El correo para recuperar contraseñas (EMAIL_FROM y RESEND_API_KEY u otro servicio) se agrega después
+      # en Environment, cuando el dueño elija servicio: ver DEPLOY.md, "Correo".

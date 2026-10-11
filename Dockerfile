@@ -10,6 +10,10 @@ ENV CLIQUE_ENV=production \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
+# The commit this image was built from, for GET /api/salud (Render gives RENDER_GIT_COMMIT by itself).
+ARG CLIQUE_COMMIT=""
+ENV CLIQUE_COMMIT=${CLIQUE_COMMIT}
+
 WORKDIR /app
 COPY server.py ./
 COPY backend ./backend
