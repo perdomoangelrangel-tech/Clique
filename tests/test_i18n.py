@@ -31,14 +31,13 @@ I18N_CALLS = {"t", "th", "tp"}
 
 # Frases sin t() anotadas por archivo (10-oct, al empezar la ronda 1). Solo pueden bajar: cuando migras un archivo, baja su número.
 BASE = {
-    "art.js": 6, "cosmetics.js": 2, "gamelist.js": 39, "games/betpanel.js": 10, "games/blackjack.js": 21, "games/chicken.js": 25,
+    "art.js": 6, "cosmetics.js": 2, "gamelist.js": 25, "games/betpanel.js": 10, "games/blackjack.js": 21, "games/chicken.js": 25,
     "games/coinflip.js": 30, "games/common.js": 9, "games/dice.js": 19, "games/hilo.js": 30, "games/limbo.js": 11, "games/mines.js": 21,
     "games/moles.js": 20, "games/roulette.js": 24, "games/rps.js": 28, "games/tower.js": 25, "games/war.js": 40, "games/wheel.js": 20,
-    "views/challenges.js": 37, "views/chat.js": 81, "views/create.js": 41, "views/exchange.js": 112, "views/friends.js": 43,
-    "views/game.js": 41, "views/games.js": 35, "views/loans.js": 81, "views/market.js": 126, "views/poker.js": 55, "views/pokerfmt.js": 2,
-    "views/pokertable.js": 185, "views/polledit.js": 70, "views/portfolio.js": 65, "views/profile.js": 138, "views/progress.js": 49,
-    "views/ranking.js": 16, "views/spread.js": 15, "views/statement.js": 58, "views/stockchart.js": 3, "views/store.js": 43,
-    "views/transfers.js": 127, "views/weekly.js": 128, "views/whosin.js": 8,
+    "views/challenges.js": 37, "views/chat.js": 81, "views/exchange.js": 112, "views/friends.js": 43, "views/game.js": 41,
+    "views/games.js": 35, "views/loans.js": 81, "views/poker.js": 55, "views/pokerfmt.js": 2, "views/pokertable.js": 185,
+    "views/portfolio.js": 65, "views/profile.js": 138, "views/progress.js": 49, "views/ranking.js": 16, "views/spread.js": 15,
+    "views/statement.js": 58, "views/stockchart.js": 3, "views/store.js": 43, "views/transfers.js": 127, "views/weekly.js": 126,
 }
 
 # Lo que se queda igual en cualquier idioma (nombres propios, unidades).
@@ -262,7 +261,7 @@ TAG = re.compile(r"<(/?)([a-zA-Z][\w-]*)((?:[^>\"']|\"[^\"]*\"|'[^']*')*)>")
 ATTR = re.compile(r"(?<![\w-])(" + "|".join(re.escape(a) for a in VISIBLE_ATTRS) + r")\s*=\s*(\"[^\"]*\"|'[^']*')")
 CODE_PROP = re.compile(r"(?:\b(?:method|type|kind|key|mode|cache|credentials|behavior|block|inline|id|cls|className|bg|tone|art|"
                        r"side|status|sort|account|acct|dir|align|code|event|action|role|cat|tab|icon|font|family|color|sel|href|src|"
-                       r"path|route|state|risk|level|game|phase|stage|unit|format|style|fit|position|variant|accent|shape)\s*:)\s*$")
+                       r"path|route|state|risk|level|game|phase|stage|unit|format|style|fit|position|variant|accent|shape|range|info|tier|slot|category)\s*:)\s*$")
 
 
 def plain(s):
@@ -285,7 +284,7 @@ def is_prose(s):
         return False
     if re.match(r"^(https?:|mailto:|data:|/|#|\./|\.\./)", s):
         return False
-    if re.search(r"[;{}]|=>|\bfunction\b|\$\{", s):
+    if re.search(r"[;{}]|=>|\bfunction\b|\$\{|\b[\w-]+=\"", s):
         return False
     if not re.search(r"\s", s):
         # one word: a capitalised word or a shouted label is text; anything with code characters or lower case is an identifier

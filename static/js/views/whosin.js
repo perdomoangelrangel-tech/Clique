@@ -1,4 +1,5 @@
-import { esc, money, cents, avatar } from '../util.js';
+import { esc, money, cents, avatar, slipLabel } from '../util.js';
+import { t, th, tp } from '../i18n.js';
 
 /**
  * "Who's in": every person holding a slip on this bet, what they put in and what they backed.
@@ -6,7 +7,7 @@ import { esc, money, cents, avatar } from '../util.js';
  */
 export function whoseIn(M) {
   const rows = M.holders;
-  if (!rows.length) return '<p class="quiet">Nobody has put money on this yet. Be the first mistake.</p>';
+  if (!rows.length) return `<p class="quiet">${t('Nadie le ha puesto fichas todavía. Sé el primer error.')}</p>`;
   const people = new Set(rows.map((h) => h.user.username)).size;
   const sides = new Map();
   for (const h of rows) {
@@ -15,11 +16,11 @@ export function whoseIn(M) {
   }
   const top = [...sides.values()].sort((a, b) => b.total - a.total);
   const settled = rows.some((h) => h.settled);
-  return `<div class="whosin-sum"><span><b class="num">${money(M.investedTotal)}</b> in play from <b>${people}</b> ${people === 1 ? 'person' : 'people'}</span>
-      ${top.map((s) => `<span class="tag ${s.side === 'yes' ? 'good' : 'bad'}">${esc(s.label)} <b class="num">${money(s.total)}</b> · ${s.n}</span>`).join('')}</div>
-    <div class="card-box tbl-wrap"><table class="tbl whosin"><thead><tr><th>Who</th><th>Backed</th><th class="r">Put in</th><th class="r">Avg price</th><th class="r">${settled ? 'Paid' : 'Worth now'}</th></tr></thead><tbody>
+  return `<div class="whosin-sum"><span>${tp(people, '<b class="num">{cantidad}</b> en juego de <b>{n}</b> persona', '<b class="num">{cantidad}</b> en juego de <b>{n}</b> personas', { cantidad: money(M.investedTotal) })}</span>
+      ${top.map((s) => `<span class="tag ${s.side === 'yes' ? 'good' : 'bad'}">${esc(slipLabel(s.label))} <b class="num">${money(s.total)}</b> · ${s.n}</span>`).join('')}</div>
+    <div class="card-box tbl-wrap"><table class="tbl whosin"><thead><tr><th>${t('Quién')}</th><th>${t('Apostó a')}</th><th class="r">${t('Puso')}</th><th class="r">${t('Precio prom.')}</th><th class="r">${settled ? t('Cobró') : t('Vale hoy')}</th></tr></thead><tbody>
     ${rows.map((h) => `<tr><td><a class="row" href="#/u/${esc(h.user.username)}" style="gap:10px;font-weight:600">${avatar(h.user.username, 26)}<span>${esc(h.user.username)}</span></a></td>
-      <td><span class="tag ${h.side === 'yes' ? 'good' : 'bad'}">${esc(h.label)}</span></td>
+      <td><span class="tag ${h.side === 'yes' ? 'good' : 'bad'}">${esc(slipLabel(h.label))}</span></td>
       <td class="r num"><b>${money(h.invested)}</b></td><td class="r num">${cents(h.avgPrice)}</td>
       <td class="r num ${h.pnl > 0 ? 'up' : h.pnl < 0 ? 'down' : ''}">${h.value == null ? '—' : money(h.value)}</td></tr>`).join('')}
     </tbody></table></div>`;

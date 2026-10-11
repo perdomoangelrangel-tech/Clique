@@ -7,6 +7,8 @@ import { chips, chipsFull, number, ago as agoI18n, until as untilI18n, dateShort
 const CATS = { General: 'General', Sports: 'Deportes', Gaming: 'Videojuegos', Life: 'Vida', Money: 'Finanzas', Dares: 'Atrévete', Music: 'Música', Other: 'Otros' };      // i18n: claves
 export const catName = (c) => (CATS[c] ? t(CATS[c]) : c);
 /** "Yes" / "No" of a yes/no market as words on screen; any other outcome is a name a person wrote and stays as it is. */
+/** A position's label as the server writes it ("Yes", "No", "Ana · Yes") with the yes/no part in the language on screen. */
+export const slipLabel = (label) => String(label ?? '').replace(/(^| · )(Yes|No)$/, (m, sep, s) => sep + (s === 'Yes' ? t('Sí') : t('No')));      // i18n: no (server words)
 export const sideName = (name, binary = true) => (binary && name === 'Yes' ? t('Sí') : binary && name === 'No' ? t('No') : name);      // i18n: no (server names)
 
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

@@ -3,18 +3,20 @@
    this only asks the server, shows what it says, and never decides anything. */
 import { get, post } from '../api.js';
 import { setUser } from '../state.js';
-import { esc, dateLong, ago, ICON, money, moneyFull, avatar } from '../util.js';
+import { esc, dateLong, ago, ICON, money, moneyFull, avatar, slipLabel } from '../util.js';
 import { modal, confirmBox, toast } from '../ui.js';
 import { saveDraft, loadDraft, clearDraft } from '../viewstate.js';
+import { t, th, tp } from '../i18n.js';
 
 const rid = () => 'edit-' + Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
 const local = (ms) => { if (!ms) return ''; const d = new Date(ms - new Date(ms).getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); };
 const fromLocal = (v) => (v ? new Date(v).getTime() : null);
-const when = (ms) => (ms ? dateLong(ms) : 'No end date');
-const KIND = { created: 'Posted', clarification: 'Clarification', material: 'Material change', no_participation: 'Edited before anyone bet' };
+const when = (ms) => (ms ? dateLong(ms) : t('Sin fecha de cierre'));
+const KIND = { created: 'Publicada', clarification: 'Aclaración', material: 'Cambio de fondo', no_participation: 'Editada antes de que alguien apostara' };      // i18n: claves
+const kindName = (k) => (KIND[k] ? t(KIND[k]) : k);
 
 /** The "Edited" marker beside a bet's title. */
-export const editedTag = (M) => (M.edited ? `<button class="tag edited" id="hist" title="This bet's rules or closing time were changed. See what changed and when.">${ICON.pencil} Edited · v${M.version}</button>` : '');
+export const editedTag = (M) => (M.edited ? `<button class="tag edited" id="hist" title="${esc(t('Se cambiaron las reglas o la fecha de cierre de esta apuesta. Mira qué cambió y cuándo.'))}">${ICON.pencil} ${t('Editada · v{n}', { n: M.version })}</button>` : '');
 
 /** The notice shown to people who bet before a material change, while they can still walk away at cost. */
 export function exitBanner(M) {
@@ -22,34 +24,35 @@ export function exitBanner(M) {
   if (!e || !e.open || !e.tokens.length) return '';
   const mine = (M.myPositions || []).filter((p) => p.withdrawable);
   if (!mine.length) return '';
-  return `<div class="exit-banner" role="status"><div><b>The rules or closing time of this bet changed after you bet.</b>
-    <p>You can withdraw what you bet under the old rules and get back <b>exactly what you paid</b>, whatever the price is now, until ${esc(dateLong(e.until))}. Or do nothing, and your bet stands under the new rules.</p></div>
-    <div class="exit-acts">${mine.map((p) => `<button class="btn btn-secondary btn-sm" data-withdraw="${esc(p.token)}">Withdraw ${money(p.invested)} (${esc(p.label)})</button>`).join('')}<button class="btn btn-ghost btn-sm" id="hist">What changed</button></div></div>`;
+  return `<div class="exit-banner" role="status"><div><b>${t('Las reglas o la fecha de cierre cambiaron después de que apostaste.')}</b>
+    <p>${th('Puedes retirar lo que apostaste con las reglas viejas y recuperar <b>exactamente lo que pagaste</b>, valga lo que valga ahora, hasta el {fecha}. O no hagas nada y tu apuesta sigue con las reglas nuevas.', { fecha: dateLong(e.until) })}</p></div>
+    <div class="exit-acts">${mine.map((p) => `<button class="btn btn-secondary btn-sm" data-withdraw="${esc(p.token)}">${th('Retirar {cantidad} ({opcion})', { cantidad: money(p.invested), opcion: slipLabel(p.label) })}</button>`).join('')}<button class="btn btn-ghost btn-sm" id="hist">${t('Qué cambió')}</button></div></div>`;
 }
 
 export async function withdrawFlow(M, token, onDone) {
   const p = (M.myPositions || []).find((x) => x.token === token);
   if (!p) return;
-  if (!(await confirmBox({ title: 'Withdraw your bet?', text: `You get back exactly ${moneyFull(p.invested)}, the amount you paid for ${p.label}, even if it is worth a different amount now. Your shares are removed from the market.`, confirm: `Withdraw ${money(p.invested)}` }))) return;
+  if (!(await confirmBox({ title: t('¿Retirar tu apuesta?'), text: t('Recuperas exactamente {cantidad}, lo que pagaste por {opcion}, aunque ahora valga otra cantidad. Tus acciones salen del mercado.', { cantidad: moneyFull(p.invested), opcion: slipLabel(p.label) }), confirm: t('Retirar {cantidad}', { cantidad: money(p.invested) }) }))) return;
   try {
     const d = await post(`/api/markets/${M.id}/withdraw`, { token, requestId: rid() });
-    setUser(d.user); toast(`Withdrawn: ${moneyFull(d.refunded)} is back in your weekly account.`, 'ok'); onDone(d.market);
+    setUser(d.user); toast(t('Retirada: {cantidad} regresaron a tu cuenta semanal.', { cantidad: moneyFull(d.refunded) }), 'ok'); onDone(d.market);
   } catch (ex) { toast(ex.message, 'err'); }
 }
 
 export async function openHistory(M) {
   let H;
   try { H = await get(`/api/markets/${M.id}/history`); } catch (ex) { toast(ex.message, 'err'); return; }
-  const rows = [...H.edits].reverse().map((e) => `<li class="vh ${esc(e.class)}"><div class="vh-top"><b>Version ${e.v}</b><span class="tag ${e.class === 'material' ? 'bad' : ''}">${esc(KIND[e.class] || e.class)}</span><span class="muted">${esc(dateLong(e.t))} · ${ago(e.t)}</span></div>
-      <div class="vh-by">${avatar(e.by.username, 20)} <a href="#/u/${esc(e.by.username)}">${esc(e.by.username)}</a>${e.kind === 'created' ? ' proposed it' : ' edited it'}</div>
-      ${e.reason ? `<p class="vh-why"><em>Why:</em> ${esc(e.reason)}</p>` : ''}
-      ${e.changes && e.changes.closesAt ? `<div class="vh-ch"><span class="lbl">Closing time</span><span class="from">${esc(when(e.changes.closesAt.from))}</span> ${ICON.arrowR} <span class="to">${esc(when(e.changes.closesAt.to))}</span></div>` : ''}
-      ${e.changes && e.changes.description ? `<div class="vh-ch"><span class="lbl">Rules</span><div class="from">${esc(e.changes.description.from) || '<i>(none)</i>'}</div><div class="to">${esc(e.changes.description.to) || '<i>(none)</i>'}</div></div>` : ''}
-      ${e.participants ? `<small class="muted">${e.participants} ${e.participants === 1 ? 'person' : 'people'} had bet when this changed.</small>` : ''}
-      ${e.exitUntil ? `<small class="muted">Anyone who bet before could withdraw at cost until ${esc(dateLong(e.exitUntil))}.</small>` : ''}</li>`).join('');
-  modal(`<span class="lbl">Open to everybody in this bet</span><h2>What changed</h2>
-    <p class="lede">Every change to the rules or closing time is kept here: who, when, why, and what it was before. A settled result is never reopened.</p>
-    <ol class="vh-list">${rows}</ol><div class="modal-actions"><button class="btn btn-primary" data-close>Close</button></div>`, { wide: true });
+  const none = `<i>${t('(nada)')}</i>`;
+  const rows = [...H.edits].reverse().map((e) => `<li class="vh ${esc(e.class)}"><div class="vh-top"><b>${t('Versión {n}', { n: e.v })}</b><span class="tag ${e.class === 'material' ? 'bad' : ''}">${esc(kindName(e.class))}</span><span class="muted">${esc(dateLong(e.t))} · ${ago(e.t)}</span></div>
+      <div class="vh-by">${avatar(e.by.username, 20)} ${e.kind === 'created' ? th('<a href="#/u/{url}">{nombre}</a> la propuso', { url: encodeURIComponent(e.by.username), nombre: e.by.username }) : th('<a href="#/u/{url}">{nombre}</a> la editó', { url: encodeURIComponent(e.by.username), nombre: e.by.username })}</div>
+      ${e.reason ? `<p class="vh-why"><em>${t('Por qué:')}</em> ${esc(e.reason)}</p>` : ''}
+      ${e.changes && e.changes.closesAt ? `<div class="vh-ch"><span class="lbl">${t('Fecha de cierre')}</span><span class="from">${esc(when(e.changes.closesAt.from))}</span> ${ICON.arrowR} <span class="to">${esc(when(e.changes.closesAt.to))}</span></div>` : ''}
+      ${e.changes && e.changes.description ? `<div class="vh-ch"><span class="lbl">${t('Reglas')}</span><div class="from">${esc(e.changes.description.from) || none}</div><div class="to">${esc(e.changes.description.to) || none}</div></div>` : ''}
+      ${e.participants ? `<small class="muted">${tp(e.participants, '{n} persona había apostado cuando cambió.', '{n} personas habían apostado cuando cambió.')}</small>` : ''}
+      ${e.exitUntil ? `<small class="muted">${t('Quien había apostado antes pudo retirar lo que pagó hasta el {fecha}.', { fecha: dateLong(e.exitUntil) })}</small>` : ''}</li>`).join('');
+  modal(`<span class="lbl">${t('Visible para todos en esta apuesta')}</span><h2>${t('Qué cambió')}</h2>
+    <p class="lede">${t('Aquí se guarda cada cambio a las reglas o a la fecha de cierre: quién, cuándo, por qué y cómo estaba antes. Un resultado ya decidido nunca se reabre.')}</p>
+    <ol class="vh-list">${rows}</ol><div class="modal-actions"><button class="btn btn-primary" data-close>${t('Cerrar')}</button></div>`, { wide: true });
 }
 
 /** The edit form. `onSaved(market)` runs after a successful save. */
@@ -60,7 +63,7 @@ export function openEditPoll(M, onSaved) {
   let restored = false;
   const init = { end: local(base.closesAt), none: !base.closesAt, rules: base.description, why: '', kind: 'material' };
   if (saved) { Object.assign(init, saved); restored = true; }
-  const m = modal(`<span class="lbl">Edit this bet</span><h2>Change the date or the rules</h2>
+  const m = modal(`<span class="lbl">${t('Editar esta apuesta')}</span><h2>${t('Cambia la fecha o las reglas')}</h2>
     <div id="pe-step"></div>`, { wide: true, guard: () => dirty() });
   const box = m.el.querySelector('#pe-step');
   let state = { ...init };
@@ -69,18 +72,18 @@ export function openEditPoll(M, onSaved) {
   const changedDate = () => (state.none ? !!base.closesAt : !base.closesAt || state.end !== local(base.closesAt));      // the box has no seconds, so compare what it shows
   function form(err = '') {
     const onlyRules = !changedDate();
-    box.innerHTML = `${restored ? '<div class="notice">Your earlier, unsaved edit was put back.</div>' : ''}
-      ${involved ? `<div class="notice">${M.traders} ${M.traders === 1 ? 'person has' : 'people have'} bet on this. Changes are announced to everybody involved, kept in a public history, and may let them withdraw. You will see exactly what happens before anything is saved.</div>` : '<p class="lede" style="margin-top:0">Nobody has bet on this yet, so a change affects nobody. It is still saved as a new version.</p>'}
-      <div class="field"><label for="pe-end">Closing date and time</label>
+    box.innerHTML = `${restored ? `<div class="notice">${t('Recuperamos tu edición anterior que no se guardó.')}</div>` : ''}
+      ${involved ? `<div class="notice">${tp(M.traders, '{n} persona ya apostó aquí.', '{n} personas ya apostaron aquí.')} ${t('Los cambios se avisan a todos los involucrados, quedan en un historial público y pueden permitirles retirarse. Vas a ver exactamente qué pasa antes de guardar nada.')}</div>` : `<p class="lede" style="margin-top:0">${t('Nadie ha apostado todavía, así que el cambio no afecta a nadie. Igual se guarda como versión nueva.')}</p>`}
+      <div class="field"><label for="pe-end">${t('Fecha y hora de cierre')}</label>
         <div class="row" style="gap:12px;flex-wrap:wrap"><input class="input" type="datetime-local" id="pe-end" value="${esc(state.end)}" ${state.none ? 'disabled' : ''} style="max-width:260px">
-          <label class="check"><input type="checkbox" id="pe-none" ${state.none ? 'checked' : ''}> No end date</label></div></div>
-      <div class="field"><label for="pe-rules">Rules (what counts as a win, and any fine print)</label><textarea class="input" id="pe-rules" rows="5" maxlength="1000">${esc(state.rules)}</textarea></div>
-      ${involved ? `<div class="field"><label>What kind of change is this?</label>
-        <div class="seg"><label class="seg-opt"><input type="radio" name="pe-kind" value="clarification" ${state.kind === 'clarification' && onlyRules ? 'checked' : ''} ${onlyRules ? '' : 'disabled'}><span><b>A clarification</b><small>Same meaning, clearer words. Nobody can withdraw. ${onlyRules ? '' : 'Not available when the date changes: a new date can change the answer.'}</small></span></label>
-          <label class="seg-opt"><input type="radio" name="pe-kind" value="material" ${state.kind === 'material' || !onlyRules ? 'checked' : ''}><span><b>A material change</b><small>It changes what counts or when it ends. Everyone who bet can withdraw what they paid. Allowed once per bet after people have bet.</small></span></label></div></div>
-        <div class="field"><label for="pe-why">Why are you changing it? <span class="muted">(shown to everybody, at least 10 characters)</span></label><textarea class="input" id="pe-why" rows="2" maxlength="200">${esc(state.why)}</textarea></div>` : `<div class="field"><label for="pe-why">Reason <span class="muted">(optional)</span></label><input class="input" id="pe-why" maxlength="200" value="${esc(state.why)}"></div>`}
+          <label class="check"><input type="checkbox" id="pe-none" ${state.none ? 'checked' : ''}> ${t('Sin fecha de cierre')}</label></div></div>
+      <div class="field"><label for="pe-rules">${t('Reglas (qué cuenta como ganar y la letra chiquita)')}</label><textarea class="input" id="pe-rules" rows="5" maxlength="1000">${esc(state.rules)}</textarea></div>
+      ${involved ? `<div class="field"><label>${t('¿Qué tipo de cambio es?')}</label>
+        <div class="seg"><label class="seg-opt"><input type="radio" name="pe-kind" value="clarification" ${state.kind === 'clarification' && onlyRules ? 'checked' : ''} ${onlyRules ? '' : 'disabled'}><span><b>${t('Una aclaración')}</b><small>${t('Mismo significado, palabras más claras. Nadie puede retirarse.')} ${onlyRules ? '' : t('No se puede si cambia la fecha: una fecha nueva puede cambiar la respuesta.')}</small></span></label>
+          <label class="seg-opt"><input type="radio" name="pe-kind" value="material" ${state.kind === 'material' || !onlyRules ? 'checked' : ''}><span><b>${t('Un cambio de fondo')}</b><small>${t('Cambia qué cuenta o cuándo termina. Quien apostó puede retirar lo que pagó. Se permite una vez por apuesta después de que alguien apostó.')}</small></span></label></div></div>
+        <div class="field"><label for="pe-why">${t('¿Por qué la cambias?')} <span class="muted">${t('(lo ven todos, mínimo 10 caracteres)')}</span></label><textarea class="input" id="pe-why" rows="2" maxlength="200">${esc(state.why)}</textarea></div>` : `<div class="field"><label for="pe-why">${t('Motivo')} <span class="muted">${t('(opcional)')}</span></label><input class="input" id="pe-why" maxlength="200" value="${esc(state.why)}"></div>`}
       <div class="error-text" id="pe-err" style="min-height:20px">${esc(err)}</div>
-      <div class="modal-actions"><button class="btn btn-secondary" data-close>Cancel</button><button class="btn btn-primary" id="pe-prev">See what will change</button></div>`;
+      <div class="modal-actions"><button class="btn btn-secondary" data-close>${t('Cancelar')}</button><button class="btn btn-primary" id="pe-prev">${t('Ver qué va a cambiar')}</button></div>`;
     wire();
   }
   function wire() {
@@ -111,23 +114,24 @@ export function openEditPoll(M, onSaved) {
   }
   function confirmStep(P, body) {
     const ch = P.changes, id = rid();
-    box.innerHTML = `<div class="pv"><div class="pv-head"><span class="tag ${P.class === 'material' ? 'bad' : ''}">${esc(KIND[P.class] || P.class)}</span><b>Saved as version ${P.newVersion}</b></div>
-      ${ch.closesAt ? `<div class="vh-ch"><span class="lbl">Closing time</span><span class="from">${esc(when(ch.closesAt.from))}</span> ${ICON.arrowR} <span class="to">${esc(when(ch.closesAt.to))}</span></div>` : ''}
-      ${ch.description ? `<div class="vh-ch"><span class="lbl">Rules</span><div class="from">${esc(ch.description.from) || '<i>(none)</i>'}</div><div class="to">${esc(ch.description.to) || '<i>(none)</i>'}</div></div>` : ''}
+    const none = `<i>${t('(nada)')}</i>`;
+    box.innerHTML = `<div class="pv"><div class="pv-head"><span class="tag ${P.class === 'material' ? 'bad' : ''}">${esc(kindName(P.class))}</span><b>${t('Se guarda como versión {n}', { n: P.newVersion })}</b></div>
+      ${ch.closesAt ? `<div class="vh-ch"><span class="lbl">${t('Fecha de cierre')}</span><span class="from">${esc(when(ch.closesAt.from))}</span> ${ICON.arrowR} <span class="to">${esc(when(ch.closesAt.to))}</span></div>` : ''}
+      ${ch.description ? `<div class="vh-ch"><span class="lbl">${t('Reglas')}</span><div class="from">${esc(ch.description.from) || none}</div><div class="to">${esc(ch.description.to) || none}</div></div>` : ''}
       <ul class="pv-notes"><li>${esc(P.note)}</li>
-        ${P.notifyCount ? `<li><b>${P.notifyCount}</b> ${P.notifyCount === 1 ? 'person is' : 'people are'} told in the app: ${esc(P.notify.join(', '))}${P.notifyCount > P.notify.length ? ' and others' : ''}.</li>` : ''}
-        ${P.exitUntil ? `<li>Anyone who bet under the old rules can withdraw what they paid until <b>${esc(dateLong(P.exitUntil))}</b>.</li>` : ''}
-        <li>Nothing about anybody's bets, balances or shares changes. The history keeps the old values, who changed them, when and why.</li>
-        ${body.reason ? `<li>Reason shown to everybody: <i>${esc(body.reason)}</i></li>` : ''}</ul>
+        ${P.notifyCount ? `<li>${P.notifyCount > P.notify.length ? tp(P.notifyCount, 'Se le avisa en la app a <b>{n}</b> persona: {nombres} y otros.', 'Se les avisa en la app a <b>{n}</b> personas: {nombres} y otros.', { nombres: esc(P.notify.join(', ')) }) : tp(P.notifyCount, 'Se le avisa en la app a <b>{n}</b> persona: {nombres}.', 'Se les avisa en la app a <b>{n}</b> personas: {nombres}.', { nombres: esc(P.notify.join(', ')) })}</li>` : ''}${''/* html: seguro (los nombres se escapan al pasarlos) */}
+        ${P.exitUntil ? `<li>${th('Quien apostó con las reglas viejas puede retirar lo que pagó hasta el <b>{fecha}</b>.', { fecha: dateLong(P.exitUntil) })}</li>` : ''}
+        <li>${t('No cambia nada de las apuestas, saldos ni acciones de nadie. El historial guarda los valores viejos, quién los cambió, cuándo y por qué.')}</li>
+        ${body.reason ? `<li>${th('Motivo que verán todos: <i>{motivo}</i>', { motivo: body.reason })}</li>` : ''}</ul>
       <div class="error-text" id="pe-err" style="min-height:20px"></div>
-      <div class="modal-actions"><button class="btn btn-secondary" id="pe-back">Back to editing</button><button class="btn btn-primary" id="pe-go">Confirm and publish</button></div></div>`;
+      <div class="modal-actions"><button class="btn btn-secondary" id="pe-back">${t('Volver a editar')}</button><button class="btn btn-primary" id="pe-go">${t('Confirmar y publicar')}</button></div></div>`;
     box.querySelector('#pe-back').addEventListener('click', () => form());
     box.querySelector('#pe-go').addEventListener('click', async (e) => {
       e.target.disabled = true;
       try {
         const d = await post(`/api/markets/${M.id}/edit`, { ...body, requestId: id });
         clearDraft(draftKey); state = { ...init, end: local(base.closesAt), none: !base.closesAt, rules: base.description, why: '' };
-        m.close(); toast(`Saved as version ${d.edit.version}. ${d.edit.notified ? `${d.edit.notified} ${d.edit.notified === 1 ? 'person was' : 'people were'} told.` : ''}`, 'ok'); onSaved(d.market);
+        m.close(); toast(t('Guardada como versión {n}.', { n: d.edit.version }) + (d.edit.notified ? ' ' + tp(d.edit.notified, 'Se le avisó a {n} persona.', 'Se les avisó a {n} personas.') : ''), 'ok'); onSaved(d.market);
       } catch (ex) { box.querySelector('#pe-err').textContent = ex.message; e.target.disabled = false; }
     });
   }
