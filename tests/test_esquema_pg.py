@@ -112,6 +112,33 @@ class LasMigracionesAplicanDesdeCero(EsquemaBase):
             self.assertNotIn(kind, ("real", "double precision", "money"))
 
 
+class ElContratoCoincideConLasMigraciones(EsquemaBase):
+    """equipo/contratos/esquema.md es lo que E3 va a llamar: cada tabla, columna y función de las migraciones está ahí."""
+
+    def contract(self):
+        import os
+        with open(os.path.join(pg_local.ROOT, "equipo", "contratos", "esquema.md"), "r", encoding="utf-8") as f:
+            return f.read()
+
+    def test_every_table_and_column_is_in_the_contract(self):
+        text = self.contract()
+        with psycopg.connect(self.dsn) as c:
+            rows = c.execute("select table_name, column_name from information_schema.columns where table_schema = 'public'").fetchall()
+        for table, column in rows:
+            with self.subTest(table=table, column=column):
+                line = next((l for l in text.splitlines() if l.startswith(f"| `{table}` |")), None)
+                self.assertIsNotNone(line, f"la tabla {table} no está en el contrato")
+                self.assertIn(f"`{column}", line, f"{table}.{column} no está en el contrato")
+
+    def test_every_function_is_in_the_contract(self):
+        text = self.contract()
+        with psycopg.connect(self.dsn) as c:
+            names = [r[0] for r in c.execute("select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace "
+                                              "where n.nspname = 'public'").fetchall()]
+        for name in names:
+            self.assertIn(f"`{name}(", text, f"la función {name} no está en el contrato")
+
+
 class CadaTablaTieneSeguridadPorFila(EsquemaBase):
     def test_row_level_security_is_on_for_every_table(self):
         self.assertEqual([t for t, on in self.tables().items() if not on], [])
