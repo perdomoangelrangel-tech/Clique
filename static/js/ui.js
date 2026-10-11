@@ -1,5 +1,6 @@
 import { esc } from './util.js';
 import { icon } from './icons.js';
+import { t } from './i18n.js';
 
 // ---- putting text people wrote on the page (names, messages, market titles, punishments) without it ever becoming markup.
 // The check that keeps it that way: tests/js/html_seguro.test.mjs.
@@ -69,7 +70,7 @@ export function modal(html, { wide = false, onClose, guard, locked = false } = {
     if (asking) return;
     if (guard && guard()) {
       asking = true;
-      const leave = await confirmBox({ title: 'Discard your changes?', text: 'What you changed in this window has not been saved.', confirm: 'Discard', danger: true });
+      const leave = await confirmBox({ title: t('¿Descartar tus cambios?'), text: t('Lo que cambiaste en esta ventana no se ha guardado.'), confirm: t('Descartar'), danger: true });
       asking = false;
       if (!leave) return;
     }
@@ -86,10 +87,10 @@ export function modal(html, { wide = false, onClose, guard, locked = false } = {
   return { el: back.firstElementChild, close };
 }
 
-export function confirmBox({ title, text, confirm = 'Confirm', danger = false }) {
+export function confirmBox({ title, text, confirm = t('Confirmar'), danger = false }) {
   return new Promise((resolve) => {
     const m = modal(`<h2>${esc(title)}</h2><p class="lede">${esc(text)}</p>
-      <div class="modal-actions"><button class="btn btn-secondary" data-close>Never mind</button>
+      <div class="modal-actions"><button class="btn btn-secondary" data-close>${esc(t('Mejor no'))}</button>
       <button class="btn ${danger ? 'btn-no' : 'btn-primary'}" id="cf-ok">${esc(confirm)}</button></div>`, { onClose: () => resolve(false) });
     m.el.querySelector('#cf-ok').addEventListener('click', () => { resolve(true); m.close(); });
   });
@@ -102,7 +103,7 @@ export async function copyText(text) {
     try { document.execCommand('copy'); } catch { /* ignore */ }
     t.remove();
   }
-  toast('Copied!', 'ok');
+  toast(t('¡Copiado!'), 'ok');
 }
 
 /** Animates a number inside an element. */
@@ -135,8 +136,8 @@ export function revealPasswords(scope) {
       input.type = shown ? 'text' : 'password';
       eye.innerHTML = icon(shown ? 'eye-slash' : 'eye', 20);
       eye.setAttribute('aria-pressed', String(shown));
-      eye.setAttribute('aria-label', shown ? 'Hide password' : 'Show password');
-      eye.title = shown ? 'Hide password' : 'Show password';
+      eye.setAttribute('aria-label', shown ? t('Ocultar contraseña') : t('Mostrar contraseña'));
+      eye.title = shown ? t('Ocultar contraseña') : t('Mostrar contraseña');
     };
     eye.addEventListener('click', () => { set(input.type === 'password'); input.focus(); });
     set(false);

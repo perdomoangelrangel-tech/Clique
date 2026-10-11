@@ -10,6 +10,8 @@
    Each history entry gets a small marker the first time it is shown, so a later visit to the same entry (Back or Forward) can be
    told apart from a fresh link click, and its scroll position found again. */
 
+import { t } from './i18n.js';
+
 const MEM = new Map();
 const KEY = 'clique-nav:';
 const read = (k) => { try { return JSON.parse(sessionStorage.getItem(KEY + k) || 'null'); } catch { return null; } };
@@ -95,7 +97,7 @@ if ('scrollRestoration' in history) history.scrollRestoration = 'manual';       
 // ---- "are you sure?" when a form with real changes would be lost --------------------------------------------------
 const guards = new Set();
 /** Registers a form with unsaved changes. `dirty()` says whether there is anything to lose. Returns a view handle (unmount removes it). */
-export function guardForm(dirty, message = 'You have changes that are not saved. Leave without saving?') {
+export function guardForm(dirty, message = t('Tienes cambios sin guardar. ¿Salir sin guardar?')) {
   const g = { dirty, message };
   guards.add(g);
   return { unmount() { guards.delete(g); } };

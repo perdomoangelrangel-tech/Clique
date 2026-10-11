@@ -1,11 +1,17 @@
 import { icon } from './icons.js';
 import { sticker, CATEGORY_ART } from './art.js';
 import { lookOf, avatarLook } from './looks.js';
-import { chips, chipsFull, number, ago as agoI18n, until as untilI18n, dateShort as dateShortI18n, dateTime, getLang, CHIP_SIGN } from './i18n.js';
+import { chips, chipsFull, number, ago as agoI18n, until as untilI18n, dateShort as dateShortI18n, dateTime, getLang, CHIP_SIGN, t } from './i18n.js';
+
+/* Names the server sends in English (backend/config.py CATEGORIES, and the two sides of a yes/no market), in the language on screen. */
+const CATS = { General: 'General', Sports: 'Deportes', Gaming: 'Videojuegos', Life: 'Vida', Money: 'Finanzas', Dares: 'Atrévete', Music: 'Música', Other: 'Otros' };      // i18n: claves
+export const catName = (c) => (CATS[c] ? t(CATS[c]) : c);
+/** "Yes" / "No" of a yes/no market as words on screen; any other outcome is a name a person wrote and stays as it is. */
+export const sideName = (name, binary = true) => (binary && name === 'Yes' ? t('Sí') : binary && name === 'No' ? t('No') : name);      // i18n: no (server names)
 
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-/* history rows: the server writes "1 lanes"; say it properly */
-export const detailText = (d) => esc(String(d ?? '').replace(/\b1 lanes\b/, '1 lane'));
+/* history rows: the server writes "1 lanes"; say it properly (the rest of the server's wording waits for codes from E3) */
+export const detailText = (d) => esc(String(d ?? '').replace(/\b1 lanes\b/, '1 lane'));      // i18n: no (server text)
 
 /** $1,234.56 — big numbers shrink to "$1.23 M" so they always fit. Written by i18n.js, in the language on screen. */
 export const money = (x, opts = {}) => chips(x, opts);

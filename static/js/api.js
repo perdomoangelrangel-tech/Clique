@@ -1,4 +1,5 @@
 import { registerLooks } from './looks.js';
+import { t, tError } from './i18n.js';
 let onUnauthorized = () => {};
 export const setUnauthorizedHandler = (fn) => { onUnauthorized = fn; };
 let demoProbe = () => false;
@@ -20,14 +21,16 @@ export async function api(method, path, body) {
   else if (method !== 'GET') { opts.headers['Content-Type'] = 'application/json'; opts.body = '{}'; }
   let res;
   try { res = await fetch(path, opts); }
-  catch { throw new Error('Can\'t reach the server. Check your connection.'); }
+  catch { const err = new Error(tError({ code: 'NETWORK' })); err.code = 'NETWORK'; throw err; }
   let data = null;
   try { data = await res.json(); } catch { /* not json */ }
   if (data) registerLooks(data);                         // remember how every person in the answer looks
   if (!res.ok) {
     if (res.status === 401 && !path.startsWith('/api/auth/')) onUnauthorized();
-    const err = new Error((data && data.error) || `Something went wrong (${res.status})`);
+    // a refusal is shown by its code when the server sends one (E3's list, equipo/contratos/errores.md), else in the server's own words
+    const err = new Error(tError({ code: data && data.code, message: (data && data.error) || t('Algo salió mal ({estado})', { estado: res.status }) }));
     err.status = res.status;
+    if (data && data.code) err.code = data.code;
     if (data) err.data = data;                           // anything extra the server sent with the refusal (a fresh quote, for one)
     if (data && data.quote) err.quote = data.quote;
     throw err;

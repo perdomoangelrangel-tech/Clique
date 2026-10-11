@@ -4,6 +4,7 @@ import { get, post } from './api.js';
 import { S, go } from './state.js';
 import { debounce } from './util.js';
 import { toast } from './ui.js';
+import { t } from './i18n.js';
 
 export const social = { online: 0, unread: 0, openChat: null };      // openChat: the chat that is on screen right now
 
@@ -75,8 +76,8 @@ export function onSocialEvent(ev) {
   if (ev.type === 'friends') {
     refreshBadgesSoon();
     if (ev.by && ev.by !== S.user?.username) {
-      if (ev.what === 'requested') toast(`${ev.by} wants to be friends`, '', { onClick: () => go('#/friends'), ms: 6000 });
-      else if (ev.what === 'friends') toast(`You and ${ev.by} are friends now`, 'ok', { onClick: () => go('#/friends'), ms: 5000 });
+      if (ev.what === 'requested') toast(t('{nombre} quiere ser tu amigo', { nombre: ev.by }), '', { onClick: () => go('#/friends'), ms: 6000 });
+      else if (ev.what === 'friends') toast(t('{nombre} y tú ya son amigos', { nombre: ev.by }), 'ok', { onClick: () => go('#/friends'), ms: 5000 });
     }
     return;
   }
@@ -87,9 +88,9 @@ export function onSocialEvent(ev) {
     social.unread += 1; paintBadges();
     if (Date.now() - lastToast > 1500) {
       lastToast = Date.now();
-      const where = ev.kind === 'circle' ? ` in ${ev.title}` : ev.kind === 'group' ? ` in ${ev.title || 'your group'}` : '';
       const text = ev.msg.x.length > 60 ? ev.msg.x.slice(0, 59) + '…' : ev.msg.x;
-      toast(`${ev.msg.name}${where}: ${text}`, '', { onClick: () => go('#/chat/' + ev.id), ms: 5000 });
+      const room = ev.kind === 'circle' ? ev.title : ev.kind === 'group' ? (ev.title || t('tu grupo')) : '';
+      toast(room ? t('{nombre} en {sala}: {texto}', { nombre: ev.msg.name, sala: room, texto: text }) : t('{nombre}: {texto}', { nombre: ev.msg.name, texto: text }), '', { onClick: () => go('#/chat/' + ev.id), ms: 5000 });
     }
   }
 }
