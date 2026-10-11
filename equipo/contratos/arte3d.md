@@ -30,7 +30,7 @@ Cómo se hace, se nombra, se exporta y se usa todo el 3D de Clique. Lo siguen E6
   - `CAM-` cámaras, con `_v` para la vertical de celular;
   - `RIG-` controles de animación;
   - `FX-` efectos (bokeh, focos).
-- **Materiales:** `M_` y nombre en español (`M_laton`, `M_fieltro`).
+- **Materiales:** `M_` y nombre en español (`M_laton`, `M_fieltro`). Los del salón de las salas (§14) llevan `S_` (`S_laton`, `S_nogal`, `S_terciopelo_<sala>`, `S_alfombra_<sala>`).
   - Los de efectos emisivos llevan `FX_` y el color (`FX_bokeh_FBB635`).
   - Los de la ficha (`chip_body`, `chip_insert`, `chip_inlay`, `chip_ink`) son interfaz con la web: la app cambia su color por nombre. No se renombran.
 - **Archivos:**
@@ -60,6 +60,7 @@ Cada material sale de un valor de la paleta v2 (la de `static/css/tokens.css`, q
 | Latón | `#D9B061`, metálico | oro-300 `#FFCF84` con menos saturación, para que se lea como latón y no como oro |
 | Madera lacada | rampa `#1E120B` → `#5A321C`; rotor `#0E0805` → `#3A2012` | neutro cálido de sala y mesa |
 | Luces de bokeh, focos y luces de la web | `#FBB635`, `#FFCF84`, `#FFE0B1`, `#FEECD1`, `#DF9C03` | escala oro |
+| Salón (§14): terciopelo y alfombra por sala | ruleta `#3A0A0E` y `#3A0D10` con motivo `#6B4A1A`; cartas `#0F2A1E` y `#14100D`; dados `#3B1C08` y `#1E120B`; originales `#1A1612` y `#121011` | terciopelo: bermellón-950 y fieltro oscurecidos para que con la luz del salón no se vean rosas; alfombra: sala-2 con el tono del terciopelo; motivo: latón apagado. Vidrios de la barra: ámbar, verde y humo de la escala oro y fieltro |
 
 **Lima y bermellón** son las luces de ganar y perder y nunca decoración (ADR-005). En las fichas son el color de la ficha, que identifica su valor. No se usan para iluminar una escena ni para adornarla. **Excepción del 11-oct:** en el estilo del dibujo (§13) son colores de los objetos de juego, como en los dibujos que eligió el dueño; ahí no hay luces, así que no se confunden con las de ganar y perder.
 
@@ -95,8 +96,9 @@ En la web (three.js), la ficha llega como `MeshPhysicalMaterial` con capa (`KHR_
 | --- | --- | --- |
 | GLB por pantalla | ≤ 1.5 MB | 50,704 bytes (22,169 con gzip, 20,727 con brotli) |
 | Un modelo suelto | ≤ 300 KB y ≤ 8 mil triángulos | 6,508 triángulos, 4 primitivas (cuerpo, incrustaciones, centro, tinta). La ruleta: 7,206. `tests/test_arte.py` comprueba el tope en cada GLB de `static/3d` |
+| Panorama de sala (§14) | ≤ 4096 × 2048 y ≤ 600 KB, WebP | Ruleta: 3072 × 1536, 56 KB. Excepción al tope de 1024 px (D16): el salón entero en una imagen; 4096 × 2048 son 32 MB en la tarjeta del celular |
 | Texturas | ≤ 1024 px, KTX2 | Ficha: ninguna, el logotipo y las marcas son geometría. Ruleta: la tira de números, 1024 × 92 en dos filas, en WebP y no en KTX2: para una sola tira no vale cargar el transcodificador de Basis. Se revisa cuando haya más texturas. `tests/test_arte.py` comprueba el tope |
-| Triángulos en escena | ≤ 50 mil | 26,032 con cuatro fichas en la página de prueba. La ruleta: 7,206 del modelo más 4,684 de su contorno (§12) |
+| Triángulos en escena | ≤ 50 mil | 26,032 con cuatro fichas en la página de prueba. La ruleta: 7,206 del modelo más 3,968 de la esfera del salón (§12, §14) |
 | Cuadros por segundo | 60 en iPhone y en Android de gama media; la app es para escritorio y para celular | **iPhone (el del dueño):** Safari dibuja a 60 como máximo, aunque la pantalla dé 120; la meta es no bajar de 60. **Falta medir la ruleta en el iPhone del dueño.**  PC del dueño (Chrome, pantalla de 144 Hz), 10-oct, con captura en la conversación con E0: de 138 a 145, que es el ritmo de su pantalla. La página dibuja un cuadro cada 6.9 ms; lo que tarda en dibujarlo no se midió, pero cabe en ese intervalo. **Falta medir en Android de gama media.** La página de prueba lleva la ficha sin comprimir (154,888 bytes), con los mismos triángulos |
 
 ## 7. Exportar para la web
@@ -186,19 +188,19 @@ mesa del club y una animación coreografiada, no simulada. La tabla de estilos p
 
 | Pieza | Archivo | Lo medido |
 | --- | --- | --- |
-| Modelo | `static/3d/ruleta.glb` (nodos `RIG-ruleta`, `RIG-ruleta_rotor` y `GEO-ruleta_bola`) | 79,676 bytes (41,989 con gzip -9), 7,206 triángulos, 13 piezas; tira de números en WebP de 1024 × 92 |
-| Respaldo 2D | `static/3d/ruleta-dibujo-2d.webp` | 512 × 512, fondo transparente; sale del mismo prototipo con `?respaldo=1` |
+| Modelo | `static/3d/ruleta.glb` (nodos `RIG-ruleta`, `RIG-ruleta_rotor` y `GEO-ruleta_bola`) | 86,364 bytes (44,093 con gzip -9), 7,206 triángulos, 14 piezas (16 primitivas) con acabado de casino (§14, `KHR_materials_clearcoat`); tira de números en WebP de 1024 × 92 |
+| Respaldo 2D | `static/3d/ruleta-sala-2d.webp` | 512 × 512, fondo transparente; sale del mismo prototipo con `?respaldo=1` |
 | Escena y exportación | Escena `T_ruleta_vivo` de `juegos.blend`, armada y exportada con `assets3d/herramientas/ruleta_toon.py`, en Blender o sin abrirlo (`pip install bpy==5.2.2`; el comando está en su encabezado); cruda en `assets3d/juegos/ruleta-exportada.glb` | Las superficies salen del perfil de la animación menos un radio de bola |
 | Anillo de números | `assets3d/texturas/ruleta-numeros.png`, de `assets3d/herramientas/ruleta_numeros.py` | Rojo → bermellón, negro → tinta, 0 → lima. Dos filas de 19 celdas: el tramo j (la casilla k = 36 − j) va en la celda j % 19 de la fila j // 19 |
-| Estilo en la web | `docs/arte/estilo-toon.mjs` (`applyToon`, `addOutlines`) | Dos tonos exactos de la paleta y contorno de tinta del mismo grueso en pantalla, sin luces ni sombras |
+| Sala en la web | `docs/arte/sala-ruleta.mjs` (`roomSphere`, `roomLight`, `playView`, la entrada) y `static/3d/salas/ruleta.webp` | El salón alrededor de la rueda y su luz sobre ella (§14). `docs/arte/estilo-toon.mjs` queda para ver la rueda en el estilo plano del dibujo |
 | Cuentas | `docs/arte/ruleta-animacion.mjs` (`planSpin`) | `docs/arte/ruleta-animacion.test.mjs`: los 37 números, con tres marcadores y tres giros de partida, sin saltos de la bola |
-| Prototipo | `docs/arte/prueba-ruleta.html` | Elige un número de prueba y lo comprueba en pantalla: "Número de prueba 23 · cayó en 23 ✓". Solo dibuja durante la tirada |
+| Prototipo | `docs/arte/prueba-ruleta.html` | Entras a la sala y la cámara baja a la mesa; elige un número de prueba y lo comprueba en pantalla: "Número de prueba 23 · cayó en 23 ✓". Solo dibuja mientras algo se mueve |
 
 - **La tirada:** el marcador φ es -π/2, hacia el jugador. El rotor frena con una curva cúbica hasta θ = φ + 2π(k + 0.5)/37 más al menos una vuelta.
 - **La bola:** corre en la pista contra el rotor y baja entre el 55 % y el 80 % del tiempo, con un rebote en los rombos y otro en la pared de la casilla. Desde el 80 % viaja con el rotor dentro de su casilla. Su ángulo de partida se calcula para que llegue sin saltos.
-- **La rueda, simplificada para que funcione en celular** (el dueño, 11-oct: "hazla funcional y si es necesario simplifícala"): sin luces, sin sombras y sin texturas de material; solo el anillo de números es imagen. 7,206 triángulos, dentro del tope de 8 mil (§6). Lleva sus números porque es funcional: la regla de §11 de no poner texto es para las imágenes fijas.
+- **La rueda, simplificada para que funcione en celular** (el dueño, 11-oct: "hazla funcional y si es necesario simplifícala"): sin sombras en tiempo real (la suya viene en el panorama) y sin texturas de material; solo el anillo de números es imagen. La luz es la de la sala (§14). 7,206 triángulos, dentro del tope de 8 mil (§6). Lleva sus números porque es funcional: la regla de §11 de no poner texto es para las imágenes fijas.
 - **La bola roza los trastes:** al entrar a su casilla se mete en ellos a lo más 1 mm durante menos de un cuadro (simulado con los 37 números). Los trastes son bajos (0.0505 m) para que casi no se note.
-- **Fondo:** el fieltro plano (`--felt`), como el póster de una mesa. La rueda no lleva sombra: el dibujo tampoco.
+- **Fondo:** la sala de ruleta (§14): el salón del casino en un panorama, con la rueda en vivo sobre su mesa.
 - **La rueda de madera de la primera prueba** queda en la escena `J_roulette` de `juegos.blend`, con sus nombres terminados en `_madera`. Ya no se exporta.
 
 ## 13. El estilo del dibujo (decisión del dueño, 11-oct)
@@ -245,3 +247,48 @@ cuanto E4 los agregue (petición en la bitácora).
   con el mismo grueso de trazo.
 
 **Animación:** la misma de §12. El estilo no cambia las cuentas.
+
+## 14. Las salas: cada juego en su casino (decisión del dueño, 11-oct, D16)
+
+"Haz los ambientes de los juegos como un casino real y que seas transportado a esas salas." Cada juego se juega dentro
+de su sala, y al abrirlo entras a ella. La sala de ruleta es la muestra; las demás siguen con el mismo salón.
+
+**El acabado:** la forma y los colores del dibujo (§13), con materiales de casino de verdad. Cada color del dibujo
+tiene su acabado (`FINISH` en `ruleta_toon.py` y `juegos_premium.py`):
+
+| Color | Acabado |
+| --- | --- |
+| Papel (`cream`) | marfil satinado: rugosidad 0.38, capa 0.6 |
+| Tinta (`ink`) | laca negra: rugosidad 0.35, capa 1.0 |
+| Bermellón (`verm`) | laca roja: rugosidad 0.32, capa 1.0 |
+| Lima (`lime`) | esmalte lima, el de la marca: rugosidad 0.28, capa 1.0 |
+| Oro (`gold`) | latón: metálico, rugosidad 0.28 |
+| Fieltro (`felt`) | fieltro con brillo de tela |
+| Anillo de números (`numbers`) | la tira de números laqueada: rugosidad 0.30, capa 1.0 |
+
+En la ruleta: aro de marfil con filete de latón y costado de laca negra, pista negra con rombos de latón, casillas de
+laca roja y negra con el 0 en esmalte lima, trastes y bordes de latón, y la torreta de latón con bolitas lima.
+
+**El salón** (`assets3d/herramientas/sala_casino.py`, procedural, sin texturas ni modelos de terceros): alfombra con
+motivo dorado, muros de nogal lacado con paneles de terciopelo y filetes de latón, techo de casetones, candiles de
+cristal, apliques, columnas, una barra con botellas de luz cálida y otras mesas, cada una bajo su lámpara. El color del
+terciopelo y de la alfombra cambia por sala (`THEMES`: ruleta, cartas, dados, originales). La mesa del juego queda en el
+origen con su cubierta a z = 0; el piso está 78 cm abajo.
+
+**En la web, sin rehacer el salón en tiempo real:**
+- El salón es un **panorama** (equirectangular) renderizado en Cycles desde el punto donde está la cámara del juego,
+  con profundidad de campo enfocada en la rueda: `static/3d/salas/<sala>.webp`. El objeto del juego no sale en el
+  panorama, pero su sombra y su reflejo en el fieltro sí.
+- La cámara de la web se queda en ese punto (`VIEW` en `docs/arte/sala-ruleta.mjs`): solo gira y abre o cierra el
+  ángulo para cada pantalla. Así el objeto en vivo nunca se despega de su mesa.
+- El objeto en vivo toma la luz del mismo panorama (mapa de entorno), de la lámpara de su mesa y de una luz suave de
+  relleno (para que el marfil no se vuelva ámbar); sin sombras en tiempo real. La web le sube un poco la rugosidad a la
+  capa transparente (`roomFinish`): el panorama refleja más nítido que el salón que representa. El tone mapping es el
+  neutral de Khronos, que respeta el rojo, el negro y el lima. El panorama no pasa otra vez por el tone mapping: ya viene
+  de Blender, con un 18 % más de luz al pasarlo a WebP (el comando está en `sala_ruleta.py`).
+- **La entrada:** al abrir el juego, un telón se levanta y la cámara baja del salón (mirando arriba, ángulo abierto) a
+  la mesa en 2.4 s. Con menos movimiento no hay entrada. Una tirada durante la entrada la termina.
+- Medidas: la ruleta en vivo pesa 86 KB y el panorama de 3072 × 1536 en WebP, 56 KB (el salón va desenfocado y se
+  comprime bien); juntos caben de sobra en el presupuesto de pantalla (§6). Un panorama no pasa de 600 KB y mide el
+  doble de ancho que de alto: lo comprueba `tests/test_arte.py` (`Rooms`), igual que la cámara de la web parada donde
+  Blender renderizó la sala. Con la tarjeta de video del dueño, el panorama final se renderiza a 4096 × 2048, el tope.

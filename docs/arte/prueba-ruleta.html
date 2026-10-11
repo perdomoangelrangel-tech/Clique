@@ -5,22 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ruleta en vivo</title>
 <!--
-  Prototipo de E6 · Arte 3D: la ruleta del dibujo, en 3D, gira y la bola cae en el número que decide el servidor.
-  No es parte de la app; E5 la lleva a la pantalla de la ruleta (equipo/contratos/arte3d.md §12 y §13).
+  Prototipo de E6 · Arte 3D: la sala de ruleta. Entras al salón del casino, la cámara baja a la mesa, y la ruleta del
+  dibujo, con acabado de casino, gira y la bola cae en el número que decide el servidor.
+  No es parte de la app; E5 la lleva a la pantalla de la ruleta (equipo/contratos/arte3d.md §12 y §14).
   Cómo abrirla: desde la raíz del repositorio, `python -m http.server 8000`
   y luego http://localhost:8000/docs/arte/prueba-ruleta.html (las fuentes de tokens.css se piden en /fonts/, que
   solo existe con `python server.py`: aquí se ven las de respaldo).
-  - Las cuentas están en docs/arte/ruleta-animacion.mjs (con su prueba) y el estilo en docs/arte/estilo-toon.mjs.
+  - Las cuentas están en docs/arte/ruleta-animacion.mjs (con su prueba) y la sala en docs/arte/sala-ruleta.mjs: el
+    panorama del salón (static/3d/salas/ruleta.webp), su luz sobre la rueda y la entrada.
   - Aquí el número lo elige el navegador, solo para probar; en la app lo manda el servidor (D8).
   - Arranca en 2D y pasa a 3D solo cuando el modelo cargó (ADR-005). Con "menos movimiento", el resultado
     aparece sin animación.
   - Solo dibuja durante una tirada o al cambiar de tamaño: quieta no gasta batería.
-  - Para capturas: ?n=17&t=3.1 deja la rueda quieta en ese instante de la tirada del 17.
-    ?respaldo=1 dibuja la rueda sola, con fondo transparente, para la versión 2D (static/3d/ruleta-dibujo-2d.webp).
+  - Para capturas: ?n=17&t=3.1 deja la rueda quieta en ese instante de la tirada del 17; ?entrada=0.4 deja la cámara
+    en ese punto de la entrada.
+    ?respaldo=1 dibuja la rueda sola con la luz de la sala, fondo transparente, para la versión 2D (static/3d/ruleta-sala-2d.webp).
 -->
 <link rel="stylesheet" href="../../static/css/tokens.css">
 <style>
-  html, body { margin: 0; height: 100%; background: var(--felt); color: var(--text); font: 0.875rem/1.4 var(--f-body); }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 0.875rem/1.4 var(--f-body); }
   body.stand-in { background: transparent; }
   #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
   .hud { position: fixed; left: 1rem; top: 1rem; padding: 0.75rem 0.875rem; background: var(--card);
@@ -40,6 +43,10 @@
   .pick select { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); padding: 0.25rem 0.375rem; }
   #fallback { display: none; position: fixed; inset: 0; place-content: center; padding: 1rem; }
   #fallback img { width: min(80vw, 32rem); height: auto; }
+  #curtain { position: fixed; inset: 0; background: var(--bg); pointer-events: none; opacity: 1; transition: opacity 0.9s ease; }
+  body.entered #curtain { opacity: 0; }
+  @media (prefers-reduced-motion: reduce) { #curtain { display: none; } }
+  body.no-3d #curtain { display: none; }
   body.no-3d #scene { display: none; }
   body.no-3d #fallback { display: grid; }
   body.stand-in .hud { display: none; }
@@ -53,8 +60,9 @@
 </script>
 </head>
 <body class="no-3d">
-<canvas id="scene" role="img" aria-label="Ruleta de papel y tinta que gira; la bola cae en el número del resultado"></canvas>
-<div id="fallback" role="img" aria-label="Ruleta de papel y tinta"><img src="../../static/3d/ruleta-dibujo-2d.webp" alt=""></div>
+<canvas id="scene" role="img" aria-label="Ruleta de marfil, laca y latón en una mesa del salón del casino; gira y la bola cae en el número del resultado"></canvas>
+<div id="fallback" role="img" aria-label="Ruleta de marfil, laca y latón"><img src="../../static/3d/ruleta-sala-2d.webp" alt=""></div>
+<div id="curtain" aria-hidden="true"></div>
 <section class="hud" aria-label="Controles de la prueba">
   <h1>Ruleta en vivo · prueba</h1>
   <dl>
@@ -77,16 +85,17 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { planSpin, ballPositionThree, pocketAngle, WHEEL_ORDER, POCKETS } from './ruleta-animacion.mjs';
-import { applyToon, addOutlines, modelTriangles } from './estilo-toon.mjs';
+import { roomSphere, roomLight, roomFinish, playView, entranceView, blendView, applyView } from './sala-ruleta.mjs';
 
-const WHEEL_RADIUS = 0.47;       // the rim, in metres
+const ENTRANCE = 2.4;            // seconds from the room to the table
 const $ = (id) => document.getElementById(id);
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const hudAtBottom = matchMedia('(max-width: 37.5rem)');
 const params = new URLSearchParams(location.search);
 const standIn = params.has('respaldo');
 
-let renderer = null, scene, camera, rotor, ball, outline = null, ready = false, running = false, frameId = 0;
-let spin = null, spinStart = 0, rotorNow = 0, margin = 1.06;
+let renderer = null, scene, camera, rotor, ball, ready = false, running = false, frameId = 0;
+let spin = null, spinStart = 0, rotorNow = 0, entering = null;
 
 const setStatus = (t) => { $('status').textContent = t; };
 const showing3D = () => !document.body.classList.contains('no-3d');
@@ -126,6 +135,7 @@ function startSpin() {
   $('result').textContent = 'Girando…';
   setSpinEnabled(false);
   if (reducedMotion.matches || !showing3D()) { finishSpin(); return; }
+  if (entering) { entering.t0 = -1e9; }        // a spin during the entrance skips the rest of it
   spinStart = performance.now();
   startLoop();
 }
@@ -149,7 +159,7 @@ $('toggle').addEventListener('click', () => {
     document.body.classList.add('no-3d'); $('toggle').textContent = 'Ver en 3D';
     setStatus('Versión 2D');
   } else if (ready) {
-    document.body.classList.remove('no-3d'); $('toggle').textContent = 'Ver versión 2D';
+    document.body.classList.remove('no-3d'); document.body.classList.add('entered'); $('toggle').textContent = 'Ver versión 2D';
     if (reducedMotion.matches) setStatus('3D quieto: pediste menos movimiento');
     fit(); draw();
   }
@@ -163,51 +173,63 @@ try {
 if (!renderer) {
   setStatus('Sin WebGL: versión 2D');
 } else {
-  // No lights, no shadows, no environment map: the two tones come from the angle (estilo-toon.mjs)
+  // The room is a panorama rendered in Blender from the camera's place; the wheel takes its light from it
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.toneMapping = THREE.NeutralToneMapping;      // keeps the red, the black and the lime of the drawing
+  renderer.toneMappingExposure = 0.95;
   scene = new THREE.Scene();
   if (standIn) { document.body.classList.add('stand-in'); renderer.setClearColor(0x000000, 0); }
-  else scene.background = new THREE.Color(getComputedStyle(document.body).getPropertyValue('--felt').trim() || 'black');
-  camera = new THREE.PerspectiveCamera(32, 1, 0.05, 20);
+  camera = new THREE.PerspectiveCamera(42, 1, 0.02, 120);
 
   const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   // Outside the repository (the published prototype) the GLB comes inline in base64
   const fetchModel = window.RULETA_GLB_B64
     ? Promise.resolve(Uint8Array.from(atob(window.RULETA_GLB_B64), (c) => c.charCodeAt(0)).buffer)
     : fetch(new URL('../../static/3d/ruleta.glb', location.href)).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.arrayBuffer(); });
+  const fetchRoom = new THREE.TextureLoader().loadAsync(window.SALA_RULETA_URL || new URL('../../static/3d/salas/ruleta.webp', location.href).href)
+    .catch((e) => { throw new Error('la sala no cargó: ' + e); });
 
-  fetchModel
+  // the stand-in takes the room's light but not the room: the wheel alone, on a transparent background
+  Promise.all([fetchModel, fetchRoom]).then(([buf, room]) => { if (!standIn) scene.add(roomSphere(room)); roomLight(renderer, scene, room); return buf; })
     .then((buf) => { $('weight').textContent = (buf.byteLength / 1000).toFixed(1) + ' KB'; return new Promise((ok, fail) => loader.parse(buf, '', ok, fail)); })
     .then((gltf) => {
       scene.add(gltf.scene);
       rotor = gltf.scene.getObjectByName('RIG-ruleta_rotor');
       ball = gltf.scene.getObjectByName('GEO-ruleta_bola');
       if (!rotor || !ball) throw new Error('faltan RIG-ruleta_rotor o GEO-ruleta_bola');
-      applyToon(gltf.scene);
-      $('tris').textContent = modelTriangles(gltf.scene).toLocaleString('es-MX');
-      outline = addOutlines(gltf.scene);
+      roomFinish(gltf.scene);
+      let tris = 0;
+      gltf.scene.traverse((o) => { if (o.isMesh) tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; });
+      $('tris').textContent = tris.toLocaleString('es-MX');
       fit();
       // the ball, in the winning pocket of the last spin: here, the 0 under the marker
       pose(planSpin({ number: 0 }).at(99));
       ready = true;
       setSpinEnabled(true); $('toggle').disabled = false;
-      if (standIn || params.has('n') || params.has('t')) {            // capture mode
+      if (standIn || params.has('n') || params.has('t') || params.has('entrada')) {   // capture mode
+        document.body.classList.add('entered');
         const n = standIn && !params.has('n') ? 0 : Number(params.get('n'));
         if (!Number.isInteger(n) || n < 0 || n >= POCKETS) { setStatus('Captura: el número va de 0 a 36'); return; }
         const s = planSpin({ number: n });
         pose(s.at(Number(params.get('t') || 99)));
+        if (params.has('entrada')) entering = { fixed: Number(params.get('entrada')) };
         document.body.classList.remove('no-3d');
         setStatus('Captura'); fit(); draw();
         window.__pose = (t) => { pose(s.at(t)); renderer.render(scene, camera); };   // to record frame by frame
+        window.__entrance = (t) => { entering = { fixed: t }; applyView(camera, currentView(0)); renderer.render(scene, camera); };
         window.__listo = true;
         return;
       }
       if (reducedMotion.matches) { setStatus('Versión 2D: pediste menos movimiento'); return; }
       setStatus('3D en vivo');
       document.body.classList.remove('no-3d'); $('toggle').textContent = 'Ver versión 2D';
-      fit(); draw();
+      fit();
+      // the entrance: the curtain lifts on the room and the camera comes down to the table
+      entering = { t0: performance.now() };
+      requestAnimationFrame(() => document.body.classList.add('entered'));
+      startLoop();
     })
-    .catch((e) => { setStatus('No cargó el modelo: versión 2D'); console.error(e); window.__err = String(e); });
+    .catch((e) => { setStatus(String(e).includes('sala') ? 'No cargó la sala: versión 2D' : 'No cargó el modelo: versión 2D'); console.error(e); window.__err = String(e); });
 
   addEventListener('resize', () => { fit(); if (!running) draw(); });
   fit();
@@ -216,24 +238,25 @@ if (!renderer) {
 function fit() {
   if (!renderer) return;
   const w = innerWidth, h = innerHeight;
-  const portrait = w < h;
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
-  // from above, nearly like the drawing, at the distance where the whole wheel fits with its line
-  const vfov = THREE.MathUtils.degToRad(camera.fov);
-  const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
-  const fitAngle = Math.min(vfov, hfov);
-  margin = standIn ? 1.1 : portrait ? 1.08 : 1.06;
-  const d = (WHEEL_RADIUS / Math.sin(fitAngle / 2)) * margin;
-  const elev = THREE.MathUtils.degToRad(portrait && !standIn ? 64 : 60);   // on a phone, higher: the numbers read better
-  camera.position.set(0, d * Math.sin(elev), d * Math.cos(elev));
-  camera.lookAt(0, 0.04, !standIn && portrait ? 0.26 : 0);                // on a phone the wheel goes up, above the controls
-  camera.updateProjectionMatrix();
-  if (outline) {
-    // the line: 1.1 % of the wheel's width on screen (the drawing uses 2.2 % of the icon), never under 1.5 px
-    const wheelPx = (hfov < vfov ? w : h) * Math.sin(fitAngle / 2) / Math.tan(fitAngle / 2) / margin;
-    outline.resize(renderer, Math.max(1.5, 0.011 * wheelPx));
+  if (standIn) {
+    // the wheel alone, from above, for the 2D stand-in
+    camera.fov = 32; camera.position.set(0, 1.55, 0.9); camera.lookAt(0, 0.04, 0); camera.updateProjectionMatrix();
+    return;
   }
+  applyView(camera, currentView(performance.now()));
+}
+/** The camera now: the play view, or a moment of the entrance (from the room down to the table). */
+function currentView(now) {
+  // on a phone the controls take the bottom of the screen (the same 37.5rem as the CSS): the wheel rests above them
+  const hud = document.querySelector('.hud').getBoundingClientRect();
+  const inset = hudAtBottom.matches ? Math.min(0.45, Math.max(0, (innerHeight - hud.top) / innerHeight)) : 0;
+  const play = playView(camera.aspect, inset);
+  if (!entering) return play;
+  const t = entering.fixed !== undefined ? entering.fixed : (now - entering.t0) / (ENTRANCE * 1000);
+  if (t >= 1) { entering = null; return play; }
+  return blendView(entranceView(play), play, t);
 }
 
 // The drawing loop runs only during a spin; a still wheel is drawn once (resize, toggle, end of spin).
@@ -246,6 +269,7 @@ function stopLoop() {
 function frame(t) {
   if (!running) return;
   frameId = requestAnimationFrame(frame);
+  if (entering) applyView(camera, currentView(t));
   if (spinning()) {
     const s = spin.at((t - spinStart) / 1000);
     pose(s);
@@ -253,6 +277,7 @@ function frame(t) {
   }
   renderer.render(scene, camera);
   frames++;
+  if (!entering && !spinning()) stopLoop();       // still: nothing to draw until something moves
 }
 </script>
 <script>

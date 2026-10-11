@@ -21,13 +21,14 @@ Cómo está hecha (equipo/contratos/arte3d.md §9, §12 y §13):
 - Las medidas salen de docs/arte/ruleta-animacion.mjs: la bola (radio BALL_RADIUS) apoya su centro en la pista a
   0.379 m y en el fondo de su casilla a 0.244 m. Cada superficie está a un radio de bola debajo de ese perfil.
 - La casilla en la posición k del orden de la rueda está centrada en -2π(k + 0.5)/37 en el marco del rotor.
-- Colores del dibujo: aro de papel, pista de tinta con rombos lima, casillas bermellón y tinta con el 0 en lima,
-  trastes de papel, centro de tinta y la torreta lima de tres brazos. Rojo y negro son los de las apuestas
-  (backend/games.py); el verde del 0 es el lima de la marca.
-- Sin contorno en la malla: la web dibuja el trazo de tinta con un casco invertido (docs/arte/estilo-toon.mjs).
-  Las piezas con `no_outline` (las de tinta y las delgadas y planas) no lo llevan.
-- Materiales `roulette_<color>`: Principled de un color plano para que cualquier visor de glTF la vea bien; la web
-  los cambia por el sombreado de dos tonos con los colores exactos de la paleta.
+- Las formas y los colores son los del dibujo, con acabado de casino (el dueño, 11-oct): aro de marfil con filete de
+  latón y costado de laca negra, pista negra con rombos de latón, casillas de laca roja y negra con el 0 en esmalte
+  lima, trastes y bordes de latón, centro negro y la torreta de latón con bolitas lima. Rojo y negro son los de las
+  apuestas (backend/games.py); el verde del 0 es el lima de la marca.
+- Materiales `roulette_<color>` (FINISH): Principled con capa transparente; glTF los lleva con
+  KHR_materials_clearcoat y la web los pinta con la luz de la sala (docs/arte/prueba-ruleta.html). Con
+  docs/arte/estilo-toon.mjs se pueden ver en el estilo plano del dibujo.
+- Las piezas con `no_outline` no llevan contorno en el estilo plano (las de tinta y las delgadas y planas).
 - Presupuesto: menos de 8 mil triángulos (§6).
 """
 import math
@@ -48,7 +49,18 @@ RING_Z = 0.047                          # la cara de arriba del anillo: justo ba
 # La tira de números (ruleta_numeros.layout()): 1024 × 92 px, dos filas de 44 px con 4 de papel entre ellas, 19 celdas
 STRIP = {"width": 1024, "height": 92, "row": 44, "gap": 4, "cells": 19}
 SEGMENTS = 96                           # vueltas de la parte fija; el rotor usa 3 por casilla (111)
-COLORS = {"cream": "#EFE6D2", "ink": "#1A1612", "lime": "#C6F432", "verm": "#FF4B2B"}
+COLORS = {"cream": "#EFE6D2", "ink": "#1A1612", "lime": "#C6F432", "verm": "#FF4B2B", "gold": "#D9B061"}
+# El acabado de casino (el dueño, 11-oct: "que se vea profesional y como un casino de verdad"): el color del dibujo con
+# laca, esmalte o latón. (rugosidad, metálico, capa transparente, rugosidad de la capa); glTF lo lleva con
+# KHR_materials_clearcoat y la web lo pinta con la luz de la sala.
+FINISH = {
+    "cream": (0.38, 0.0, 0.6, 0.08),     # marfil satinado
+    "ink": (0.35, 0.0, 1.0, 0.04),       # laca negra
+    "lime": (0.28, 0.0, 1.0, 0.05),      # esmalte lima, el de la marca
+    "verm": (0.32, 0.0, 1.0, 0.05),      # laca roja
+    "gold": (0.28, 1.0, 0.0, 0.0),       # latón (contrato §3)
+    "numbers": (0.30, 0.0, 1.0, 0.05),   # el anillo de números, laqueado
+}
 
 SCENE, COLLECTION = "T_ruleta_vivo", "T-ruleta-vivo"
 
@@ -60,7 +72,7 @@ def _linear(hex_color):
 
 
 def material(color, image=None):
-    """roulette_<color>: a flat Principled colour (or the number strip) that the web swaps for its toon shading."""
+    """roulette_<color>: the drawing's colour (or the number strip) with its casino finish (FINISH)."""
     name = f"roulette_{color}"
     mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
     mat.use_nodes = True
@@ -68,8 +80,11 @@ def material(color, image=None):
     nt.nodes.clear()
     out = nt.nodes.new("ShaderNodeOutputMaterial")
     bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
-    bsdf.inputs["Roughness"].default_value = 1.0
-    bsdf.inputs["Metallic"].default_value = 0.0
+    rough, metal, coat, coat_rough = FINISH[color]
+    bsdf.inputs["Roughness"].default_value = rough
+    bsdf.inputs["Metallic"].default_value = metal
+    bsdf.inputs["Coat Weight"].default_value = coat
+    bsdf.inputs["Coat Roughness"].default_value = coat_rough
     if image is not None:
         tex = nt.nodes.new("ShaderNodeTexImage")
         tex.image = image
@@ -179,7 +194,7 @@ def build_roulette(numbers_png):
     for o in list(col.objects):
         bpy.data.objects.remove(o, do_unlink=True)
 
-    cream, ink, lime, verm = (material(c) for c in ("cream", "ink", "lime", "verm"))
+    cream, ink, lime, verm, gold = (material(c) for c in ("cream", "ink", "lime", "verm", "gold"))
     img = bpy.data.images.get("ruleta-numeros.png")
     if img is not None:
         bpy.data.images.remove(img)
@@ -192,13 +207,22 @@ def build_roulette(numbers_png):
     root = _empty(col, "RIG-ruleta")
     rotor = _empty(col, "RIG-ruleta_rotor", parent=root)
 
-    # ── la parte fija: aro de papel, pista de tinta y rombos lima ──
+    # ── la parte fija: aro de marfil con filete de latón y costado de laca negra, pista negra y rombos de latón ──
     def rim(bm):
-        lathe(bm, [(0.395, 0.086), (0.395, 0.118), (0.397, 0.125), (0.402, 0.129), (0.409, 0.130), (0.452, 0.130),
-                   (0.462, 0.128), (0.468, 0.122), (0.470, 0.112), (0.470, 0.020), (0.466, 0.005), (0.455, 0.0)],
+        lathe(bm, [(0.395, 0.086), (0.395, 0.118), (0.397, 0.125), (0.402, 0.129), (0.409, 0.130), (0.452, 0.130)],
               SEGMENTS)
         weld_seam(bm)
     make_object(col, "GEO-ruleta_aro", rim, [cream], parent=root)
+
+    def rim_trim(bm):
+        lathe(bm, [(0.452, 0.130), (0.462, 0.128), (0.468, 0.122), (0.470, 0.112)], SEGMENTS)
+        weld_seam(bm)
+    make_object(col, "GEO-ruleta_aro_filete", rim_trim, [gold], parent=root)
+
+    def rim_side(bm):
+        lathe(bm, [(0.470, 0.112), (0.470, 0.020), (0.466, 0.005), (0.455, 0.0)], SEGMENTS)
+        weld_seam(bm)
+    make_object(col, "GEO-ruleta_aro_costado", rim_side, [ink], parent=root, no_outline=True)
 
     def track(bm):
         # el perfil de la animación menos un radio de bola: la bola corre arriba y baja hacia las casillas
@@ -220,7 +244,7 @@ def build_roulette(numbers_png):
             for j in range(4):
                 bm.faces.new((ring[j], ring[(j + 1) % 4], top))
                 bm.faces.new((ring[(j + 1) % 4], ring[j], bottom))
-    make_object(col, "GEO-ruleta_rombos", diamonds, [lime], parent=root, no_outline=True)
+    make_object(col, "GEO-ruleta_rombos", diamonds, [gold], parent=root, no_outline=True)
 
     # ── el rotor: centro de tinta, labio de papel, casillas, trastes, números y torreta lima ──
     def cone(bm):
@@ -232,7 +256,7 @@ def build_roulette(numbers_png):
     def inner_lip(bm):
         lathe(bm, [(0.182, 0.057), (0.185, 0.064), (0.196, 0.064), (0.199, POCKET_FLOOR)], 74)
         weld_seam(bm)
-    make_object(col, "GEO-ruleta_labio", inner_lip, [cream], parent=rotor)
+    make_object(col, "GEO-ruleta_labio", inner_lip, [gold], parent=rotor)
 
     def slot_material(s):
         # 3 tramos por casilla; el tramo s cae en la casilla j = s // 3, que es la posición k = 36 - j del orden
@@ -272,7 +296,7 @@ def build_roulette(numbers_png):
         # a ras del anillo: la bola pasa por encima al bajar de la pista (su centro va a 0.0635 m sobre 0.306 m)
         lathe(bm, [(0.300, 0.0465), (0.302, 0.0475), (0.306, 0.0475), (0.308, 0.046)], 74)
         weld_seam(bm)
-    make_object(col, "GEO-ruleta_borde", outer_lip, [cream], parent=rotor)
+    make_object(col, "GEO-ruleta_borde", outer_lip, [gold], parent=rotor)
 
     def frets(bm):
         top = 0.0505        # bajos: se ve el color de las casillas y la bola apenas los roza al entrar
@@ -283,18 +307,25 @@ def build_roulette(numbers_png):
             res = bmesh.ops.create_cube(bm, size=1.0, matrix=m)
             for f in {f for v in res["verts"] for f in v.link_faces}:
                 f.smooth = False
-    make_object(col, "GEO-ruleta_trastes", frets, [cream], parent=rotor)
+    make_object(col, "GEO-ruleta_trastes", frets, [gold], parent=rotor)
+
+    # la torreta del dibujo: tallo y brazos de latón, bolitas de esmalte lima
+    z = 0.121
 
     def turret(bm):
-        z = 0.121
         add_cylinder(bm, 0.015, 0.03, (0, 0, 0.105), mathutils.Euler((0, 0, 0)), segs=12)
-        add_sphere(bm, 0.038, (0, 0, z), segs=20)
         for i in range(3):
             a = math.radians(90 + 120 * i)
             add_cylinder(bm, 0.013, 0.08, (0.055 * math.cos(a), 0.055 * math.sin(a), z),
                          mathutils.Euler((0, math.radians(90), a), "XYZ"), segs=10)
+    make_object(col, "GEO-ruleta_torreta", turret, [gold], parent=rotor)
+
+    def turret_balls(bm):
+        add_sphere(bm, 0.038, (0, 0, z), segs=20)
+        for i in range(3):
+            a = math.radians(90 + 120 * i)
             add_sphere(bm, 0.025, (0.105 * math.cos(a), 0.105 * math.sin(a), z), segs=14)
-    make_object(col, "GEO-ruleta_torreta", turret, [lime], parent=rotor)
+    make_object(col, "GEO-ruleta_torreta_lima", turret_balls, [lime], parent=rotor)
 
     # ── la bola: de papel, cuelga de la rueda y no del rotor (la web la mueve sola) ──
     def ball(bm):

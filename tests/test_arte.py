@@ -252,6 +252,36 @@ class LiveModelBudgets(unittest.TestCase):
                     self.assertLessEqual(max(w, h), TEXTURE_SIDE, f"static/3d/{name}: la textura {image} mide {w} × {h}; el tope es {TEXTURE_SIDE} px")
 
 
+ROOM_BUDGET = 600_000                                               # one room panorama, bytes (equipo/contratos/arte3d.md §6, §14)
+ROOM_SIDE = 4096                                                    # widest panorama: 4096 × 2048 is 32 MB on the phone's GPU
+
+
+class Rooms(unittest.TestCase):
+    """The rooms of the games (section 14): a panorama of the hall per room, seen from where the live camera stands."""
+
+    def test_every_room_is_a_full_panorama_inside_its_budget(self):
+        folder = os.path.join(STATIC, "3d", "salas")
+        rooms = sorted(n for n in os.listdir(folder) if n.endswith(".webp")) if os.path.isdir(folder) else []
+        self.assertIn("ruleta.webp", rooms, "falta la sala de ruleta: static/3d/salas/ruleta.webp")
+        for name in rooms:
+            path = os.path.join(folder, name)
+            with self.subTest(room=name):
+                w, h = webp_size(path)
+                self.assertEqual(w, 2 * h, f"static/3d/salas/{name} mide {w} × {h}: un panorama mide el doble de ancho que de alto")
+                self.assertGreaterEqual(w, 2048, f"static/3d/salas/{name} es muy chico para verse en la mesa")
+                self.assertLessEqual(w, ROOM_SIDE, f"static/3d/salas/{name} mide {w} px de ancho; el tope es {ROOM_SIDE} (memoria del celular)")
+                self.assertLessEqual(os.path.getsize(path), ROOM_BUDGET, f"static/3d/salas/{name} pasa de {ROOM_BUDGET:,} bytes")
+
+    def test_the_web_camera_stands_where_blender_rendered_the_room(self):
+        # if the two points differ, the live wheel slides off its table in the panorama
+        with open(os.path.join(ROOT, "assets3d", "herramientas", "sala_ruleta.py"), encoding="utf-8") as f:
+            x, y, z = (float(v) for v in re.search(r"VIEW_OFFSET = \(([^)]*)\)", f.read()).group(1).split(","))
+        with open(os.path.join(ROOT, "docs", "arte", "sala-ruleta.mjs"), encoding="utf-8") as f:
+            web = [float(v) for v in re.search(r"VIEW = new THREE\.Vector3\(([^)]*)\)", f.read()).group(1).split(",")]
+        for a, b in zip(web, (x, z, -y)):                            # Blender (x, y, z) → three.js (x, z, -y)
+            self.assertAlmostEqual(a, b, places=6, msg="VIEW de docs/arte/sala-ruleta.mjs no es VIEW_OFFSET de sala_ruleta.py")
+
+
 def _palette(path, pattern):
     with open(os.path.join(ROOT, path), encoding="utf-8") as f:
         return {k: (lit.upper(), shade.upper()) for k, lit, shade in re.findall(pattern, f.read())}
