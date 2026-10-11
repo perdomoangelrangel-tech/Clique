@@ -38,6 +38,7 @@ Cómo se hace, se nombra, se exporta y se usa todo el 3D de Clique. Lo siguen E6
   - Modelos: `assets3d/<modelo>/<modelo>.blend` y su exportación cruda `<modelo>-exportada.glb`.
   - Renders: `docs/arte/<nn-nombre>-<ancho>x<alto>.webp` para la dirección de arte y `static/renders/` para lo que use la app.
   - Web: `static/3d/<modelo>.glb` y un respaldo 2D por variante: `static/3d/<modelo>-<variante>-2d.webp`.
+  - Imágenes de juego y de la app: una sola escena de Blender por imagen, todas en `assets3d/juegos/juegos.blend` (`J_<juego>`, `F_fondo`, `I_icono`), con sus herramientas en el bloque de texto `e6_util.py` del mismo archivo, copiado en `assets3d/herramientas/e6_util.py` (si cambias uno, cambia el otro). Sección 11.
 
 ## 3. Paleta v2 → materiales
 
@@ -95,7 +96,7 @@ En la web (three.js), la ficha llega como `MeshPhysicalMaterial` con capa (`KHR_
 | Un modelo suelto | ≤ 300 KB y ≤ 8 mil triángulos | 6,508 triángulos, 4 primitivas (cuerpo, incrustaciones, centro, tinta) |
 | Texturas | ≤ 1024 px, KTX2 | Ninguna: el logotipo y las marcas son geometría. |
 | Triángulos en escena | ≤ 50 mil | 26,032 con cuatro fichas en la página de prueba |
-| Cuadros por segundo | 60 en Android de gama media | La página de prueba marca los cuadros por segundo; medido por el dueño el 10-oct (`equipo/historia/ronda-0/bitacoras/OT-006.md`) |
+| Cuadros por segundo | 60 en Android de gama media | PC del dueño (Chrome, pantalla de 144 Hz), 10-oct, con captura en la conversación con E0: de 138 a 145, que es el ritmo de su pantalla. La página dibuja un cuadro cada 6.9 ms; lo que tarda en dibujarlo no se midió, pero cabe en ese intervalo. **Falta medir en Android de gama media.** La página de prueba lleva la ficha sin comprimir (154,888 bytes), con los mismos triángulos |
 
 ## 7. Exportar para la web
 
@@ -140,3 +141,26 @@ const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 - La pantalla **arranca en 2D** y pasa a 3D solo cuando el modelo cargó.
 - Se queda en 2D si no hay WebGL, si no cargó three.js o el modelo, o si la persona pidió menos movimiento (`prefers-reduced-motion: reduce`). En ese último caso puede abrir el 3D a mano, y se ve quieto.
 - Mientras se ve el 2D, el ciclo de dibujo 3D está detenido.
+
+## 11. Imágenes 2D de la app
+
+Lo que la app muestra como imagen fija sale de Blender con la receta de los cuadros (sección 5), y la prueba
+`tests/test_arte.py` comprueba nombres, medidas, transparencia y peso.
+
+| Imagen | Archivo | Medida | Presupuesto | Fondo |
+| --- | --- | --- | --- | --- |
+| Juego, póster | `static/casino-icons/<juego>.png` | 480 × 480 | ≤ 100 KB | Transparente: va sobre el color de su póster (`GAME_ICON` en `static/js/art.js`) |
+| Juego, mosaico | `static/casino-icons/small/<juego>.png` | 128 × 128 | ≤ 15 KB | Transparente |
+| Fondo de mesa | `static/renders/fondo-mesa-1920x1080.webp`, `fondo-mesa-1080x2340.webp` | las del nombre | ≤ 150 KB | Fieltro con la luz de la lámpara; la orilla cae casi a negro |
+| Ícono de la app | `static/renders/icono-192.png`, `icono-512.png` | las del nombre | ≤ 100 KB | Sala oscura, sin transparencia (Android e iOS ponen blanco o negro debajo) |
+| Ícono enmascarable | `static/renders/icono-maskable-512.png` | 512 × 512 | ≤ 100 KB | La ficha dentro del 70 % del lado: cabe en el círculo seguro del 80 % |
+| Ícono de iOS | `static/renders/apple-touch-icon-180.png` | 180 × 180 | ≤ 100 KB | Como el 512; iOS redondea las esquinas |
+
+**Receta de las imágenes de juego:**
+- Cycles con fondo transparente y un plano `is_shadow_catcher` debajo: la sombra suave queda en la imagen y oscurece el color del póster. En EEVEE no hay atrapasombras.
+- La misma gestión de color que los cuadros: AgX "Punchy", exposición -0.5.
+- Luces escaladas al tamaño del objeto (`luces()` en `e6_util.py`): llave cálida arriba a la izquierda, cenital suave para el brillo de la laca, contraluz y relleno sin sombra.
+- Cámara de 70 mm, de 34° a 58° de elevación según el objeto. El objeto ocupa del 82 % al 86 % del cuadro.
+- Se renderiza a 960 px y se reduce con `assets3d/herramientas/iconos_juego.py`: Lanczos y cuantización a 256 colores con libimagequant, que respeta la transparencia de la sombra.
+- Sin texto en las imágenes: la leyenda impresa de las cartas de los cuadros se quita en las de juego (`carta_as_*_sin_leyenda` en el .blend). Los números de la rueda y el índice "A" de las cartas son parte del objeto y se quedan **si el dueño lo aprueba** con la hoja de prueba; si no, se quitan igual.
+- **Lima y bermellón no se usan como color de un objeto de juego** (sección 3). Los dados son papel y oro.

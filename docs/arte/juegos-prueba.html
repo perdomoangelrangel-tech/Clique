@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prueba de juegos 3D</title>
+<!--
+  Hoja de prueba de E6 · Arte 3D (orden 1, entregable 1). No es parte de la app.
+  Cómo abrirla: desde la raíz del repositorio, `python -m http.server 8000`
+  y luego http://localhost:8000/docs/arte/juegos-prueba.html
+  Pone cada imagen propuesta (docs/arte/juegos-prueba/) junto a la de hoy
+  (static/casino-icons/), sobre el color de su póster en static/js/art.js,
+  a 480 px y a 128 px. Los colores salen de static/css/tokens.css.
+-->
+<link rel="stylesheet" href="../../static/css/tokens.css">
+<style>
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 0.9375rem/1.45 var(--f-body); }
+  main { max-width: 70rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+  h1 { font: 800 1.375rem/1.2 var(--f-display); margin: 0 0 0.25rem; }
+  p { color: var(--text-2); margin: 0 0 1.5rem; }
+  .juego { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .juego h2 { grid-column: 1 / -1; font: 700 1rem/1.3 var(--f-display); margin: 0; }
+  figure { margin: 0; }
+  figcaption { color: var(--text-3); font-size: 0.8125rem; margin-top: 0.375rem; }
+  .poster { aspect-ratio: 1; display: grid; place-items: center; position: relative; }
+  .poster img.grande { width: 86%; height: auto; }
+  .poster .chica { position: absolute; right: 0.5rem; bottom: 0.5rem; width: 4rem; height: 4rem;
+    padding: 0.25rem; background: inherit; outline: 1px solid var(--line-soft); }
+  .verm { background: var(--verm); }
+  .felt { background: var(--felt); }
+  @media (max-width: 35rem) { .juego { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Juegos del casino: hoy y en 3D</h1>
+  <p>Cada imagen va sobre el color de su póster. La chica es la de 128 px, la que usan los mosaicos y la barra del casino.</p>
+  <section class="juego">
+    <h2>Ruleta</h2>
+    <figure><div class="poster verm"><img class="grande" src="../../static/casino-icons/roulette.png" alt="Ruleta, dibujo de hoy"><img class="chica" src="../../static/casino-icons/small/roulette.png" alt=""></div><figcaption>Hoy</figcaption></figure>
+    <figure><div class="poster verm"><img class="grande" src="juegos-prueba/roulette.png" alt="Ruleta en 3D"><img class="chica" src="juegos-prueba/small/roulette.png" alt=""></div><figcaption>Propuesta</figcaption></figure>
+  </section>
+  <section class="juego">
+    <h2>Blackjack</h2>
+    <figure><div class="poster felt"><img class="grande" src="../../static/casino-icons/blackjack.png" alt="Blackjack, dibujo de hoy"><img class="chica" src="../../static/casino-icons/small/blackjack.png" alt=""></div><figcaption>Hoy</figcaption></figure>
+    <figure><div class="poster felt"><img class="grande" src="juegos-prueba/blackjack.png" alt="Blackjack en 3D"><img class="chica" src="juegos-prueba/small/blackjack.png" alt=""></div><figcaption>Propuesta</figcaption></figure>
+  </section>
+  <section class="juego">
+    <h2>Dados</h2>
+    <figure><div class="poster felt"><img class="grande" src="../../static/casino-icons/dice.png" alt="Dados, dibujo de hoy"><img class="chica" src="../../static/casino-icons/small/dice.png" alt=""></div><figcaption>Hoy</figcaption></figure>
+    <figure><div class="poster felt"><img class="grande" src="juegos-prueba/dice.png" alt="Dados en 3D"><img class="chica" src="juegos-prueba/small/dice.png" alt=""></div><figcaption>Propuesta</figcaption></figure>
+  </section>
+</main>
+</body>
+</html>
