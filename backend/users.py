@@ -27,7 +27,7 @@ def _throttle(key, limit, window_s):
     recent = [t for t in _attempts.get(key, []) if now - t < window_s]
     _attempts[key] = recent
     if len(recent) >= limit:
-        raise bad("Too many attempts. Wait a few minutes and try again.", 429)
+        raise bad("Too many attempts. Wait a few minutes and try again.", 429, code="too_many_attempts")
 
 
 def _fail(key):
@@ -39,13 +39,13 @@ def _fail(key):
 def register(username, password):
     d = db()
     if not isinstance(username, str) or not USERNAME_RE.match(username):
-        raise bad("Username must be 3-20 characters: letters, numbers or underscores")
+        raise bad("Username must be 3-20 characters: letters, numbers or underscores", code="invalid_username")
     if not isinstance(password, str) or len(password) < 6:
-        raise bad("Password must be at least 6 characters")
+        raise bad("Password must be at least 6 characters", code="password_too_short")
     if len(password) > 200:
-        raise bad("Password is too long")
+        raise bad("Password is too long", code="password_too_long")
     if username.lower() in d["usernames"]:
-        raise bad("That username is already taken", 409)
+        raise bad("That username is already taken", 409, code="username_taken")
     uid = new_id()
     salt = secrets.token_hex(16)
     user = {
@@ -75,7 +75,7 @@ def login(username, password, ip="?"):
     if not user or not ok:
         _fail("login:" + ip)
         _fail(who)
-        raise bad("Wrong username or password", 401)
+        raise bad("Wrong username or password", 401, code="wrong_credentials")
     return user
 
 
@@ -89,15 +89,15 @@ def reset_password(username, new_password, funds_password, ip="?"):
     if not hmac.compare_digest(given, wanted):
         _fail("reset:" + ip)
         _fail("deposit:everyone")
-        raise bad("Wrong funds password", 403)
+        raise bad("Wrong funds password", 403, code="wrong_funds_password")
     if not isinstance(new_password, str) or len(new_password) < 6:
-        raise bad("Password must be at least 6 characters")
+        raise bad("Password must be at least 6 characters", code="password_too_short")
     if len(new_password) > 200:
-        raise bad("Password is too long")
+        raise bad("Password is too long", code="password_too_long")
     d = db()
     uid = d["usernames"].get(str(username).lower())
     if not uid:
-        raise bad("There is no account with that username", 404)
+        raise bad("There is no account with that username", 404, code="user_not_found")
     user = d["users"][uid]
     set_password(user, new_password)
     _attempts.pop("reset:" + ip, None)
@@ -106,9 +106,9 @@ def reset_password(username, new_password, funds_password, ip="?"):
 
 def check_new_password(new_password):
     if not isinstance(new_password, str) or len(new_password) < 6:
-        raise bad("Password must be at least 6 characters")
+        raise bad("Password must be at least 6 characters", code="password_too_short")
     if len(new_password) > 200:
-        raise bad("Password is too long")
+        raise bad("Password is too long", code="password_too_long")
 
 
 def set_password(user, new_password):
@@ -155,14 +155,14 @@ def drop_session(token):
 def get(uid):
     u = db()["users"].get(uid)
     if not u:
-        raise bad("User not found", 404)
+        raise bad("User not found", 404, code="user_not_found")
     return u
 
 
 def by_username(name):
     uid = db()["usernames"].get(str(name).lower())
     if not uid:
-        raise bad("User not found", 404)
+        raise bad("User not found", 404, code="user_not_found")
     return db()["users"][uid]
 
 
@@ -214,7 +214,7 @@ def debit(user, amount, reason=None, **kw):
     """Money out of the WEEKLY account (or the accumulated one, for a casino wallet that is that account). Raises "Not enough funds" rather than going below zero."""
     if user.get("isDemo"):
         if amount > user["balance"] + 1e-9:
-            raise bad("Not enough funds")
+            raise bad("Not enough funds", code="insufficient_funds")
         user["balance"] = max(0.0, round2(user["balance"] - amount))
         return
     if user.get("isAcc"):
@@ -232,18 +232,18 @@ def check_deposit(user, amount, password, account="weekly"):
     _throttle("deposit:" + user["id"], 5, 600)
     _throttle("deposit:everyone", 20, 600)
     if account not in ledger.ACCOUNTS:
-        raise bad("Choose the weekly or the accumulated account")
+        raise bad("Choose the weekly or the accumulated account", code="invalid_account")
     amount = parse_money(amount, "Amount")
     if amount <= 0:
-        raise bad("Enter an amount greater than 0")
+        raise bad("Enter an amount greater than 0", code="amount_not_positive")
     if amount > config.MAX_DEPOSIT:
-        raise bad(f"Max {config.MAX_DEPOSIT:,.0f} per deposit")
+        raise bad(f"Max {config.MAX_DEPOSIT:,.0f} per deposit", code="deposit_too_large")
     given = hashlib.sha256(str(password).encode("utf-8")).digest()
     wanted = hashlib.sha256(config.ADMIN_PASSWORD.encode("utf-8")).digest()
     if not hmac.compare_digest(given, wanted):
         _fail("deposit:" + user["id"])
         _fail("deposit:everyone")
-        raise bad("Wrong password", 403)
+        raise bad("Wrong password", 403, code="wrong_funds_password")
     _attempts.pop("deposit:" + user["id"], None)
     return round2(amount), account
 
@@ -289,11 +289,11 @@ def add_deposit_stat(user, amount, week=None):
 def redeem_voucher(user):
     info = voucher_info(user)
     if info["used"]:
-        raise bad("You already used this week's voucher. A new one turns up when the week does.")
+        raise bad("You already used this week's voucher. A new one turns up when the week does.", code="voucher_used")
     if user["balance"] >= config.VOUCHER_BELOW:
-        raise bad(f"You still have chips. Vouchers are for when you are under ${config.VOUCHER_BELOW:.2f}.")
+        raise bad(f"You still have chips. Vouchers are for when you are under ${config.VOUCHER_BELOW:.2f}.", code="voucher_not_needed")
     if info["busy"]:
-        raise bad("Finish the round you are playing first, then redeem.")
+        raise bad("Finish the round you are playing first, then redeem.", code="voucher_round_in_play")
     user["voucher"] = {"week": week_key(), "t": now_ms()}
     credit(user, config.VOUCHER_AMOUNT, "voucher", external=True)
     add_deposit_stat(user, config.VOUCHER_AMOUNT)

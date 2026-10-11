@@ -147,7 +147,7 @@ def tables():
 def get(tid):
     t = tables().get(tid)
     if not t:
-        raise bad("That table is gone", 404)
+        raise bad("That table is gone", 404, code="table_not_found")
     return t
 
 
@@ -243,7 +243,7 @@ def _units(money, value, label):
     v = parse_money(value, label)
     if money == "fake":
         if v != int(v):
-            raise bad(f"{label} has to be a whole number of chips")
+            raise bad(f"{label} has to be a whole number of chips", code="invalid_table_settings")
         return int(v)
     return int(round(v * 100))
 
@@ -253,7 +253,7 @@ def apply_settings(table, body):
     cur = table["settings"]
     money = body.get("money", cur["money"])
     if money not in ("fake", "real"):
-        raise bad("Money has to be fake chips or real cash")
+        raise bad("Money has to be fake chips or real cash", code="invalid_table_settings")
     s = dict(cur)
     if money != cur["money"]:
         s.update(default_settings(money))
@@ -269,13 +269,13 @@ def apply_settings(table, body):
     if "maxSeats" in body:
         ms = body["maxSeats"]
         if isinstance(ms, bool) or not isinstance(ms, int) or not 2 <= ms <= MAX_SEATS:
-            raise bad(f"A table seats between 2 and {MAX_SEATS}")
+            raise bad(f"A table seats between 2 and {MAX_SEATS}", code="invalid_table_settings")
         s["maxSeats"] = ms
     if "turnSeconds" in body:
         s["turnSeconds"] = body["turnSeconds"]
     if "rebuy" in body:
         if not isinstance(body["rebuy"], bool):
-            raise bad("Rebuys are on or off")
+            raise bad("Rebuys are on or off", code="invalid_table_settings")
         s["rebuy"] = body["rebuy"]
     if "blindsUp" in body:
         s["blindsUp"] = body["blindsUp"]
@@ -283,28 +283,28 @@ def apply_settings(table, body):
     bb, sb, stack = s["bigBlind"], s["smallBlind"], s["stack"]
     if money == "fake":
         if not 2 <= bb <= 1_000_000:
-            raise bad("The big blind has to be between 2 and 1,000,000 chips")
+            raise bad("The big blind has to be between 2 and 1,000,000 chips", code="invalid_table_settings")
         if not 1 <= sb <= bb:
-            raise bad("The small blind has to be at least 1 chip and no more than the big blind")
+            raise bad("The small blind has to be at least 1 chip and no more than the big blind", code="invalid_table_settings")
         if not 10 * bb <= stack <= 1000 * bb:
-            raise bad("The starting stack has to be 10 to 1,000 big blinds")
+            raise bad("The starting stack has to be 10 to 1,000 big blinds", code="invalid_table_settings")
         if s["turnSeconds"] not in TURN_FAKE:
-            raise bad("Pick a turn timer from the list")
+            raise bad("Pick a turn timer from the list", code="invalid_table_settings")
     else:
         if not 10 <= bb <= 10_000:
-            raise bad("The big blind has to be between $0.10 and $100")
+            raise bad("The big blind has to be between $0.10 and $100", code="invalid_table_settings")
         if not 5 <= sb <= bb:
-            raise bad("The small blind has to be at least $0.05 and no more than the big blind")
+            raise bad("The small blind has to be at least $0.05 and no more than the big blind", code="invalid_table_settings")
         if not 20 * bb <= stack <= 200 * bb or stack > 1_000_000:
-            raise bad("The buy-in has to be 20 to 200 big blinds, and at most $10,000")
+            raise bad("The buy-in has to be 20 to 200 big blinds, and at most $10,000", code="invalid_table_settings")
         if s["turnSeconds"] not in TURN_REAL:
-            raise bad("Real-money tables need a turn timer of at most 2 minutes")
+            raise bad("Real-money tables need a turn timer of at most 2 minutes", code="invalid_table_settings")
     if s["blindsUp"] not in BLINDS_UP:
-        raise bad("Pick how often the blinds go up from the list")
+        raise bad("Pick how often the blinds go up from the list", code="invalid_table_settings")
     # seats can shrink only if the chairs that disappear are empty
     seats = table["seats"]
     if s["maxSeats"] < len(seats) and any(seats[s["maxSeats"]:]):
-        raise bad("Some of the seats you would remove are taken")
+        raise bad("Some of the seats you would remove are taken", code="invalid_table_settings")
     return s
 
 
@@ -313,15 +313,15 @@ def apply_settings(table, body):
 def create(user, body):
     uid = user["id"]
     if table_of(uid):
-        raise bad("You are already sitting at a table. Leave it first.")
+        raise bad("You are already sitting at a table. Leave it first.", code="already_seated")
     hosting = sum(1 for t in tables().values() if t["hostId"] == uid)
     if hosting >= MAX_TABLES_PER_HOST:
-        raise bad(f"You are already running {MAX_TABLES_PER_HOST} tables")
+        raise bad(f"You are already running {MAX_TABLES_PER_HOST} tables", code="too_many_tables")
     if len(tables()) >= MAX_TABLES_TOTAL:
-        raise bad("The poker room is full right now. Try again later.")
+        raise bad("The poker room is full right now. Try again later.", code="poker_room_full")
     vis = body.get("visibility", "public")
     if vis not in ("public", "private"):
-        raise bad("A table is public or private")
+        raise bad("A table is public or private", code="invalid_table_settings")
     name = clean_text(body.get("name") or f"{user['username']}'s table", "Table name", 2, 30)
     settings = default_settings("fake")
     now = now_ms()
@@ -354,19 +354,19 @@ def join(user, table_id=None, code=None, confirm=False):
     if code:
         table = by_code(code)
         if not table:
-            raise bad("No table has that code", 404)
+            raise bad("No table has that code", 404, code="table_not_found")
     else:
         table = get(table_id)
         if table["visibility"] == "private":
-            raise bad("That table is private. You need its code.", 404)
+            raise bad("That table is private. You need its code.", 404, code="invite_code_required")
     mine = table_of(uid)
     if mine and mine["id"] != table["id"]:
-        raise bad("You are already sitting at another table. Leave it first.")
+        raise bad("You are already sitting at another table. Leave it first.", code="already_seated")
     if seat_index(table, uid) is not None:
         return table
     free = next((i for i, s in enumerate(table["seats"]) if s is None), None)
     if free is None:
-        raise bad("That table is full")
+        raise bad("That table is full", code="table_full")
     s = table["settings"]
     _sit(table, user, free, now)
     seat = table["seats"][free]
@@ -374,7 +374,7 @@ def join(user, table_id=None, code=None, confirm=False):
         if s["money"] == "real":
             if not confirm:
                 table["seats"][free] = None
-                raise bad(f"This is a real-money table. Joining costs a ${s['stack'] / 100:,.2f} buy-in from your cash.")
+                raise bad(f"This is a real-money table. Joining costs a ${s['stack'] / 100:,.2f} buy-in from your cash.", code="confirm_required")
             try:
                 _buy_in(table, user, seat, s["stack"])
             except Exception:
@@ -393,7 +393,7 @@ def join(user, table_id=None, code=None, confirm=False):
 def _buy_in(table, user, seat, amount):
     cash = amount / 100
     if cash > user["balance"] + 1e-9:
-        raise bad(f"You need ${cash:,.2f} in cash to buy in")
+        raise bad(f"You need ${cash:,.2f} in cash to buy in", code="insufficient_funds")
     users.debit(user, cash)
     users.log(user, "poker", -cash, f"Poker buy-in: {table['name']}")
     seat["stack"] += amount
@@ -449,7 +449,7 @@ def leave(user, table):
     uid = user["id"]
     idx = seat_index(table, uid)
     if idx is None:
-        raise bad("You are not at this table")
+        raise bad("You are not at this table", code="not_seated")
     now = now_ms()
     h = table["hand"]
     if h and h["street"] != "ended" and h["st"][idx] in ("in", "allin"):
@@ -466,12 +466,12 @@ def leave(user, table):
 
 def kick(user, table, target_id):
     if table["hostId"] != user["id"]:
-        raise bad("Only the host can remove someone", 403)
+        raise bad("Only the host can remove someone", 403, code="not_table_host")
     if target_id == user["id"]:
-        raise bad("Use leave to leave your own table")
+        raise bad("Use leave to leave your own table", code="invalid_action")
     idx = seat_index(table, target_id)
     if idx is None:
-        raise bad("They are not at this table", 404)
+        raise bad("They are not at this table", 404, code="not_seated")
     now = now_ms()
     h = table["hand"]
     if h and h["street"] != "ended" and h["st"][idx] in ("in", "allin"):
@@ -487,9 +487,9 @@ def kick(user, table, target_id):
 
 def set_settings(user, table, body):
     if table["hostId"] != user["id"]:
-        raise bad("Only the host can change the settings", 403)
+        raise bad("Only the host can change the settings", 403, code="not_table_host")
     if table["status"] != "setup":
-        raise bad("The settings are locked once the game starts. End the game to change them.")
+        raise bad("The settings are locked once the game starts. End the game to change them.", code="game_in_progress")
     table["settings"] = apply_settings(table, body)
     s = table["settings"]
     seats = table["seats"]
@@ -507,11 +507,11 @@ def set_settings(user, table, body):
 def vote(user, table, accept):
     idx = seat_index(table, user["id"])
     if idx is None:
-        raise bad("Sit down first")
+        raise bad("Sit down first", code="not_seated")
     if table["status"] != "setup":
-        raise bad("The game has already started")
+        raise bad("The game has already started", code="game_in_progress")
     if not isinstance(accept, bool):
-        raise bad("Accept or decline")
+        raise bad("Accept or decline", code="invalid_vote")
     table["votes"][user["id"]] = accept
     _log(table, f"{user['username']} {'accepted' if accept else 'declined'} the settings")
     _touch(table, now_ms())
@@ -519,23 +519,23 @@ def vote(user, table, accept):
 
 def start(user, table):
     if table["hostId"] != user["id"]:
-        raise bad("Only the host can start the game", 403)
+        raise bad("Only the host can start the game", 403, code="not_table_host")
     if table["status"] != "setup":
-        raise bad("The game has already started")
+        raise bad("The game has already started", code="game_in_progress")
     players = seated(table)
     if len(players) < 2:
-        raise bad("You need at least two players")
+        raise bad("You need at least two players", code="not_enough_players")
     waiting = [p["name"] for p in players if table["votes"].get(p["userId"]) is not True]
     if waiting:
         declined = [p["name"] for p in players if table["votes"].get(p["userId"]) is False]
         why = f" ({', '.join(declined)} declined)" if declined else ""
-        raise bad(f"Everyone has to accept the settings first. Waiting for: {', '.join(waiting)}{why}")
+        raise bad(f"Everyone has to accept the settings first. Waiting for: {', '.join(waiting)}{why}", code="settings_not_accepted")
     s = table["settings"]
     now = now_ms()
     if s["money"] == "real":
         poor = [p["name"] for p in players if users.get(p["userId"])["balance"] + 1e-9 < s["stack"] / 100]
         if poor:
-            raise bad(f"Not enough cash for the ${s['stack'] / 100:,.2f} buy-in: {', '.join(poor)}")
+            raise bad(f"Not enough cash for the ${s['stack'] / 100:,.2f} buy-in: {', '.join(poor)}", code="insufficient_funds")
         for p in players:
             _buy_in(table, users.get(p["userId"]), p, s["stack"])
     else:
@@ -553,9 +553,9 @@ def start(user, table):
 
 def end_game(user, table):
     if table["hostId"] != user["id"]:
-        raise bad("Only the host can end the game", 403)
+        raise bad("Only the host can end the game", 403, code="not_table_host")
     if table["status"] != "playing":
-        raise bad("There is no game to end")
+        raise bad("There is no game to end", code="no_game")
     now = now_ms()
     h = table["hand"]
     if h and h["street"] != "ended":
@@ -587,16 +587,16 @@ def _finish_game(table):
 def rebuy(user, table):
     idx = seat_index(table, user["id"])
     if idx is None:
-        raise bad("You are not at this table")
+        raise bad("You are not at this table", code="not_seated")
     s = table["settings"]
     seat = table["seats"][idx]
     if table["status"] != "playing" or not s["rebuy"]:
-        raise bad("Rebuys are off at this table")
+        raise bad("Rebuys are off at this table", code="rebuy_not_allowed")
     if seat["stack"] > 0:
-        raise bad("You still have chips")
+        raise bad("You still have chips", code="rebuy_not_allowed")
     h = table["hand"]
     if h and h["street"] != "ended" and h["st"][idx] in ("in", "allin"):
-        raise bad("Wait for the hand to finish")
+        raise bad("Wait for the hand to finish", code="hand_in_progress")
     if s["money"] == "real":
         _buy_in(table, user, seat, s["stack"])
     else:
@@ -720,9 +720,9 @@ def act(user, table, action, amount=None, now=None):
     idx = seat_index(table, user["id"])
     h = table["hand"]
     if idx is None:
-        raise bad("You are not at this table")
+        raise bad("You are not at this table", code="not_seated")
     if not h or h["street"] == "ended" or h["runout"] or h["toAct"] != idx:
-        raise bad("It is not your turn")
+        raise bad("It is not your turn", code="not_your_turn")
     seat = table["seats"][idx]
     legal = _legal(table, idx)
     name = seat["name"]
@@ -732,19 +732,19 @@ def act(user, table, action, amount=None, now=None):
         return
     if action == "check":
         if not legal["canCheck"]:
-            raise bad("You can't check. There is a bet to call.")
+            raise bad("You can't check. There is a bet to call.", code="invalid_move")
         _log(table, f"{name} checks")
         h["last"][idx] = "check"
     elif action == "call":
         if not legal["canCall"]:
-            raise bad("There is nothing to call. You can check.")
+            raise bad("There is nothing to call. You can check.", code="invalid_move")
         pay = _post(h, table, idx, legal["toCall"])
         _log(table, f"{name} calls {_fmt(table, pay)}" + (" and is all in" if h["st"][idx] == "allin" else ""))
         h["last"][idx] = "call"
     elif action in ("raise", "allin"):
         target = legal["maxRaiseTo"] if action == "allin" else amount
         if isinstance(target, bool) or not isinstance(target, int):
-            raise bad("Pick how much to raise to")
+            raise bad("Pick how much to raise to", code="invalid_move")
         if target <= h["currentBet"]:
             if action == "allin" and legal["toCall"] > 0:          # all in for less than the bet is a call
                 pay = _post(h, table, idx, legal["toCall"])
@@ -755,13 +755,13 @@ def act(user, table, action, amount=None, now=None):
                 _after_action(table, idx, now)
                 _touch(table, now)
                 return
-            raise bad(f"Raise to more than {h['currentBet']}")
+            raise bad(f"Raise to more than {h['currentBet']}", code="invalid_move")
         if not legal["canRaise"]:
-            raise bad("You can't raise right now. The betting wasn't re-opened.")
+            raise bad("You can't raise right now. The betting wasn't re-opened.", code="invalid_move")
         if target > legal["maxRaiseTo"]:
-            raise bad(f"You only have {legal['maxRaiseTo'] - h['bets'][idx]} to bet")
+            raise bad(f"You only have {legal['maxRaiseTo'] - h['bets'][idx]} to bet", code="invalid_move")
         if target < legal["minRaiseTo"]:
-            raise bad(f"The smallest raise is to {legal['minRaiseTo']}")
+            raise bad(f"The smallest raise is to {legal['minRaiseTo']}", code="invalid_move")
         prev = h["currentBet"]
         _post(h, table, idx, target - h["bets"][idx])
         h["currentBet"] = target
@@ -777,7 +777,7 @@ def act(user, table, action, amount=None, now=None):
         h["last"][idx] = "bet" if prev == 0 else "raise"
         _log(table, f"{name} {verb} {_fmt(table, target)}" + (" and is all in" if h["st"][idx] == "allin" else ""))
     else:
-        raise bad("Unknown action")
+        raise bad("Unknown action", code="invalid_action")
     h["acted"][idx] = True
     seat["timeouts"] = 0
     _after_action(table, idx, now)

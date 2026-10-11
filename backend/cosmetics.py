@@ -176,16 +176,16 @@ def readable(accent_hex, bg_id):
 def _check_slot(user, slot, item_id):
     it = catalog.get(item_id) if isinstance(item_id, str) else None
     if not it or it["kind"] != slot:
-        raise bad("That is not an option for " + catalog.KINDS[slot].lower())
+        raise bad("That is not an option for " + catalog.KINDS[slot].lower(), code="invalid_option")
     if not owns(user, item_id):
-        raise bad(f"You do not own {it['name']} yet. Get it in the Store first.", 403)
+        raise bad(f"You do not own {it['name']} yet. Get it in the Store first.", 403, code="item_not_owned")
     return it
 
 
 def customize(user, body):
     """Applies any of: avatar frame badge title banner accent font bg bio. All of it or none of it."""
     if not isinstance(body, dict):
-        raise bad("Invalid request")
+        raise bad("Invalid request", code="invalid_request")
     p = profile(user)
     new = dict(p)
     if body.get("reset") is True:
@@ -197,20 +197,20 @@ def customize(user, body):
             continue
         if slot == "avatar" and body["avatar"] == "upload":
             if not uploaded_file(user):
-                raise bad("Upload a picture first")
+                raise bad("Upload a picture first", code="no_picture")
             new["avatar"] = "upload"
             continue
         new[slot] = _check_slot(user, slot, body[slot])["id"]
     if "bg" in body:
         if body["bg"] not in catalog.BACKGROUNDS:
-            raise bad("Unknown background")
+            raise bad("Unknown background", code="invalid_option")
         new["bg"] = body["bg"]
     if "bio" in body:
         new["bio"] = clean_text(body["bio"], "Bio", 0, 140) if body["bio"] else ""
     accent = catalog.get(new["accent"])
     if not readable(accent["art"]["color"], new["bg"]):
         raise bad(f"{accent['name']} is hard to read on the {catalog.BACKGROUNDS[new['bg']]['name']} background. "
-                  "Pick a different colour or background.")
+                  "Pick a different colour or background.", code="low_contrast")
     profile(user, create=True).update(new)
     return profile_json(user)
 
@@ -248,7 +248,7 @@ def remove_upload(user):
     p = profile(user, create=True)
     old = p.get("upload")
     if not old:
-        raise bad("You have not uploaded a picture")
+        raise bad("You have not uploaded a picture", code="no_picture")
     _delete_file(old)
     p["upload"] = None
     if p["avatar"] == "upload":
@@ -309,7 +309,7 @@ def _remember_key(user, request_id):
     if request_id is None:
         return None
     if not isinstance(request_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{8,64}", request_id):
-        raise bad("Invalid request id")
+        raise bad("Invalid request id", code="invalid_request_id")
     return f"store:{user['id']}:{request_id}"
 
 
@@ -321,24 +321,24 @@ def buy(user, item_id, request_id=None):
     seen = db().setdefault("idem", {}).get(key) if key else None
     if seen:
         if seen["fp"] != item_id:
-            raise bad("That request id was already used for a different purchase", 409)
+            raise bad("That request id was already used for a different purchase", 409, code="request_id_reused")
         return {**seen["result"], "duplicate": True}
     it = catalog.get(item_id) if isinstance(item_id, str) else None
     if not it:
-        raise bad("There is no such product", 404)
+        raise bad("There is no such product", 404, code="product_not_found")
     why = _why_not(user, it)
     if why == "free":
-        raise bad("That one is free: just equip it")
+        raise bad("That one is free: just equip it", code="product_free")
     if why == "owned":
-        raise bad("You already own this", 409)
+        raise bad("You already own this", 409, code="already_owned")
     if why == "unavailable":
-        raise bad("That product is not on sale right now", 409)
+        raise bad("That product is not on sale right now", 409, code="product_unavailable")
     if why == "locked":
-        raise bad("Not yet: " + requirement_text(it["requires"]), 403)
+        raise bad("Not yet: " + requirement_text(it["requires"]), 403, code="requirement_not_met")
     price_c = ledger.to_cents(it["price"])
     have_c = ledger.balance_c(user, "accumulated")
     if have_c < price_c:
-        raise bad(f"You need ${(price_c - have_c) / 100:,.2f} more in your accumulated account", 402)
+        raise bad(f"You need ${(price_c - have_c) / 100:,.2f} more in your accumulated account", 402, code="insufficient_funds")
     before = have_c / 100
     ledger.post(user, "accumulated", -price_c / 100, "store.buy", ref=item_id, txid=f"buy:{item_id}")
     inventory(user)[item_id] = {"t": now_ms(), "paid": price_c}
@@ -355,7 +355,7 @@ def buy(user, item_id, request_id=None):
 def equip(user, item_id):
     it = catalog.get(item_id) if isinstance(item_id, str) else None
     if not it:
-        raise bad("There is no such product", 404)
+        raise bad("There is no such product", 404, code="product_not_found")
     _check_slot(user, it["kind"], item_id)
     profile(user, create=True)[it["kind"]] = item_id
     return profile_json(user)
@@ -363,6 +363,6 @@ def equip(user, item_id):
 
 def unequip(user, kind):
     if kind not in SLOTS:
-        raise bad("Unknown slot")
+        raise bad("Unknown slot", code="invalid_option")
     profile(user, create=True)[kind] = catalog.DEFAULTS[kind]
     return profile_json(user)

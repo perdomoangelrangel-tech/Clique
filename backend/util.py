@@ -36,15 +36,16 @@ TZ, TZ_NAME = _load_timezone()
 
 
 class ApiError(Exception):
-    def __init__(self, status, message, data=None):
+    def __init__(self, status, message, data=None, code=None):
         super().__init__(message)
         self.status = status
         self.message = message
         self.data = data              # extra fields to send along with the error (a fresh quote, for example)
+        self.code = code              # a stable name for the error ("insufficient_funds"), listed in equipo/contratos/errores.md
 
 
-def bad(message, status=400):
-    return ApiError(status, message)
+def bad(message, status=400, code=None):
+    return ApiError(status, message, code=code)
 
 
 def now_ms():
@@ -78,28 +79,28 @@ def shuffle(items):
 def parse_money(value, field="Amount"):
     """Accepts 12, 12.5, '12.5', '$1,200'. No upper limit, only finite numbers."""
     if isinstance(value, bool) or value is None:
-        raise bad(f"{field} is required")
+        raise bad(f"{field} is required", code="field_required")
     if isinstance(value, str):
         value = value.replace(",", "").replace("$", "").strip()
         if not value:
-            raise bad(f"{field} is required")
+            raise bad(f"{field} is required", code="field_required")
     try:
         x = float(value)
     except (TypeError, ValueError):
-        raise bad(f"{field} must be a number")
+        raise bad(f"{field} must be a number", code="not_a_number")
     if not math.isfinite(x):
-        raise bad(f"{field} must be a finite number")
+        raise bad(f"{field} must be a finite number", code="not_a_number")
     return x
 
 
 def clean_text(value, field, min_len=1, max_len=200):
     if not isinstance(value, str):
-        raise bad(f"{field} is required")
+        raise bad(f"{field} is required", code="field_required")
     text = " ".join(value.split())
     if len(text) < min_len:
-        raise bad(f"{field} is too short")
+        raise bad(f"{field} is too short", code="text_too_short")
     if len(text) > max_len:
-        raise bad(f"{field} is too long (max {max_len})")
+        raise bad(f"{field} is too long (max {max_len})", code="text_too_long")
     return text
 
 

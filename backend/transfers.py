@@ -65,7 +65,7 @@ def _hash_pw(pw, salt):
 
 def _locked_error(x, now):
     secs = max(1, int((x["lockUntil"] - now) / 1000))
-    err = bad(f"Too many wrong transfer passwords. Transfers are locked for about {max(1, round(secs / 60))} more minute{'s' if round(secs / 60) != 1 else ''}.", 429)
+    err = bad(f"Too many wrong transfer passwords. Transfers are locked for about {max(1, round(secs / 60))} more minute{'s' if round(secs / 60) != 1 else ''}.", 429, code="transfers_locked")
     err.data = {"retryAfter": secs}
     return err
 
@@ -86,7 +86,7 @@ def _check_pw(user, pw, now):
         err = _locked_error(x, now)
     else:
         left = economy.TRANSFER_PW_MAX_FAILS - x["fails"]
-        err = bad(f"Wrong transfer password. {left} more tr{'y' if left == 1 else 'ies'} before transfers lock for {economy.TRANSFER_PW_LOCK_MIN:g} minutes.", 403)
+        err = bad(f"Wrong transfer password. {left} more tr{'y' if left == 1 else 'ies'} before transfers lock for {economy.TRANSFER_PW_LOCK_MIN:g} minutes.", 403, code="wrong_transfer_password")
     err.persist = True                         # the count of wrong tries must be saved even though this request fails
     raise err
 
@@ -96,16 +96,16 @@ def _check_login_pw(user, login_password):
     users._throttle(key, 8, 900)
     if not users.password_ok(user, login_password):
         users._fail(key)
-        raise bad("Type your account (login) password to confirm it is you", 403)
+        raise bad("Type your account (login) password to confirm it is you", 403, code="wrong_password")
 
 
 def _validate_new(user, new_password):
     if not isinstance(new_password, str) or len(new_password) < 6:
-        raise bad("The transfer password must be at least 6 characters")
+        raise bad("The transfer password must be at least 6 characters", code="password_too_short")
     if len(new_password) > 200:
-        raise bad("The transfer password is too long")
+        raise bad("The transfer password is too long", code="password_too_long")
     if users.password_ok(user, new_password):
-        raise bad("The transfer password must be different from your login password")
+        raise bad("The transfer password must be different from your login password", code="password_same_as_login")
 
 
 def _store_pw(user, new_password, now):
@@ -134,12 +134,12 @@ def set_password(user, login_password, new_password, current_password=None, code
         users._throttle("tpwcode:" + user["id"], 10, 900)
         if not recovery._check(x, "tpw", str(code)):
             users._fail("tpwcode:" + user["id"])
-            err = bad("That code is wrong or has expired. Ask for a new one.", 403)
+            err = bad("That code is wrong or has expired. Ask for a new one.", 403, code="invalid_code")
             err.persist = True
             raise err
         _store_pw(user, new_password, now)
         return "reset"
-    raise bad("Type your current transfer password, or use the emailed code if you forgot it")
+    raise bad("Type your current transfer password, or use the emailed code if you forgot it", code="transfer_password_required")
 
 
 def request_reset_code(user, login_password):
@@ -147,12 +147,12 @@ def request_reset_code(user, login_password):
     Returns (address, code). The caller sends it."""
     _check_login_pw(user, login_password)
     if not has_password(user):
-        raise bad("You have not set a transfer password yet. Just set one.")
+        raise bad("You have not set a transfer password yet. Just set one.", code="no_transfer_password")
     m = user.get("mail") or {}
     if not (m.get("verified") and m.get("addr")):
-        raise bad("Resetting needs a confirmed email address on your account. Add and confirm one from the account menu first.", 403)
+        raise bad("Resetting needs a confirmed email address on your account. Add and confirm one from the account menu first.", 403, code="email_not_confirmed")
     if not mailer.delivery_on():                                     # never claim a code was sent when this site cannot send one
-        raise bad("Resetting by email is not switched on for this site yet. You can still change your transfer password with the current one.", 503)
+        raise bad("Resetting by email is not switched on for this site yet. You can still change your transfer password with the current one.", 503, code="email_unavailable")
     users._throttle("tpwsend:" + user["id"], 5, 3600)
     users._fail("tpwsend:" + user["id"])
     return m["addr"], recovery._issue(state(user), "tpw", int(economy.TRANSFER_CODE_MIN * 60))
@@ -196,9 +196,9 @@ def _account(body):
     """Which account the person is sending from (accumulated when they do not say, as before there was a choice)."""
     a = body.get("account", "accumulated")
     if not isinstance(a, str) or a not in ACCOUNTS:
-        raise bad("Choose the weekly account or the accumulated account")
+        raise bad("Choose the weekly account or the accumulated account", code="invalid_account")
     if a not in economy.TRANSFER_ACCOUNTS:
-        raise bad(f"Sending from the {a} account is switched off right now.", 403)
+        raise bad(f"Sending from the {a} account is switched off right now.", 403, code="transfers_disabled")
     return a
 
 
@@ -245,9 +245,9 @@ def _parse_amount(value):
     x = parse_money(value, "Amount")
     c = ledger.to_cents(x)
     if x <= 0 or c <= 0:
-        raise bad("Enter an amount greater than 0")
+        raise bad("Enter an amount greater than 0", code="amount_not_positive")
     if abs(x * 100 - c) > 1e-6:
-        raise bad("Use at most two decimals")
+        raise bad("Use at most two decimals", code="too_many_decimals")
     return c
 
 
@@ -255,51 +255,51 @@ def _clean_note(value):
     if value in (None, ""):
         return ""
     if not isinstance(value, str):
-        raise bad("The note must be text")
+        raise bad("The note must be text", code="invalid_request")
     note = " ".join(value.split())
     if len(note) > economy.TRANSFER_NOTE_MAX:
-        raise bad(f"The note can be at most {economy.TRANSFER_NOTE_MAX} characters")
+        raise bad(f"The note can be at most {economy.TRANSFER_NOTE_MAX} characters", code="text_too_long")
     return note
 
 
 def _check(user, body, now):
     """Everything about a transfer that can be refused before money moves. Returns (recipient, cents, note, account)."""
     if not economy.TRANSFERS_ENABLED:
-        raise bad("Transfers are switched off right now.", 403)
+        raise bad("Transfers are switched off right now.", 403, code="transfers_disabled")
     if not has_password(user):
-        raise bad("Choose a transfer password first (on the Transfers page).", 403)
+        raise bad("Choose a transfer password first (on the Transfers page).", 403, code="no_transfer_password")
     account = _account(body)
     label = ledger.LABEL[account].lower()
     if not isinstance(body.get("to"), str):
-        raise bad("Choose who to send to")
+        raise bad("Choose who to send to", code="recipient_required")
     to = db()["users"].get(body["to"])
     if to is None:
-        raise bad("That person was not found", 404)
+        raise bad("That person was not found", 404, code="user_not_found")
     if to["id"] == user["id"]:
-        raise bad("You cannot send money to yourself")
+        raise bad("You cannot send money to yourself", code="cannot_send_to_self")
     if not are_friends(user["id"], to["id"]):
-        raise bad("You can only send money to friends you have added, and who added you back.", 403)
+        raise bad("You can only send money to friends you have added, and who added you back.", 403, code="not_friends")
     if not eligible(to) or not eligible(user):
-        raise bad("That account cannot receive money right now.", 403)
+        raise bad("That account cannot receive money right now.", 403, code="recipient_unavailable")
     c = _parse_amount(body.get("amount"))
     if c < ledger.to_cents(economy.TRANSFER_MIN):
-        raise bad(f"The smallest transfer is ${economy.TRANSFER_MIN:,.2f}")
+        raise bad(f"The smallest transfer is ${economy.TRANSFER_MIN:,.2f}", code="amount_too_small")
     note = _clean_note(body.get("note"))
     have, cash = sendable_c(user, account), ledger.balance_c(user, account)
     if c > have:
         if account == "weekly" and loans.owed_c(user) and cash > have:
-            raise bad(f"Your weekly account has ${cash / 100:,.2f}, but ${loans.owed_c(user) / 100:,.2f} of it is what you owe on a loan and stays with you, so ${have / 100:,.2f} can be sent.")
-        raise bad(f"Your {label} has ${cash / 100:,.2f}. Only cash in it can be sent: shares and money riding on a bet, a round or a poker table are not cash.")
+            raise bad(f"Your weekly account has ${cash / 100:,.2f}, but ${loans.owed_c(user) / 100:,.2f} of it is what you owe on a loan and stays with you, so ${have / 100:,.2f} can be sent.", code="insufficient_funds")
+        raise bad(f"Your {label} has ${cash / 100:,.2f}. Only cash in it can be sent: shares and money riding on a bet, a round or a poker table are not cash.", code="insufficient_funds")
     al = _allowance(user, now, account)
     if c > al["remaining_c"]:
-        raise bad(f"That is over your daily limit for the {account} account. You can send ${al['remaining_c'] / 100:,.2f} more today (limit ${al['limit_c'] / 100:,.2f}, resets at midnight).", 403)
+        raise bad(f"That is over your daily limit for the {account} account. You can send ${al['remaining_c'] / 100:,.2f} more today (limit ${al['limit_c'] / 100:,.2f}, resets at midnight).", 403, code="daily_limit_reached")
     room = receiver_room_c(to, account)
     if c > room:
         if account == "weekly" and economy.TRANSFER_WEEKLY_RECEIVER_PCT > 0 and room < ledger.to_cents(config.MAX_BALANCE) - ledger.balance_c(to, account):
             if room <= 0:
-                raise bad(f"{to['username']} already holds the whole weekly allocation, so there is nothing to top up.", 403)
-            raise bad(f"Weekly chips can only top a friend up to the weekly allocation. {to['username']} can take ${room / 100:,.2f} right now.", 403)
-        raise bad("That account cannot hold that much more.", 403)
+                raise bad(f"{to['username']} already holds the whole weekly allocation, so there is nothing to top up.", 403, code="recipient_cap_reached")
+            raise bad(f"Weekly chips can only top a friend up to the weekly allocation. {to['username']} can take ${room / 100:,.2f} right now.", 403, code="recipient_cap_reached")
+        raise bad("That account cannot hold that much more.", 403, code="recipient_cap_reached")
     return to, c, note, account
 
 
@@ -320,16 +320,16 @@ def send(user, body, now=None):
     now = now_ms() if now is None else now
     request_id = idem.clean_id(body.get("requestId"))
     if not request_id:
-        raise bad("Missing request id")
+        raise bad("Missing request id", code="invalid_request_id")
     if body.get("confirm") is not True:
-        raise bad("Confirm the transfer to send it")
+        raise bad("Confirm the transfer to send it", code="confirm_required")
     key = idem.key_for("xfer", user, request_id)
     fp = idem.fingerprint(to=body.get("to"), amount=str(body.get("amount")), note=body.get("note") or "", account=body.get("account") or "accumulated")
     hit = idem.seen(key, fp)
     if hit:
         return hit
     if not has_password(user):                                       # say so plainly, and do not count it as a wrong try
-        raise bad("Choose a transfer password first (on the Transfers page).", 403)
+        raise bad("Choose a transfer password first (on the Transfers page).", 403, code="no_transfer_password")
     _check_pw(user, body.get("password"), now)
     to, c, note, account = _check(user, body, now)
     tid = new_id()

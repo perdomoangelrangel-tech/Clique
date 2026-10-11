@@ -64,7 +64,7 @@ def propose(user, amount, password, account="weekly"):
     """Starts a vote on adding `amount` to the person's account. Returns the vote (already closed, and the money added, when there was nobody to ask)."""
     amount, account = users.check_deposit(user, amount, password, account)
     if open_for(user):
-        raise bad("The funds you added before are still waiting for a vote")
+        raise bad("The funds you added before are still waiting for a vote", code="vote_pending")
     now = now_ms()
     voters = _eligible(user)
     v = {"id": new_id(), "userId": user["id"], "username": user["username"], "amount": amount, "account": account, "createdAt": now,
@@ -81,15 +81,15 @@ def propose(user, amount, password, account="weekly"):
 def cast(user, vote_id, favor):
     v = _all().get(vote_id)
     if not v:
-        raise bad("There is no such vote", 404)
+        raise bad("There is no such vote", 404, code="vote_not_found")
     if v["status"] != "open":
-        raise bad("That vote has already ended")
+        raise bad("That vote has already ended", code="vote_closed")
     if user["id"] not in v["voters"]:
-        raise bad("This vote is not for you", 403)
+        raise bad("This vote is not for you", 403, code="not_a_voter")
     if user["id"] in v["votes"]:
-        raise bad("You have already voted")
+        raise bad("You have already voted", code="already_voted")
     if not isinstance(favor, bool):
-        raise bad("Vote in favor or against")
+        raise bad("Vote in favor or against", code="invalid_vote")
     v["votes"][user["id"]] = favor
     settle(v)
     return v

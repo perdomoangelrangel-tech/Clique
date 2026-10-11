@@ -82,21 +82,21 @@ def request(user, username):
     target = users.by_username(username)
     tid = target["id"]
     if tid == uid:
-        raise bad("That's you. You already like yourself.")
+        raise bad("That's you. You already like yourself.", code="cannot_friend_self")
     me, them = rec(uid), rec(tid)
     if tid in me["friends"]:
-        raise bad("You are already friends")
+        raise bad("You are already friends", code="already_friends")
     if tid in me["outgoing"]:
-        raise bad("You already asked. Give them time to answer.")
+        raise bad("You already asked. Give them time to answer.", code="request_pending")
     if tid in me["incoming"]:
         return accept(user, tid)
     _wait("friendreq:" + uid)
     if len(me["friends"]) >= MAX_FRIENDS:
-        raise bad(f"That is the most friends you can have ({MAX_FRIENDS})")
+        raise bad(f"That is the most friends you can have ({MAX_FRIENDS})", code="friend_limit")
     if len(me["outgoing"]) >= MAX_PENDING:
-        raise bad("You have too many requests waiting. Cancel a few first.")
+        raise bad("You have too many requests waiting. Cancel a few first.", code="too_many_requests")
     if len(them["incoming"]) >= MAX_PENDING * 2:
-        raise bad("They have a lot of requests waiting. Try again later.")
+        raise bad("They have a lot of requests waiting. Try again later.", code="too_many_requests")
     me["outgoing"].append(tid)
     them["incoming"].append(uid)
     return "requested"
@@ -106,10 +106,10 @@ def accept(user, other_id):
     uid = user["id"]
     me = rec(uid)
     if other_id not in me["incoming"]:
-        raise bad("There is no request from them", 404)
+        raise bad("There is no request from them", 404, code="request_not_found")
     them = rec(other_id)
     if len(me["friends"]) >= MAX_FRIENDS or len(them["friends"]) >= MAX_FRIENDS:
-        raise bad(f"Somebody has hit the {MAX_FRIENDS}-friend limit")
+        raise bad(f"Somebody has hit the {MAX_FRIENDS}-friend limit", code="friend_limit")
     me["incoming"].remove(other_id)
     if uid in them["outgoing"]:
         them["outgoing"].remove(uid)
@@ -122,7 +122,7 @@ def accept(user, other_id):
 def decline(user, other_id):
     me = rec(user["id"])
     if other_id not in me["incoming"]:
-        raise bad("There is no request from them", 404)
+        raise bad("There is no request from them", 404, code="request_not_found")
     me["incoming"].remove(other_id)
     them = rec(other_id)
     if user["id"] in them["outgoing"]:
@@ -132,7 +132,7 @@ def decline(user, other_id):
 def cancel(user, other_id):
     me = rec(user["id"])
     if other_id not in me["outgoing"]:
-        raise bad("You have no request waiting for them", 404)
+        raise bad("You have no request waiting for them", 404, code="request_not_found")
     me["outgoing"].remove(other_id)
     them = rec(other_id)
     if user["id"] in them["incoming"]:
@@ -143,7 +143,7 @@ def remove(user, other_id):
     """Ends a friendship you made by adding each other. Circle-mates stay friends for as long as they share a circle."""
     me, them = rec(user["id"]), rec(other_id)
     if other_id not in me["friends"]:
-        raise bad("You didn't add each other as friends" + (". Circle-mates are friends for as long as you share a circle." if other_id in circle_mates(user["id"]) else ""))
+        raise bad("You didn't add each other as friends" + (". Circle-mates are friends for as long as you share a circle." if other_id in circle_mates(user["id"]) else ""), code="not_friends")
     me["friends"].remove(other_id)
     if user["id"] in them["friends"]:
         them["friends"].remove(user["id"])
@@ -151,7 +151,7 @@ def remove(user, other_id):
 
 def set_hidden(user, hide):
     if not isinstance(hide, bool):
-        raise bad("Hidden is on or off")
+        raise bad("Hidden is on or off", code="invalid_setting")
     rec(user["id"])["hide"] = hide
 
 

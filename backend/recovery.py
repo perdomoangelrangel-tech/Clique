@@ -33,10 +33,10 @@ APP = "Clique"
 
 def normalize_email(value):
     if not isinstance(value, str) or not value.strip():
-        raise bad("Enter your email address")
+        raise bad("Enter your email address", code="email_required")
     addr = value.strip().lower()
     if len(addr) > 254 or ".." in addr or not EMAIL_RE.match(addr):
-        raise bad("That does not look like an email address")
+        raise bad("That does not look like an email address", code="invalid_email")
     return addr
 
 
@@ -51,7 +51,7 @@ def _owner(addr, except_uid=None):
 
 def check_available(addr, except_uid=None):
     if _owner(addr, except_uid):
-        raise bad("That email is already confirmed on another account. Use a different one.", 409)
+        raise bad("That email is already confirmed on another account. Use a different one.", 409, code="email_taken")
 
 
 # ---- codes -------------------------------------------------------------------------------------------------------
@@ -106,11 +106,11 @@ def attach(user, address, password=None):
     users._fail("setmail:" + user["id"])
     m = user.get("mail") or {}
     if m.get("verified") and m.get("addr") == addr and not m.get("pending"):
-        raise bad("That is already your confirmed email")
+        raise bad("That is already your confirmed email", code="email_already_confirmed")
     check_available(addr, user["id"])
     if m.get("verified"):                              # replacing a confirmed address: prove it is you, and keep the old one until the new one works
         if not users.password_ok(user, password):
-            raise bad("Type your current password to change your email", 403)
+            raise bad("Type your current password to change your email", 403, code="wrong_password")
         m["pending"] = {"addr": addr}
         m["codes"] = {}
     else:                                              # nothing confirmed yet: the address simply replaces what was there
@@ -124,10 +124,10 @@ def resend(user):
     m = user.get("mail") or {}
     target = (m.get("pending") or {}).get("addr") or m.get("addr")
     if not target or (m.get("verified") and not m.get("pending")):
-        raise bad("There is no email waiting to be confirmed")
+        raise bad("There is no email waiting to be confirmed", code="no_pending_email")
     last = (m.get("codes") or {}).get("verify")
     if last and time.time() - last["sent"] < RESEND_AFTER_S:
-        raise bad("A code was just sent. Give it a minute, and check your spam folder.", 429)
+        raise bad("A code was just sent. Give it a minute, and check your spam folder.", 429, code="rate_limited")
     users._throttle("vsend:" + user["id"], 6, 3600)
     users._fail("vsend:" + user["id"])
     return target, _issue(m, "verify", VERIFY_TTL_S)
@@ -137,11 +137,11 @@ def confirm(user, code):
     m = user.get("mail") or {}
     target = (m.get("pending") or {}).get("addr") or m.get("addr")
     if not target or (m.get("verified") and not m.get("pending")):
-        raise bad("There is no email waiting to be confirmed")
+        raise bad("There is no email waiting to be confirmed", code="no_pending_email")
     users._throttle("vcheck:" + user["id"], 20, 3600)
     if not _check(m, "verify", code):
         users._fail("vcheck:" + user["id"])
-        raise bad("That code is wrong or has expired. Ask for a new one.")
+        raise bad("That code is wrong or has expired. Ask for a new one.", code="invalid_code")
     check_available(target, user["id"])
     m["addr"], m["verified"] = target, True
     m.pop("pending", None)
@@ -170,7 +170,7 @@ def request_reset(email, ip):
     users._fail("forgot:" + ip)
     addr = normalize_email(email)
     if not mailer.delivery_on():
-        raise bad("Resetting by email is not switched on for this site yet. Ask whoever runs it to set a new password for you.", 503)
+        raise bad("Resetting by email is not switched on for this site yet. Ask whoever runs it to set a new password for you.", 503, code="email_unavailable")
     try:
         users._throttle("forgotmail:" + addr, 3, 3600)         # one address cannot be flooded with codes; the answer does not change
     except Exception:
@@ -186,7 +186,7 @@ def reset_with_code(email, code, new_password, ip):
     """Sets the new password if the code is right. Returns the user. Every wrong answer looks the same."""
     users._throttle("resetmail:" + ip, 20, 3600)
     users.check_new_password(new_password)
-    wrong = bad("That code is wrong or has expired. Ask for a new one.")
+    wrong = bad("That code is wrong or has expired. Ask for a new one.", code="invalid_code")
     try:
         addr = normalize_email(email)
     except Exception:

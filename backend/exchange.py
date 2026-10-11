@@ -31,7 +31,7 @@ TRADES_KEEP = 300
 
 def market():
     if engine is None or engine.s is None:
-        raise bad("The exchange is not open yet", 503)
+        raise bad("The exchange is not open yet", 503, code="exchange_closed")
     return engine
 
 
@@ -51,7 +51,7 @@ def prices_c(mid):
 def _company(sym):
     c = stockengine.BY_SYM.get(sym if isinstance(sym, str) else None)
     if not c:
-        raise bad("There is no company with that symbol", 404)
+        raise bad("There is no company with that symbol", 404, code="company_not_found")
     return c
 
 
@@ -65,20 +65,20 @@ def _shares_owned(user, sym):
 
 def parse_shares(value):
     if isinstance(value, bool) or value is None:
-        raise bad("Enter how many shares")
+        raise bad("Enter how many shares", code="shares_required")
     if isinstance(value, float):
         if not value.is_integer():
-            raise bad("Shares are whole numbers")
+            raise bad("Shares are whole numbers", code="invalid_shares")
         value = int(value)
     if isinstance(value, str):
         v = value.strip().replace(",", "")
         if not re.fullmatch(r"\d{1,9}", v):
-            raise bad("Shares are whole numbers")
+            raise bad("Shares are whole numbers", code="invalid_shares")
         value = int(v)
     if not isinstance(value, int) or value < 1:
-        raise bad("Enter at least 1 share")
+        raise bad("Enter at least 1 share", code="shares_required")
     if value > economy.STOCK_MAX_ORDER_SHARES:
-        raise bad(f"The most you can trade at once is {economy.STOCK_MAX_ORDER_SHARES:,} shares")
+        raise bad(f"The most you can trade at once is {economy.STOCK_MAX_ORDER_SHARES:,} shares", code="order_too_large")
     return value
 
 
@@ -98,14 +98,14 @@ def quote(user, body, now=None):
     c = _company(body.get("symbol"))
     side = body.get("side")
     if side not in ("buy", "sell"):
-        raise bad("Choose buy or sell")
+        raise bad("Choose buy or sell", code="invalid_action")
     shares = parse_shares(body.get("shares"))
     sym = c["sym"]
     if eng.halted(sym, now):
-        raise bad(f"Trading in {c['name']} is paused for a moment after a sharp move. Try again shortly.", 409)
+        raise bad(f"Trading in {c['name']} is paused for a moment after a sharp move. Try again shortly.", 409, code="trading_halted")
     owned = _shares_owned(user, sym)
     if side == "sell" and shares > owned:
-        raise bad(f"You only own {owned:,} share{'s' if owned != 1 else ''} of {c['name']}", 400)
+        raise bad(f"You only own {owned:,} share{'s' if owned != 1 else ''} of {c['name']}", 400, code="not_enough_shares")
     mid = eng.price(sym)
     bid, ask = prices_c(mid)
     px = ask if side == "buy" else bid
@@ -135,7 +135,7 @@ def _request_key(user, request_id):
     if request_id is None:
         return None
     if not isinstance(request_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{8,64}", request_id):
-        raise bad("Invalid request id")
+        raise bad("Invalid request id", code="invalid_request_id")
     return f"stocks:{user['id']}:{request_id}"
 
 
@@ -147,38 +147,36 @@ def trade(user, body, now=None):
     if key and key in memory:
         seen = memory[key]
         if seen["fp"] != body.get("quoteId"):
-            raise bad("That request id was already used for a different order", 409)
+            raise bad("That request id was already used for a different order", 409, code="request_id_reused")
         return {**seen["result"], "duplicate": True}
     q = QUOTES.get(body.get("quoteId")) if isinstance(body.get("quoteId"), str) else None
     if not q or q["uid"] != user["id"]:
-        raise bad("That quote was not found. Ask for a new one.", 404)
+        raise bad("That quote was not found. Ask for a new one.", 404, code="quote_not_found")
     if q["used"]:
-        raise bad("That quote was already used", 409)
+        raise bad("That quote was already used", 409, code="quote_used")
 
-    def refresh(message):
-        fresh = quote(user, {"symbol": q["sym"], "side": q["side"], "shares": q["shares"]}, now)
-        err = bad(message, 409)
-        err.data = {"quote": fresh}
+    def refresh(err):
+        err.data = {"quote": quote(user, {"symbol": q["sym"], "side": q["side"], "shares": q["shares"]}, now)}
         return err
     if now > q["exp"]:
-        raise refresh("That quote expired. Here is a fresh one.")
+        raise refresh(bad("That quote expired. Here is a fresh one.", 409, code="quote_expired"))
     sym, side, shares = q["sym"], q["side"], q["shares"]
     c = stockengine.BY_SYM[sym]
     if eng.halted(sym, now):
-        raise bad(f"Trading in {c['name']} is paused for a moment after a sharp move. Try again shortly.", 409)
+        raise bad(f"Trading in {c['name']} is paused for a moment after a sharp move. Try again shortly.", 409, code="trading_halted")
     bid, ask = prices_c(eng.price(sym))
     px = ask if side == "buy" else bid
     if abs(px - q["px"]) * 10_000 > q["px"] * economy.STOCK_MAX_SLIPPAGE_BPS:
-        raise refresh("The price moved while you were deciding. Check the new quote.")
+        raise refresh(bad("The price moved while you were deciding. Check the new quote.", 409, code="price_moved"))
 
     total = shares * px
     pos = _positions(user).setdefault(sym, {"sh": 0, "cost_c": 0, "real_c": 0})
     have = ledger.balance_c(user, "accumulated")
     if side == "buy":
         if total > have:
-            raise bad(f"Not enough in your accumulated account: this costs ${total / 100:,.2f} and you have ${have / 100:,.2f}", 400)
+            raise bad(f"Not enough in your accumulated account: this costs ${total / 100:,.2f} and you have ${have / 100:,.2f}", 400, code="insufficient_funds")
     elif shares > pos["sh"]:
-        raise bad(f"You only own {pos['sh']:,} share{'s' if pos['sh'] != 1 else ''} of {c['name']}", 400)
+        raise bad(f"You only own {pos['sh']:,} share{'s' if pos['sh'] != 1 else ''} of {c['name']}", 400, code="not_enough_shares")
     # everything is checked: from here nothing can fail
     tid = new_id()
     realized = 0
@@ -271,11 +269,11 @@ def detail(user, sym, interval="5m", limit=200):
     c = _company(sym)
     sym = c["sym"]
     if interval not in stockengine.INTERVALS:
-        raise bad("Unknown interval")
+        raise bad("Unknown interval", code="invalid_request")
     try:
         limit = max(10, min(1500, int(limit)))
     except (TypeError, ValueError):
-        raise bad("Invalid limit")
+        raise bad("Invalid limit", code="invalid_request")
     chg, pct = eng.change(sym)
     hi, lo = eng.hi_lo(sym)
     bid, ask = prices_c(eng.price(sym))

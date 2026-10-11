@@ -48,7 +48,7 @@ def account_for(user, demo, acct=None):
     if acct == "accumulated":
         return accum_account(user)
     if acct not in (None, "weekly"):
-        raise bad("Choose the weekly account or the accumulated account")
+        raise bad("Choose the weekly account or the accumulated account", code="invalid_account")
     return user
 
 
@@ -62,9 +62,9 @@ def demo_reset(user):
 def _bet(user, value, field="Bet"):
     amount = round2(parse_money(value, field))
     if amount < config.MIN_BET - 1e-9:
-        raise bad(f"The minimum bet is ${config.MIN_BET:.2f}")
+        raise bad(f"The minimum bet is ${config.MIN_BET:.2f}", code="bet_below_minimum")
     if amount > user["balance"] + 1e-9:
-        raise bad("Not enough funds")
+        raise bad("Not enough funds", code="insufficient_funds")
     return amount
 
 
@@ -110,7 +110,7 @@ def limbo(user, body):
     target = parse_money(body.get("target"), "Target")
     target_c = int(round(target * 100))
     if target_c < 101 or target_c > int(LIMBO_MAX * 100):
-        raise bad("Target must be between 1.01x and 1,000,000x")
+        raise bad("Target must be between 1.01x and 1,000,000x", code="invalid_target")
     users.debit(user, amount)
     result_c = limbo_roll_c()
     win = result_c >= target_c
@@ -148,31 +148,31 @@ def _roulette_wins(kind, value, n):
 def roulette(user, body):
     bets = body.get("bets")
     if not isinstance(bets, list) or not bets:
-        raise bad("Place at least one chip")
+        raise bad("Place at least one chip", code="no_bets")
     if len(bets) > 120:
-        raise bad("Too many bets")
+        raise bad("Too many bets", code="too_many_bets")
     clean, total = [], 0.0
     for b in bets:
         if not isinstance(b, dict):
-            raise bad("Invalid bet")
+            raise bad("Invalid bet", code="invalid_bet")
         kind = b.get("type")
         value = b.get("value")
         if kind == "straight":
             if not isinstance(value, int) or not 0 <= value <= 36:
-                raise bad("Invalid number")
+                raise bad("Invalid number", code="invalid_bet")
         elif kind in ("dozen", "column"):
             if value not in (1, 2, 3):
-                raise bad("Invalid bet")
+                raise bad("Invalid bet", code="invalid_bet")
         elif kind not in ("red", "black", "odd", "even", "low", "high"):
-            raise bad("Invalid bet")
+            raise bad("Invalid bet", code="invalid_bet")
         amount = round2(parse_money(b.get("amount"), "Chip"))
         if amount < config.MIN_BET - 1e-9:
-            raise bad(f"The minimum chip is ${config.MIN_BET:.2f}")
+            raise bad(f"The minimum chip is ${config.MIN_BET:.2f}", code="bet_below_minimum")
         clean.append((kind, value, amount))
         total += amount
     total = round2(total)
     if total > user["balance"] + 1e-9:
-        raise bad("Not enough funds")
+        raise bad("Not enough funds", code="insufficient_funds")
     users.debit(user, total)
     n = rand_below(37)
     payout, wins = 0.0, []
@@ -305,7 +305,7 @@ def _bj_advance(user, st):
 def blackjack_deal(user, body):
     g = _games(user)
     if "blackjack" in g:
-        raise bad("Finish your current hand first")
+        raise bad("Finish your current hand first", code="round_in_progress")
     amount = _bet(user, body.get("amount"))
     users.debit(user, amount)
     shoe = [{"r": r, "s": s} for _ in range(6) for r in RANKS for s in SUITS]
@@ -328,7 +328,7 @@ def blackjack_deal(user, body):
 def blackjack_action(user, body):
     st = _games(user).get("blackjack")
     if not st or st["phase"] != "player":
-        raise bad("No hand in progress")
+        raise bad("No hand in progress", code="no_round_in_progress")
     action = body.get("action")
     h = st["hands"][st["active"]]
     if action == "hit":
@@ -345,7 +345,7 @@ def blackjack_action(user, body):
         _bj_advance(user, st)
     elif action == "double":
         if len(h["cards"]) != 2:
-            raise bad("You can only double on your first two cards")
+            raise bad("You can only double on your first two cards", code="invalid_move")
         users.debit(user, h["bet"])
         st["totalBet"] = round2(st["totalBet"] + h["bet"])
         h["bet"] = round2(h["bet"] * 2)
@@ -356,7 +356,7 @@ def blackjack_action(user, body):
     elif action == "split":
         if len(st["hands"]) != 1 or len(h["cards"]) != 2 or \
                 _card_value(h["cards"][0]["r"]) != _card_value(h["cards"][1]["r"]):
-            raise bad("You can't split this hand")
+            raise bad("You can't split this hand", code="invalid_move")
         users.debit(user, h["bet"])
         st["totalBet"] = round2(st["totalBet"] + h["bet"])
         c1, c2 = h["cards"]
@@ -372,7 +372,7 @@ def blackjack_action(user, body):
             st["active"] = -1
             _bj_advance(user, st)
     else:
-        raise bad("Unknown action")
+        raise bad("Unknown action", code="invalid_action")
     return _bj_json(st, user)
 
 
@@ -414,10 +414,10 @@ def chicken_state(user):
 def chicken_start(user, body):
     g = _games(user)
     if "chicken" in g:
-        raise bad("You already have a chicken on the road")
+        raise bad("You already have a chicken on the road", code="round_in_progress")
     difficulty = body.get("difficulty", "medium")
     if difficulty not in CHICKEN:
-        raise bad("Unknown difficulty")
+        raise bad("Unknown difficulty", code="invalid_game_option")
     amount = _bet(user, body.get("amount"))
     users.debit(user, amount)
     st = {"id": new_id(), "bet": amount, "difficulty": difficulty, "step": 0, "status": "active"}
@@ -439,7 +439,7 @@ def _chicken_cash(user, st, auto=False):
 def chicken_step(user):
     st = _games(user).get("chicken")
     if not st or st["status"] != "active":
-        raise bad("Start a game first")
+        raise bad("Start a game first", code="no_round_in_progress")
     cfg = CHICKEN[st["difficulty"]]
     if rand_unit() > cfg["p"]:
         st["status"] = "dead"
@@ -456,9 +456,9 @@ def chicken_step(user):
 def chicken_cashout(user):
     st = _games(user).get("chicken")
     if not st or st["status"] != "active":
-        raise bad("Nothing to cash out")
+        raise bad("Nothing to cash out", code="no_round_in_progress")
     if st["step"] < 1:
-        raise bad("Cross at least one lane first")
+        raise bad("Cross at least one lane first", code="cashout_too_early")
     payout = _chicken_cash(user, st)
     return _chicken_json(st, user, {"payout": payout, "finished": True})
 
@@ -478,15 +478,15 @@ def coinflip(user, body):
     amount = _bet(user, body.get("amount"))
     side = body.get("side")
     if side not in ("heads", "tails"):
-        raise bad("Pick heads or tails")
+        raise bad("Pick heads or tails", code="invalid_move")
     mode = body.get("mode", "classic")
     if mode not in ("classic", "target"):
-        raise bad("Unknown mode")
+        raise bad("Unknown mode", code="invalid_game_option")
     flips = 1
     if mode == "target":
         flips = body.get("flips")
         if isinstance(flips, bool) or not isinstance(flips, int) or not 1 <= flips <= COIN_MAX_FLIPS:
-            raise bad(f"Pick between 1 and {COIN_MAX_FLIPS} flips in a row")
+            raise bad(f"Pick between 1 and {COIN_MAX_FLIPS} flips in a row", code="invalid_game_option")
     users.debit(user, amount)
     results = []
     for _ in range(flips):                       # stops at the first miss: the rest can't matter
@@ -515,7 +515,7 @@ def dice_odds(direction, target_c):
     over T wins on a roll >= T (chance 100-T); under T wins on a roll < T (chance T)."""
     count = 10000 - target_c if direction == "over" else target_c
     if not 1 <= count <= DICE_MAX_CHANCE:
-        raise bad("The win chance must be between 0.01% and 98%")
+        raise bad("The win chance must be between 0.01% and 98%", code="invalid_target")
     return count, math.floor(DICE_RTP * 10000 / count * 10000) / 10000
 
 
@@ -523,7 +523,7 @@ def dice(user, body):
     amount = _bet(user, body.get("amount"))
     direction = body.get("direction", "over")
     if direction not in ("over", "under"):
-        raise bad("Roll over or under")
+        raise bad("Roll over or under", code="invalid_move")
     target = parse_money(body.get("target"), "Target")
     target_c = int(round(target * 100))
     count, mult = dice_odds(direction, target_c)
@@ -555,7 +555,7 @@ def _side_bet(value, name):
         return 0.0
     amount = round2(parse_money(value, name))
     if amount < config.MIN_BET - 1e-9:
-        raise bad(f"The minimum {name.lower()} is ${config.MIN_BET:.2f}")
+        raise bad(f"The minimum {name.lower()} is ${config.MIN_BET:.2f}", code="bet_below_minimum")
     return amount
 
 
@@ -568,7 +568,7 @@ def war(user, body):
     colour_bet = _side_bet(body.get("colouredTie"), "Coloured tie bet")
     total = round2(main + tie_bet + colour_bet)
     if total > user["balance"] + 1e-9:
-        raise bad("Not enough funds")
+        raise bad("Not enough funds", code="insufficient_funds")
     users.debit(user, total)
     shoe = [{"r": r, "s": s} for _ in range(6) for r in RANKS for s in SUITS]
     shuffle(shoe)
@@ -624,9 +624,9 @@ def mines_table(size, mines):
 
 def _mines_check(size, mines):
     if isinstance(size, bool) or size not in MINES_SIZES:
-        raise bad("Pick a grid size: 25, 36, 49 or 64")
+        raise bad("Pick a grid size: 25, 36, 49 or 64", code="invalid_game_option")
     if isinstance(mines, bool) or not isinstance(mines, int) or not 1 <= mines <= size - 1:
-        raise bad(f"Pick between 1 and {size - 1} mines")
+        raise bad(f"Pick between 1 and {size - 1} mines", code="invalid_game_option")
 
 
 def _mines_json(st, user, extra=None):
@@ -651,7 +651,7 @@ def mines_state(user):
 def mines_start(user, body):
     g = _games(user)
     if "mines" in g:
-        raise bad("You already have a Mines round going")
+        raise bad("You already have a Mines round going", code="round_in_progress")
     size, mines = body.get("size", 25), body.get("mines", 3)
     _mines_check(size, mines)
     amount = _bet(user, body.get("amount"))
@@ -676,12 +676,12 @@ def _mines_cash(user, st):
 def mines_pick(user, body):
     st = _games(user).get("mines")
     if not st or st["status"] != "active":
-        raise bad("Start a round first")
+        raise bad("Start a round first", code="no_round_in_progress")
     tile = body.get("tile")
     if isinstance(tile, bool) or not isinstance(tile, int) or not 0 <= tile < st["size"]:
-        raise bad("Pick a tile on the grid")
+        raise bad("Pick a tile on the grid", code="invalid_move")
     if tile in st["picked"]:
-        raise bad("You already opened that one")
+        raise bad("You already opened that one", code="invalid_move")
     if tile in st["board"]:
         st["status"] = "dead"
         _record(user, "mines", st["bet"], 0.0, None, f"{st['mines']} mines in {st['size']}, hit after {len(st['picked'])}")
@@ -698,9 +698,9 @@ def mines_pick(user, body):
 def mines_cashout(user):
     st = _games(user).get("mines")
     if not st or st["status"] != "active":
-        raise bad("Nothing to cash out")
+        raise bad("Nothing to cash out", code="no_round_in_progress")
     if not st["picked"]:
-        raise bad("Open at least one tile first")
+        raise bad("Open at least one tile first", code="cashout_too_early")
     payout = _mines_cash(user, st)
     return _mines_json(st, user, {"payout": payout, "finished": True})
 
@@ -735,7 +735,7 @@ def moles_table(moles):
 
 def _moles_check(moles):
     if isinstance(moles, bool) or not isinstance(moles, int) or not 1 <= moles <= MOLES_HOLES - 1:
-        raise bad(f"Pick between 1 and {MOLES_HOLES - 1} moles")
+        raise bad(f"Pick between 1 and {MOLES_HOLES - 1} moles", code="invalid_game_option")
 
 
 def _moles_json(st, user, extra=None):
@@ -758,7 +758,7 @@ def moles_state(user):
 def moles_start(user, body):
     g = _games(user)
     if "moles" in g:
-        raise bad("You already have a Moles round going")
+        raise bad("You already have a Moles round going", code="round_in_progress")
     moles = body.get("moles", 3)
     _moles_check(moles)
     amount = _bet(user, body.get("amount"))
@@ -781,10 +781,10 @@ def _moles_cash(user, st):
 def moles_pick(user, body):
     st = _games(user).get("moles")
     if not st or st["status"] != "active":
-        raise bad("Start a round first")
+        raise bad("Start a round first", code="no_round_in_progress")
     hole = body.get("hole")
     if isinstance(hole, bool) or not isinstance(hole, int) or not 0 <= hole < MOLES_HOLES:
-        raise bad("Pick one of the holes")
+        raise bad("Pick one of the holes", code="invalid_move")
     popped = sorted(shuffle(list(range(MOLES_HOLES)))[:st["moles"]])      # where the moles are this round
     if hole not in popped:
         st["status"] = "dead"
@@ -802,9 +802,9 @@ def moles_pick(user, body):
 def moles_cashout(user):
     st = _games(user).get("moles")
     if not st or st["status"] != "active":
-        raise bad("Nothing to cash out")
+        raise bad("Nothing to cash out", code="no_round_in_progress")
     if st["hits"] < 1:
-        raise bad("Whack at least one mole first")
+        raise bad("Whack at least one mole first", code="cashout_too_early")
     payout = _moles_cash(user, st)
     return _moles_json(st, user, {"payout": payout, "finished": True})
 
@@ -827,7 +827,7 @@ def tower_mult(risk, rows):
 
 def tower_table(risk):
     if risk not in TOWER_RISK:
-        raise bad("Unknown risk level")
+        raise bad("Unknown risk level", code="invalid_game_option")
     return [tower_mult(risk, k) for k in range(0, TOWER_ROWS + 1)]
 
 
@@ -852,10 +852,10 @@ def tower_state(user):
 def tower_start(user, body):
     g = _games(user)
     if "tower" in g:
-        raise bad("You already have a Tower climb going")
+        raise bad("You already have a Tower climb going", code="round_in_progress")
     risk = body.get("risk", "easy")
     if risk not in TOWER_RISK:
-        raise bad("Unknown risk level")
+        raise bad("Unknown risk level", code="invalid_game_option")
     amount = _bet(user, body.get("amount"))
     cols, traps = TOWER_RISK[risk]
     users.debit(user, amount)
@@ -880,10 +880,10 @@ def _tower_cash(user, st):
 def tower_pick(user, body):
     st = _games(user).get("tower")
     if not st or st["status"] != "active":
-        raise bad("Start a climb first")
+        raise bad("Start a climb first", code="no_round_in_progress")
     col = body.get("tile")
     if isinstance(col, bool) or not isinstance(col, int) or not 0 <= col < st["cols"]:
-        raise bad("Pick a tile on the next row")
+        raise bad("Pick a tile on the next row", code="invalid_move")
     row = len(st["picks"])
     if col in st["layout"][row]:
         st["status"] = "dead"
@@ -901,9 +901,9 @@ def tower_pick(user, body):
 def tower_cashout(user):
     st = _games(user).get("tower")
     if not st or st["status"] != "active":
-        raise bad("Nothing to cash out")
+        raise bad("Nothing to cash out", code="no_round_in_progress")
     if not st["picks"]:
-        raise bad("Climb at least one row first")
+        raise bad("Climb at least one row first", code="cashout_too_early")
     payout = _tower_cash(user, st)
     return _tower_json(st, user, {"payout": payout, "finished": True})
 
@@ -991,7 +991,7 @@ def hilo_state(user):
 def hilo_start(user, body):
     g = _games(user)
     if "hilo" in g:
-        raise bad("You already have a Hi-Lo round going")
+        raise bad("You already have a Hi-Lo round going", code="round_in_progress")
     amount = _bet(user, body.get("amount"))
     users.debit(user, amount)
     st = {"id": new_id(), "bet": amount, "card": _hilo_card(), "steps": [], "skips": 0, "history": [], "status": "active"}
@@ -1016,13 +1016,13 @@ def _hilo_cash(user, st):
 def hilo_guess(user, body):
     st = _games(user).get("hilo")
     if not st or st["status"] != "active":
-        raise bad("Start a round first")
+        raise bad("Start a round first", code="no_round_in_progress")
     pick = body.get("pick")
     if pick not in ("higher", "lower"):
-        raise bad("Guess higher or lower")
+        raise bad("Guess higher or lower", code="invalid_move")
     opt = hilo_options(st["card"]["r"])[pick]
     if not opt["offered"]:
-        raise bad("That guess cannot lose, so it is not offered. Guess the other way, or skip the card.")
+        raise bad("That guess cannot lose, so it is not offered. Guess the other way, or skip the card.", code="guess_not_offered")
     nxt = _hilo_card()
     cur = st["card"]["r"]
     won = nxt["r"] >= cur if pick == "higher" else nxt["r"] <= cur
@@ -1046,9 +1046,9 @@ def hilo_guess(user, body):
 def hilo_skip(user):
     st = _games(user).get("hilo")
     if not st or st["status"] != "active":
-        raise bad("Start a round first")
+        raise bad("Start a round first", code="no_round_in_progress")
     if st["skips"] >= HILO_MAX_SKIPS:
-        raise bad("No skips left in this round")
+        raise bad("No skips left in this round", code="no_skips_left")
     st["skips"] += 1
     st["card"] = _hilo_card()
     st["history"].append({**_card_json(st["card"]), "t": "skip"})
@@ -1058,9 +1058,9 @@ def hilo_skip(user):
 def hilo_cashout(user):
     st = _games(user).get("hilo")
     if not st or st["status"] != "active":
-        raise bad("Nothing to cash out")
+        raise bad("Nothing to cash out", code="no_round_in_progress")
     if not st["steps"]:
-        raise bad("Guess right at least once first")
+        raise bad("Guess right at least once first", code="cashout_too_early")
     payout = _hilo_cash(user, st)
     return _hilo_json(st, user, {"payout": payout, "finished": True})
 
@@ -1097,7 +1097,7 @@ def wheel_table(risk):
 def wheel(user, body):
     risk = body.get("risk")
     if risk not in WHEEL_RISKS:
-        raise bad("Pick a risk level")
+        raise bad("Pick a risk level", code="invalid_game_option")
     amount = _bet(user, body.get("amount"))
     users.debit(user, amount)
     layout = wheel_layout(risk)
@@ -1151,7 +1151,7 @@ def rps_state(user):
 def rps_start(user, body):
     g = _games(user)
     if "rps" in g:
-        raise bad("You already have a Rock Paper Scissors round going")
+        raise bad("You already have a Rock Paper Scissors round going", code="round_in_progress")
     amount = _bet(user, body.get("amount"))
     users.debit(user, amount)
     st = {"id": new_id(), "bet": amount, "wins": 0, "draws": 0, "status": "active"}
@@ -1173,10 +1173,10 @@ def _rps_cash(user, st):
 def rps_play(user, body):
     st = _games(user).get("rps")
     if not st or st["status"] != "active":
-        raise bad("Start a round first")
+        raise bad("Start a round first", code="no_round_in_progress")
     pick = body.get("pick")
     if pick not in RPS_MOVES:
-        raise bad("Pick rock, paper or scissors")
+        raise bad("Pick rock, paper or scissors", code="invalid_move")
     house = RPS_MOVES[rand_below(3)]
     if house == pick:
         st["draws"] += 1
@@ -1196,9 +1196,9 @@ def rps_play(user, body):
 def rps_cashout(user):
     st = _games(user).get("rps")
     if not st or st["status"] != "active":
-        raise bad("Nothing to cash out")
+        raise bad("Nothing to cash out", code="no_round_in_progress")
     if st["wins"] < 1:
-        raise bad("Win at least one round first")
+        raise bad("Win at least one round first", code="cashout_too_early")
     payout = _rps_cash(user, st)
     return _rps_json(st, user, {"payout": payout, "finished": True})
 

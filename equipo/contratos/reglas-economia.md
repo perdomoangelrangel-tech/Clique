@@ -14,7 +14,7 @@ números que se puedan rastrear) y E7 (para verificar).
   (todas en `tests/`). "Sin prueba" quiere decir que ninguna prueba la fija.
 - El dinero se guarda en dólares de punto flotante en el usuario (`user["balance"]`, `user["accum"]`), pero el libro
   trabaja en **centavos enteros** (`backend/ledger.py:33`, `to_cents`: redondea a la mitad hacia arriba).
-- Dos redondeos distintos en el código: `backend/util.py:232` `round2` (a la mitad hacia arriba) y
+- Dos redondeos distintos en el código: `backend/util.py:59` `round2` (a la mitad hacia arriba) y
   `backend/lmsr.py:93` `floor_cents` (hacia abajo, "nunca a favor del jugador").
 
 | Sección de `ECONOMY.md` | Aquí |
@@ -103,7 +103,7 @@ números que se puedan rastrear) y E7 (para verificar).
 
 | Regla | Dónde | Prueba |
 |---|---|---|
-| Una semana va del **lunes 00:00 al lunes siguiente 00:00**, hora de `WEEK_TIMEZONE` (por omisión `America/Mexico_City`; sin base de zonas, UTC−6 fijo). Las fronteras se cuentan por calendario, no sumando horas. Una zona desconocida detiene el arranque. | `backend/config.py:64-71`, `backend/util.py:186-209`, `backend/util.py:280-335` | `test_timezone.py::WeekBoundaries.*`, `ChoosingTheZone.*` |
+| Una semana va del **lunes 00:00 al lunes siguiente 00:00**, hora de `WEEK_TIMEZONE` (por omisión `America/Mexico_City`; sin base de zonas, UTC−6 fijo). Las fronteras se cuentan por calendario, no sumando horas. Una zona desconocida detiene el arranque. | `backend/config.py:64-71`, `backend/util.py:12-35`, `backend/util.py:107-162` | `test_timezone.py::WeekBoundaries.*`, `ChoosingTheZone.*` |
 | **Lo que tienes** = efectivo semanal + valor de venta de las apuestas abiertas + apuestas en rondas de casino sin terminar + dinero real en una mesa de póker − **lo que debes de un préstamo**. | `backend/markets.py:542-562`, `backend/games.py:222-230`, `backend/poker.py:216-231` | `test_weekly_rewards.py::Leaderboard.test_open_bets_and_unfinished_rounds_count_as_money_you_hold`, `test_loans.py::Disbursement.test_borrowing_does_not_change_what_you_hold_or_how_the_week_went` |
 | **Rendimiento** = lo que tienes ahora − lo que tenías al empezar la semana − lo que te dieron de fuera (`external`). La acumulada, la tienda y la bolsa no cuentan. | `backend/weekly.py:73-78`, `backend/weekly.py:139` | `test_weekly_rewards.py::Leaderboard.test_performance_is_what_you_hold_minus_where_you_started_minus_handouts`, `test_the_accumulated_account_and_what_you_spend_there_do_not_count` |
 | Orden de la tabla del círculo: (0) quien no cumplió el mínimo al cierre va al final; 1. mayor rendimiento; 2. más tenencia; 3. cuenta más antigua; 4. id. | `backend/weekly.py:142` | `test_weekly_rewards.py::Leaderboard.test_order_and_tie_breakers_are_fixed`, `test_a_tie_on_performance_goes_to_whoever_holds_more_then_the_older_account` |
@@ -239,10 +239,10 @@ semanal (`backend/weekly.py:611-616`; `test_weekly_rewards.py::PendingAtTheEndOf
 |---|---|---|
 | 10 empresas ficticias; un mercado compartido por el servidor. | `backend/stockengine.py:58-81` | `test_exchange.py::TheCompanies.*` |
 | Precio entre $1 y $5,000; paso máximo de 1 % por segundo; banda de 0.45× a 2.2× del valor justo; un movimiento de 8 % en 5 minutos pausa las órdenes 60 s. | `backend/stockengine.py:40-43`, `backend/stockengine.py:270-278` | `test_exchange.py::ThePriceEngine.*` |
-| Solo acciones enteras, sin apalancamiento ni ventas en corto; máximo `STOCK_MAX_ORDER_SHARES` = 100,000 por orden. | `backend/exchange.py:66-82`, `backend/exchange.py:172-181` | `test_exchange.py::Trading.test_bad_orders_are_refused_with_a_reason`, `test_you_can_not_spend_more_than_you_have_or_sell_more_than_you_own` |
+| Solo acciones enteras, sin apalancamiento ni ventas en corto; máximo `STOCK_MAX_ORDER_SHARES` = 100,000 por orden. | `backend/exchange.py:66-82`, `backend/exchange.py:170-179` | `test_exchange.py::Trading.test_bad_orders_are_refused_with_a_reason`, `test_you_can_not_spend_more_than_you_have_or_sell_more_than_you_own` |
 | Diferencial `STOCK_SPREAD_BPS` = 30 pb en total: compra al *ask* (redondeado hacia arriba), venta al *bid* (hacia abajo), al menos un centavo de diferencia. | `backend/economy.py:114`, `backend/exchange.py:40-48` | `test_exchange.py::Trading.test_buying_and_straight_away_selling_always_loses`, `test_no_sequence_of_trades_at_one_price_ever_makes_money` |
-| Cotización de un uso, de una persona, válida `STOCK_QUOTE_TTL_S` = 15 s. Si el precio se movió más de `STOCK_MAX_SLIPPAGE_BPS` = 50 pb no se llena y se da otra; si se movió menos, se llena al precio **actual**. | `backend/economy.py:115-116`, `backend/exchange.py:95-129`, `backend/exchange.py:142-172` | `test_exchange.py::Trading.test_a_quote_expires_and_you_get_a_fresh_one`, `test_if_the_price_moves_too_far_before_you_confirm_nothing_is_filled`, `test_a_small_move_fills_at_the_current_price_in_both_directions_so_waiting_gains_nothing` |
-| Cargo o abono a la **acumulada**: razones `stocks.buy` y `stocks.sell`, `txid` `stk:<operación>`. | `backend/exchange.py:186`, `backend/exchange.py:191` | `test_exchange.py::Trading.test_a_buy_is_paid_from_the_accumulated_account_at_the_ask`, `test_a_sell_pays_the_bid_and_records_the_gain_or_loss` |
+| Cotización de un uso, de una persona, válida `STOCK_QUOTE_TTL_S` = 15 s. Si el precio se movió más de `STOCK_MAX_SLIPPAGE_BPS` = 50 pb no se llena y se da otra; si se movió menos, se llena al precio **actual**. | `backend/economy.py:115-116`, `backend/exchange.py:95-129`, `backend/exchange.py:142-170` | `test_exchange.py::Trading.test_a_quote_expires_and_you_get_a_fresh_one`, `test_if_the_price_moves_too_far_before_you_confirm_nothing_is_filled`, `test_a_small_move_fills_at_the_current_price_in_both_directions_so_waiting_gains_nothing` |
+| Cargo o abono a la **acumulada**: razones `stocks.buy` y `stocks.sell`, `txid` `stk:<operación>`. | `backend/exchange.py:184`, `backend/exchange.py:189` | `test_exchange.py::Trading.test_a_buy_is_paid_from_the_accumulated_account_at_the_ask`, `test_a_sell_pays_the_bid_and_records_the_gain_or_loss` |
 | No cuenta para la semana ni la toca el reinicio. | `backend/weekly.py:49-54` | `test_exchange.py::Trading.test_the_stock_account_does_not_touch_the_weekly_leaderboard_or_the_weekly_reset` |
 
 ## 12. El casino: ventaja de la casa y pago de cada juego
@@ -251,7 +251,7 @@ Reglas comunes:
 
 | Regla | Dónde | Prueba |
 |---|---|---|
-| El servidor reparte y tira con una fuente segura (`secrets`). El navegador nunca decide (D8). | `backend/util.py:236-249` | `test_casino_three.py::HiLoRounds.test_the_random_source_is_the_secure_one`, `test_roulette_odds.py::TheRealRandomSourceIsFair.*` |
+| El servidor reparte y tira con una fuente segura (`secrets`). El navegador nunca decide (D8). | `backend/util.py:63-76` | `test_casino_three.py::HiLoRounds.test_the_random_source_is_the_secure_one`, `test_roulette_odds.py::TheRealRandomSourceIsFair.*` |
 | Apuesta mínima `MIN_BET` = $0.10, redondeada a centavos; no más de lo que tiene la cuenta elegida. | `backend/config.py:55`, `backend/games.py:62-68` | `test_new_games.py::War.test_funds_and_minimums` |
 | La apuesta se cobra **antes** de jugar (`users.debit`) y el pago se abona al terminar (`users.credit`). Una ronda de varios pasos guarda su apuesta como "en juego" (`escrow`), que cuenta como dinero de quien juega. | `backend/games.py:222-230` | `test_casino_three.py::HiLoRounds.test_the_stake_in_play_counts_as_the_players_money` |
 | Una ronda de cada juego a la vez por cuenta. | p. ej. `backend/games.py:415-417` | `test_casino_three.py::HiLoRounds.test_one_round_at_a_time_and_the_stake_is_taken_once` |
@@ -387,8 +387,8 @@ código que llama a `ledger.post` o `ledger.opening` esté en esta tabla.
 | `transfers.send` | `backend/transfers.py:339` | `transfer.out` | − la cuenta elegida | la misma cuenta de la otra persona | `xfer:<transferencia>:out` | sí |
 | `transfers.send` | `backend/transfers.py:340` | `transfer.in` | + la misma cuenta, de quien recibe | la misma cuenta de quien envía | `xfer:<transferencia>:in` | sí |
 | `cosmetics.buy` | `backend/cosmetics.py:343` | `store.buy` | − acumulada | `tienda` | `buy:<producto>` | no |
-| `exchange.trade` | `backend/exchange.py:186` | `stocks.buy` | − acumulada | `bolsa` | `stk:<operación>` | no |
-| `exchange.trade` | `backend/exchange.py:191` | `stocks.sell` | + acumulada | `bolsa` | `stk:<operación>` | no |
+| `exchange.trade` | `backend/exchange.py:184` | `stocks.buy` | − acumulada | `bolsa` | `stk:<operación>` | no |
+| `exchange.trade` | `backend/exchange.py:189` | `stocks.sell` | + acumulada | `bolsa` | `stk:<operación>` | no |
 | `migrations.split_accounts` (E2) | `backend/migrations.py:38-39` | `opening` | ninguna: deja constancia del saldo que ya había | — | — | sí |
 | `migrations.retire_horses` (E2) | `backend/migrations.py:70` | `casino.horses` | + semanal (devuelve la apuesta) | `casa` | `horse:retired:<carrera>:<clave>` | no |
 

@@ -50,11 +50,11 @@ def chat_for(user, chat_id):
     if kind == "circle":
         c = db()["circles"].get(chat_id[len("circle_"):])
         if not c or uid not in c["members"]:
-            raise bad("Chat not found", 404)
+            raise bad("Chat not found", 404, code="chat_not_found")
         return _ensure(chat_id)
     chat = _chats().get(chat_id)
     if kind is None or not chat or uid not in chat["members"]:
-        raise bad("Chat not found", 404)
+        raise bad("Chat not found", 404, code="chat_not_found")
     return chat
 
 
@@ -196,7 +196,7 @@ def mark_read(user, chat_id, upto):
     """The person has read up to message `upto`. Returns (chat, [n, when] or None if nothing new was read)."""
     chat = chat_for(user, chat_id)
     if isinstance(upto, bool) or not isinstance(upto, int):
-        raise bad("Which message?")
+        raise bad("Which message?", code="invalid_request")
     reads = social.rec(user["id"])["reads"]
     reads[chat["id"]] = max(_pointer(user["id"], chat), min(upto, chat["seq"]))
     return chat, _see(user["id"], chat, upto)
@@ -206,7 +206,7 @@ def mark_read(user, chat_id, upto):
 
 def set_receipts(user, on):
     if not isinstance(on, bool):
-        raise bad("Read receipts are on or off")
+        raise bad("Read receipts are on or off", code="invalid_setting")
     social.rec(user["id"])["receipts"] = on
 
 
@@ -242,16 +242,16 @@ def seen_audience(chat, reader_id):
 
 def clean_message(text):
     if not isinstance(text, str):
-        raise bad("Write something first")
+        raise bad("Write something first", code="text_required")
     text = _HIDDEN_CONTROLS.sub("", text)
     text = "".join(ch for ch in text if ch == "\n" or (ch >= " " and ch != "\x7f"))
     text = re.sub(r"[ \t]+", " ", text)
     text = "\n".join(line.strip() for line in text.split("\n"))
     text = re.sub(r"\n{3,}", "\n\n", text).strip()
     if not text:
-        raise bad("Write something first")
+        raise bad("Write something first", code="text_required")
     if len(text) > MAX_TEXT:
-        raise bad(f"Messages can be {MAX_TEXT} characters at most")
+        raise bad(f"Messages can be {MAX_TEXT} characters at most", code="text_too_long")
     return text
 
 
@@ -260,7 +260,7 @@ def _slow_down(uid):
     recent = [t for t in _sent.get(uid, []) if now - t < SPEED[1]]
     if len(recent) >= SPEED[0]:
         _sent[uid] = recent
-        raise bad("Easy. You are sending messages too fast.", 429)
+        raise bad("Easy. You are sending messages too fast.", 429, code="rate_limited")
     recent.append(now)
     _sent[uid] = recent
 
@@ -281,7 +281,7 @@ def send(user, chat_id, text):
     uid = user["id"]
     text = clean_message(text)
     if chat["kind"] == "dm" and not social.is_friend(uid, _other(chat, uid)):
-        raise bad("You can only message friends. Add them first.", 403)
+        raise bad("You can only message friends. Add them first.", 403, code="not_friends")
     _slow_down(uid)
     msg = _append(chat, uid, text)
     social.rec(uid)["reads"][chat["id"]] = chat["seq"]
@@ -293,13 +293,13 @@ def delete_message(user, chat_id, n):
     """You can take back your own message. The owner of a circle can also clear things out of its chat."""
     chat = chat_for(user, chat_id)
     if isinstance(n, bool) or not isinstance(n, int):
-        raise bad("Which message?")
+        raise bad("Which message?", code="invalid_request")
     msg = next((m for m in chat["msgs"] if m["n"] == n and not m.get("sys")), None)
     if msg is None:
-        raise bad("That message is gone", 404)
+        raise bad("That message is gone", 404, code="message_not_found")
     owner = chat["kind"] == "circle" and db()["circles"][chat["id"][len("circle_"):]]["ownerId"] == user["id"]
     if msg["u"] != user["id"] and not owner:
-        raise bad("You can only delete your own messages", 403)
+        raise bad("You can only delete your own messages", 403, code="not_your_message")
     chat["msgs"].remove(msg)
 
 
@@ -308,7 +308,7 @@ def delete_message(user, chat_id, n):
 def open_dm(user, other_id):
     uid = user["id"]
     if other_id not in db()["users"] or not social.is_friend(uid, other_id):
-        raise bad("You can only message friends. Add them first.", 403)
+        raise bad("You can only message friends. Add them first.", 403, code="not_friends")
     chat_id = "dm_" + "_".join(sorted([uid, other_id]))
     chat = _ensure(chat_id)
     if not chat["members"]:
@@ -320,10 +320,10 @@ def _friends_only(uid, ids):
     out = []
     for i in ids:
         if not isinstance(i, str) or i not in db()["users"]:
-            raise bad("Somebody on that list doesn't exist")
+            raise bad("Somebody on that list doesn't exist", code="user_not_found")
         if i != uid and i not in out:
             if not social.is_friend(uid, i):
-                raise bad(f"{_name(i)} is not your friend yet")
+                raise bad(f"{_name(i)} is not your friend yet", code="not_friends")
             out.append(i)
     return out
 
@@ -331,12 +331,12 @@ def _friends_only(uid, ids):
 def create_group(user, name, member_ids):
     uid = user["id"]
     if not isinstance(member_ids, list):
-        raise bad("Pick who is in the group")
+        raise bad("Pick who is in the group", code="invalid_group")
     others = _friends_only(uid, member_ids)
     if len(others) < 2:
-        raise bad("A group needs at least two friends. For one friend, just message them.")
+        raise bad("A group needs at least two friends. For one friend, just message them.", code="invalid_group")
     if len(others) + 1 > MAX_GROUP:
-        raise bad(f"A group can have {MAX_GROUP} people at most")
+        raise bad(f"A group can have {MAX_GROUP} people at most", code="group_full")
     name = clean_text(name, "Group name", 1, 40) if name else ""
     chat = _ensure("group_" + new_id())
     chat.update({"name": name, "members": [uid] + others, "owner": uid})
@@ -347,9 +347,9 @@ def create_group(user, name, member_ids):
 def _group_owned(user, chat_id):
     chat = chat_for(user, chat_id)
     if chat["kind"] != "group":
-        raise bad("That only works in a group chat")
+        raise bad("That only works in a group chat", code="not_a_group")
     if chat["owner"] != user["id"]:
-        raise bad("Only the person who made the group can do that", 403)
+        raise bad("Only the person who made the group can do that", 403, code="not_group_owner")
     return chat
 
 
@@ -357,9 +357,9 @@ def add_members(user, chat_id, ids):
     chat = _group_owned(user, chat_id)
     new = [i for i in _friends_only(user["id"], ids) if i not in chat["members"]]
     if not new:
-        raise bad("Pick friends who are not in the group yet")
+        raise bad("Pick friends who are not in the group yet", code="invalid_group")
     if len(chat["members"]) + len(new) > MAX_GROUP:
-        raise bad(f"A group can have {MAX_GROUP} people at most")
+        raise bad(f"A group can have {MAX_GROUP} people at most", code="group_full")
     chat["members"] += new
     _append(chat, user["id"], f"{_name(user['id'])} added {', '.join(_name(i) for i in new)}", system=True)
     return chat
@@ -368,9 +368,9 @@ def add_members(user, chat_id, ids):
 def remove_member(user, chat_id, target_id):
     chat = _group_owned(user, chat_id)
     if target_id == user["id"]:
-        raise bad("To go yourself, leave the group")
+        raise bad("To go yourself, leave the group", code="invalid_group")
     if target_id not in chat["members"]:
-        raise bad("They are not in this group")
+        raise bad("They are not in this group", code="invalid_group")
     chat["members"].remove(target_id)
     _append(chat, user["id"], f"{_name(user['id'])} removed {_name(target_id)}", system=True)
     return chat
@@ -387,7 +387,7 @@ def leave(user, chat_id):
     """Leaves a group. Returns the chat, or None if it closed because fewer than two people were left."""
     chat = chat_for(user, chat_id)
     if chat["kind"] != "group":
-        raise bad("You can only leave a group. For a circle chat, leave the circle." if chat["kind"] == "circle" else "You can only leave a group.")
+        raise bad("You can only leave a group. For a circle chat, leave the circle." if chat["kind"] == "circle" else "You can only leave a group.", code="cannot_leave_chat")
     uid = user["id"]
     chat["members"].remove(uid)
     if len(chat["members"]) < 2:

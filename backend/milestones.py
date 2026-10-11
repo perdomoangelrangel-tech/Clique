@@ -76,12 +76,12 @@ def claim(user, tid, now=None):
     tiers = {t["id"]: t for t in rules.milestone_tiers()}
     t = tiers.get(tid) if isinstance(tid, str) else None
     if t is None:
-        raise bad("That milestone does not exist", 404)
+        raise bad("That milestone does not exist", 404, code="milestone_not_found")
     g = progress.state(user)
     if tid in g["claimed"]:
-        raise bad("You already claimed that reward", 409)
+        raise bad("You already claimed that reward", 409, code="already_claimed")
     if tid not in g["done"]:
-        raise bad("That milestone is not reached yet")
+        raise bad("That milestone is not reached yet", code="goal_not_reached")
     with Txn(users=[user]):
         row = None
         if t["money_c"] > 0:

@@ -65,10 +65,10 @@ def holdings_c(user):
 def _money(value, field="Amount"):
     x = parse_money(value, field)
     if x <= 0:
-        raise bad("Enter an amount greater than 0")
+        raise bad("Enter an amount greater than 0", code="amount_not_positive")
     c = ledger.to_cents(x)
     if abs(x * 100 - c) > 1e-6:
-        raise bad("Use at most two decimals")
+        raise bad("Use at most two decimals", code="too_many_decimals")
     return c
 
 
@@ -119,12 +119,12 @@ def quote(user, amount, now=None):
     now = now_ms() if now is None else now
     lim = limits(user, now)
     if not lim["eligible"]:
-        raise bad(lim["reasons"][0], 403)
+        raise bad(lim["reasons"][0], 403, code="loan_not_allowed")
     c = _money(amount)
     if c < lim["min_c"]:
-        raise bad(f"The smallest loan is ${lim['min_c'] / 100:,.2f}")
+        raise bad(f"The smallest loan is ${lim['min_c'] / 100:,.2f}", code="loan_too_small")
     if c > lim["available_c"]:
-        raise bad(f"You can borrow up to ${lim['available_c'] / 100:,.2f} right now", 403)
+        raise bad(f"You can borrow up to ${lim['available_c'] / 100:,.2f} right now", 403, code="loan_too_large")
     fee_c = ledger.to_cents(economy.LOAN_FEE)
     return {"amount": c / 100, "fee": fee_c / 100, "total": (c + fee_c) / 100, "dueAt": lim["dueAt"], "week": lim["week"],
             "weeklyAfter": (ledger.balance_c(user, "weekly") + c) / 100,
@@ -185,18 +185,18 @@ def repay(user, amount, request_id=None, now=None):
         return hit
     loan = active(user)
     if not loan:
-        raise bad("You do not owe anything", 409)
+        raise bad("You do not owe anything", 409, code="no_debt")
     cash = ledger.balance_c(user, "weekly")
     if isinstance(amount, str) and amount.strip().lower() == "all":
         c = min(loan["owed_c"], cash)
         if c <= 0:
-            raise bad("There is nothing in your weekly account to repay with")
+            raise bad("There is nothing in your weekly account to repay with", code="insufficient_funds")
     else:
         c = _money(amount)
         if c > loan["owed_c"]:
-            raise bad(f"You only owe ${loan['owed_c'] / 100:,.2f}")
+            raise bad(f"You only owe ${loan['owed_c'] / 100:,.2f}", code="repay_too_large")
         if c > cash:
-            raise bad(f"Your weekly account has ${cash / 100:,.2f}. Loans are only repaid from the weekly account.")
+            raise bad(f"Your weekly account has ${cash / 100:,.2f}. Loans are only repaid from the weekly account.", code="insufficient_funds")
     with Txn(users=[user], extras=[(_loans(), loan["id"]), (db().setdefault("idem", {}), key or "-")]):
         _apply_payment(user, loan, c, "repay", f"loan:{loan['id']}:pay:{request_id or new_id()}", now, "Loan repayment")
         result = {"loan": loan_json(loan, now), "paid": c / 100, "owed": loan["owed_c"] / 100, "closed": loan["status"] == "closed",

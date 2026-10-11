@@ -99,7 +99,7 @@ def post(user, account, amount, reason=None, *, ref=None, external=False, txid=N
     field = FIELD[account]
     have = to_cents(user.get(field, 0.0))
     if delta < 0 and have + delta < 0:
-        raise bad("Not enough funds" if account == "weekly" else "Not enough in your accumulated account")
+        raise bad("Not enough funds" if account == "weekly" else "Not enough in your accumulated account", code="insufficient_funds")
     cap = to_cents(config.MAX_BALANCE)
     new = min(cap, have + delta)
     delta = new - have

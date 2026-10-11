@@ -39,13 +39,13 @@ SIGNALS_PER_10S = 120
 def _member(user, cid):
     c = circles.get(cid)
     if not circles.is_member(c, user):
-        raise bad("Join this circle first", 403)
+        raise bad("Join this circle first", 403, code="not_circle_member")
     return c
 
 
 def _sid(value):
     if not isinstance(value, str) or not SID_RE.match(value):
-        raise bad("Invalid session")
+        raise bad("Invalid session", code="invalid_request")
     return value
 
 
@@ -88,7 +88,7 @@ def join(user, cid, sid):
         room = ROOMS.setdefault(cid, {})
         existing = room.get(user["id"])
         if not existing and len(room) >= economy.VOICE_MAX_PEOPLE:
-            raise bad(f"This room is full ({economy.VOICE_MAX_PEOPLE} people)", 409)
+            raise bad(f"This room is full ({economy.VOICE_MAX_PEOPLE} people)", 409, code="room_full")
         replaced = existing["sid"] if existing and existing["sid"] != sid else None
         now = time.time()
         room[user["id"]] = {"sid": sid, "joined": existing["joined"] if existing and not replaced else int(now * 1000),
@@ -133,22 +133,22 @@ def signal(user, cid, sid, to_uid, to_sid, data):
     _member(user, cid)
     sid = _sid(sid)
     if not isinstance(data, dict) or data.get("type") not in SIGNAL_TYPES:
-        raise bad("Invalid message")
+        raise bad("Invalid message", code="invalid_request")
     if len(json.dumps(data, separators=(",", ":"))) > MAX_SIGNAL_BYTES:
-        raise bad("That message is too large", 413)
+        raise bad("That message is too large", 413, code="request_too_large")
     now = time.time()
     with _lock:
         recent = [t for t in _signals.get(user["id"], []) if now - t < 10]
         if len(recent) >= SIGNALS_PER_10S:
-            raise bad("Too many messages. Slow down.", 429)
+            raise bad("Too many messages. Slow down.", 429, code="rate_limited")
         recent.append(now)
         _signals[user["id"]] = recent
         room = ROOMS.get(cid) or {}
         mine, theirs = room.get(user["id"]), room.get(to_uid)
         if not mine or mine["sid"] != sid:
-            raise bad("You are not in this room", 409)
+            raise bad("You are not in this room", 409, code="not_in_room")
         if not theirs or (to_sid and theirs["sid"] != to_sid):
-            raise bad("That person is no longer in the room", 409)
+            raise bad("That person is no longer in the room", 409, code="not_in_room")
         target = theirs["sid"]
     return {"type": "voice", "k": "signal", "room": cid, "from": user["id"], "fromSid": sid, "fromName": user["username"],
             "toSid": target, "data": data}, to_uid

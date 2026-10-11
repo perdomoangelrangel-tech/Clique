@@ -269,7 +269,7 @@ def _poll(c, week):
 
 def _require_current(week):
     if week != week_key():
-        raise bad("That week is over. The poll is closed.")
+        raise bad("That week is over. The poll is closed.", code="week_over")
 
 
 def add_punishment(user, c, text):
@@ -278,9 +278,9 @@ def add_punishment(user, c, text):
     text = clean_text(text, "Punishment", 3, 120)
     poll = _poll(c, week)
     if sum(1 for p in poll if p["authorId"] == user["id"]) >= MAX_PUNISHMENTS_PER_USER:
-        raise bad(f"You can suggest up to {MAX_PUNISHMENTS_PER_USER} punishments per week")
+        raise bad(f"You can suggest up to {MAX_PUNISHMENTS_PER_USER} punishments per week", code="punishment_limit")
     if any(p["text"].lower() == text.lower() for p in poll):
-        raise bad("Someone already suggested that one. Go vote for it.")
+        raise bad("Someone already suggested that one. Go vote for it.", code="punishment_duplicate")
     entry = {"id": new_id(), "text": text, "authorId": user["id"], "t": now_ms(), "votes": [user["id"]]}
     for p in poll:                      # suggesting something counts as your vote
         if user["id"] in p["votes"]:
@@ -294,7 +294,7 @@ def vote(user, c, pid):
     poll = _poll(c, week_key())
     target = next((p for p in poll if p["id"] == pid), None)
     if not target:
-        raise bad("Punishment not found", 404)
+        raise bad("Punishment not found", 404, code="punishment_not_found")
     already = user["id"] in target["votes"]
     for p in poll:
         if user["id"] in p["votes"]:
@@ -308,9 +308,9 @@ def delete_punishment(user, c, pid):
     poll = _poll(c, week_key())
     target = next((p for p in poll if p["id"] == pid), None)
     if not target:
-        raise bad("Punishment not found", 404)
+        raise bad("Punishment not found", 404, code="punishment_not_found")
     if user["id"] not in (target["authorId"], c["ownerId"]):
-        raise bad("Only the author or the circle owner can remove a punishment", 403)
+        raise bad("Only the author or the circle owner can remove a punishment", 403, code="not_punishment_author")
     poll.remove(target)
 
 
@@ -526,9 +526,9 @@ def view(c, viewer, week=None):
 def mark_served(user, c, week):
     recap = c["recaps"].get(week)
     if not recap:
-        raise bad("That week hasn't been settled yet", 404)
+        raise bad("That week hasn't been settled yet", 404, code="week_not_settled")
     if user["id"] != c["ownerId"] and user["id"] not in recap["loserIds"]:
-        raise bad("Only the owner or the person being punished can mark this", 403)
+        raise bad("Only the owner or the person being punished can mark this", 403, code="not_allowed")
     recap["served"] = not recap.get("served", False)
 
 

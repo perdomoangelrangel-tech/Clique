@@ -19,7 +19,7 @@ MAX_OPEN_PUBLIC = 20       # open site-wide markets one person may have at a tim
 def get(mid):
     m = db()["markets"].get(mid)
     if not m:
-        raise bad("Market not found", 404)
+        raise bad("Market not found", 404, code="market_not_found")
     return m
 
 
@@ -43,7 +43,7 @@ def _member_or_403(m, user):
 def view_or_404(mid, viewer):
     m = get(mid)
     if not visible(m, viewer):
-        raise bad("Market not found", 404)
+        raise bad("Market not found", 404, code="market_not_found")
     return m
 
 
@@ -60,9 +60,9 @@ def token_of(m, outcome, side):
     try:
         i = int(outcome)
     except (TypeError, ValueError):
-        raise bad("Pick an outcome")
+        raise bad("Pick an outcome", code="invalid_outcome")
     if not 0 <= i < n:
-        raise bad("Unknown outcome")
+        raise bad("Unknown outcome", code="invalid_outcome")
     s = "n" if str(side).lower() in ("no", "n") else "y"
     if n == 2 and s == "n":          # NO on a 2-outcome market is just the other outcome
         i, s = 1 - i, "y"
@@ -85,7 +85,7 @@ def create(user, body):
         open_public = sum(1 for x in db()["markets"].values()
                           if x["creatorId"] == user["id"] and not x.get("circleId") and x["status"] == "open")
         if open_public >= MAX_OPEN_PUBLIC:
-            raise bad(f"You already have {MAX_OPEN_PUBLIC} open public bets. Settle one first.")
+            raise bad(f"You already have {MAX_OPEN_PUBLIC} open public bets. Settle one first.", code="too_many_open_markets")
     else:
         c = circles.get(body.get("circleId"))
         circles.member_or_403(c, user)
@@ -98,10 +98,10 @@ def create(user, body):
         outcomes = ["Yes", "No"]
     else:
         if not isinstance(raw, list) or not 2 <= len(raw) <= 12:
-            raise bad("A market needs between 2 and 12 outcomes")
+            raise bad("A market needs between 2 and 12 outcomes", code="invalid_outcomes")
         outcomes = [clean_text(x, "Outcome", 1, 40) for x in raw]
         if len({o.lower() for o in outcomes}) != len(outcomes):
-            raise bad("Outcome names must be different")
+            raise bad("Outcome names must be different", code="invalid_outcomes")
     category = body.get("category") or "General"
     if category not in config.CATEGORIES:
         category = "General"
@@ -113,11 +113,11 @@ def create(user, body):
         try:
             closes = int(closes)
         except (TypeError, ValueError):
-            raise bad("Invalid end date")
+            raise bad("Invalid end date", code="invalid_date")
         if closes < now_ms() + 60_000:
-            raise bad("The end date must be in the future")
+            raise bad("The end date must be in the future", code="close_time_too_soon")
         if closes > now_ms() + 5 * 365 * 86400000:
-            raise bad("The end date is too far away")
+            raise bad("The end date is too far away", code="close_time_too_far")
     b = config.MARKET_LIQUIDITY                 # one standard depth; whoever proposes a bet does not get to choose it
     n = len(outcomes)
     m = {
@@ -287,9 +287,9 @@ def _require_trading(m, user):
     _member_or_403(m, user)
     st = state_of(m)
     if st == "closed":
-        raise bad("Trading has closed for this market. Waiting for the result.")
+        raise bad("Trading has closed for this market. Waiting for the result.", code="market_closed")
     if st != "open":
-        raise bad("This market is no longer open")
+        raise bad("This market is no longer open", code="market_not_open")
 
 
 def _number(value, label):
@@ -316,40 +316,40 @@ def _plan(m, user, body):
     if action == "buy":
         amount = round2(_number(body.get("amount"), "Amount"))
         if amount < config.MIN_BET - 1e-9:
-            raise bad(f"The minimum bet is ${config.MIN_BET:.2f}")
+            raise bad(f"The minimum bet is ${config.MIN_BET:.2f}", code="bet_below_minimum")
         if amount > user["balance"] + 1e-9:
-            raise bad("Not enough funds")
+            raise bad("Not enough funds", code="insufficient_funds")
         shares = lmsr.shares_for_amount(ln_p, ln_q, b, amount)
         for _ in range(60):                            # never hand out more than the stake actually pays for (float noise only)
             if not math.isfinite(shares) or lmsr.cost_for_shares(ln_p, ln_q, b, shares) <= amount + 1e-9:
                 break
             shares *= 1 - 1e-12
         if not math.isfinite(shares) or shares <= 0:
-            raise bad("That amount is too small")
+            raise bad("That amount is too small", code="amount_too_small")
         q2 = lmsr.apply_trade(q, i, side, shares)
         plan = {"action": "buy", "amount": amount, "shares": shares, "heldAfter": held + shares}
     elif action == "sell":
         if held <= EPS:
-            raise bad("You don't hold any of these shares")
+            raise bad("You don't hold any of these shares", code="not_enough_shares")
         if body.get("all") is True:
             shares = held
         else:
             shares = _number(body.get("shares"), "Shares")
         if shares <= 0:
-            raise bad("Enter how many shares to sell")
+            raise bad("Enter how many shares to sell", code="shares_required")
         if shares > held * (1 + 1e-9) + 1e-9:
-            raise bad(f"You only hold {held:,.2f} shares")
+            raise bad(f"You only hold {held:,.2f} shares", code="not_enough_shares")
         if shares >= held - 1e-6:
             shares = held
         amount = lmsr.floor_cents(lmsr.proceeds_for_shares(ln_p, ln_q, b, shares))
         if amount < 0.01:
-            raise bad("That's worth less than a cent. Sell more shares, or hold them until the bet is settled.")
+            raise bad("That's worth less than a cent. Sell more shares, or hold them until the bet is settled.", code="amount_too_small")
         q2 = lmsr.apply_trade(q, i, side, -shares)
         plan = {"action": "sell", "amount": amount, "shares": shares, "heldAfter": max(0.0, held - shares)}
         if shares >= held - EPS:
             plan["heldAfter"] = 0.0
     else:
-        raise bad("Unknown action")
+        raise bad("Unknown action", code="invalid_action")
 
     ln_p2, _ = lmsr.token_logs(q2, b, i, side)
     probs_after = lmsr.prices(q2, b)
@@ -386,7 +386,7 @@ def _request_key(user, m, body):
     if rid is None:
         return None, None
     if not isinstance(rid, str) or not re.fullmatch(r"[A-Za-z0-9_-]{8,64}", rid):
-        raise bad("Invalid request id")
+        raise bad("Invalid request id", code="invalid_request_id")
     fingerprint = "|".join(str(x) for x in (m["id"], body.get("action", "buy"), body.get("outcome"), str(body.get("side", "yes")).lower(),
                                              body.get("amount"), body.get("shares"), body.get("all")))
     return f"{user['id']}:{rid}", fingerprint
@@ -406,10 +406,10 @@ def _check_expectations(p, body):
     moved = "The price moved while you were deciding. Review the new quote and try again."
     if p["action"] == "buy" and body.get("minShares") is not None:
         if p["shares"] + 1e-9 < _number(body["minShares"], "Minimum shares"):
-            raise bad(moved, 409)
+            raise bad(moved, 409, code="price_moved")
     if p["action"] == "sell" and body.get("minAmount") is not None:
         if p["amount"] + 1e-9 < _number(body["minAmount"], "Minimum amount"):
-            raise bad(moved, 409)
+            raise bad(moved, 409, code="price_moved")
 
 
 def _result(p):
@@ -426,7 +426,7 @@ def trade(user, m, body):
         seen = db().setdefault("idem", {}).get(key)
         if seen:
             if seen["fp"] != fingerprint:
-                raise bad("That request id was already used for a different trade", 409)
+                raise bad("That request id was already used for a different trade", 409, code="request_id_reused")
             return {**seen["result"], "duplicate": True}
     p = _plan(m, user, body)
     _check_expectations(p, body)
@@ -478,9 +478,9 @@ def trade(user, m, body):
 def _manager_or_403(m, user):
     c = circle_of(m)
     if user["id"] != m["creatorId"] and (c is None or user["id"] != c["ownerId"]):
-        raise bad("Only the creator of this bet" + ("" if c is None else " or the circle owner") + " can do that", 403)
+        raise bad("Only the creator of this bet" + ("" if c is None else " or the circle owner") + " can do that", 403, code="not_market_manager")
     if m["status"] != "open":
-        raise bad("This market is already settled")
+        raise bad("This market is already settled", code="market_settled")
 
 
 def resolve(user, m, winner):
@@ -488,9 +488,9 @@ def resolve(user, m, winner):
     try:
         w = int(winner)
     except (TypeError, ValueError):
-        raise bad("Pick the winning outcome")
+        raise bad("Pick the winning outcome", code="invalid_outcome")
     if not 0 <= w < len(m["outcomes"]):
-        raise bad("Unknown outcome")
+        raise bad("Unknown outcome", code="invalid_outcome")
     paid = 0.0
     for uid, toks in m["positions"].items():
         u = users.get(uid)
@@ -662,11 +662,11 @@ def _parse_close(value):
     if value in ("", None, 0):
         return None
     if isinstance(value, bool):
-        raise bad("Invalid end date")
+        raise bad("Invalid end date", code="invalid_date")
     try:
         t = int(value)
     except (TypeError, ValueError):
-        raise bad("Invalid end date")
+        raise bad("Invalid end date", code="invalid_date")
     return t
 
 
@@ -675,64 +675,64 @@ def edit_plan(user, m, body, now=None):
     calculation, so what you are shown is what happens."""
     now = now_ms() if now is None else now
     if not can_edit(m, user):
-        raise bad("Only the person who proposed this bet, or the owner of its circle, can edit it", 403)
+        raise bad("Only the person who proposed this bet, or the owner of its circle, can edit it", 403, code="not_market_manager")
     if m["status"] == "resolved":
-        raise bad("This bet is settled. A settled result can not be reopened or changed.", 409)
+        raise bad("This bet is settled. A settled result can not be reopened or changed.", 409, code="market_settled")
     if m["status"] == "cancelled":
-        raise bad("This bet was cancelled, so there is nothing left to edit.", 409)
+        raise bad("This bet was cancelled, so there is nothing left to edit.", 409, code="market_cancelled")
     if not isinstance(body, dict):
-        raise bad("Invalid request")
+        raise bad("Invalid request", code="invalid_request")
     changes = {}
     if "closesAt" in body:
         new_close = _parse_close(body["closesAt"])
         if new_close != m.get("closesAt"):
             if new_close is not None:
                 if new_close < now + economy.EDIT_MIN_LEAD_MS:
-                    raise bad("The new closing time must be at least 5 minutes from now")
+                    raise bad("The new closing time must be at least 5 minutes from now", code="close_time_too_soon")
                 if new_close > now + 5 * 365 * 86400000:
-                    raise bad("The end date is too far away")
+                    raise bad("The end date is too far away", code="close_time_too_far")
             changes["closesAt"] = {"from": m.get("closesAt"), "to": new_close}
     if "description" in body:
         new_desc = str(body["description"] or "").strip()[:1000] if not isinstance(body["description"], (list, dict)) else None
         if new_desc is None:
-            raise bad("The rules must be text")
+            raise bad("The rules must be text", code="invalid_request")
         if new_desc != (m.get("description") or ""):
             changes["description"] = {"from": m.get("description") or "", "to": new_desc}
     if not changes:
-        raise bad("Nothing would change. Edit the date or the rules first.")
+        raise bad("Nothing would change. Edit the date or the rules first.", code="nothing_to_change")
     people = participants(m)
     people.discard(user["id"])
     involved = set(people)                  # the editor's own bet is not "somebody else's bet reinterpreted"
     declared = body.get("kind")
     if declared not in (None, "clarification", "material"):
-        raise bad("Say whether this is a clarification or a material change")
+        raise bad("Say whether this is a clarification or a material change", code="edit_kind_required")
     reason = body.get("reason")
     reason = " ".join(str(reason).split()) if isinstance(reason, str) else ""
     if len(reason) > 200:
-        raise bad("The reason is too long (max 200)")
+        raise bad("The reason is too long (max 200)", code="text_too_long")
     plan = {"changes": changes, "participants": len(involved), "affected": sorted(people), "reason": reason, "now": now,
             "positions": sum(1 for p in m["positions"].values() for pos in p.values() if pos["shares"] > EPS), "exitUntil": None}
     if not involved:
         plan["class"], plan["note"] = "no_participation", "Nobody has bet on this yet, so the change affects nobody. It is still saved as a new version."
         return plan
     if len(reason) < MIN_REASON:
-        raise bad(f"People have already bet on this, so say why you are changing it (at least {MIN_REASON} characters)")
+        raise bad(f"People have already bet on this, so say why you are changing it (at least {MIN_REASON} characters)", code="edit_reason_required")
     only_text = set(changes) == {"description"}
     is_clar = only_text and declared == "clarification"
     if declared == "clarification" and not only_text:
-        raise bad("A date change can not be a clarification: it can change the answer. Mark it as a material change.")
+        raise bad("A date change can not be a clarification: it can change the answer. Mark it as a material change.", code="edit_date_is_material")
     plan["class"] = "clarification" if is_clar else "material"
     if plan["class"] == "material":
         if any(e.get("class") == "material" for e in m.get("edits") or []):
-            raise bad("This bet has already had a material change after people bet on it. Further edits can only be clarifications.", 409)
+            raise bad("This bet has already had a material change after people bet on it. Further edits can only be clarifications.", 409, code="edit_material_limit")
         until = now + int(economy_exit_h() * 3600 * 1000)
         if "closesAt" in changes:
             new_close, old_close = changes["closesAt"]["to"], changes["closesAt"]["from"]
             if new_close is not None and old_close is not None and new_close < old_close:
                 if new_close < now + REACTION_MS:
-                    raise bad("People who have bet need at least 24 hours to react, so the new closing time must be at least a day from now")
+                    raise bad("People who have bet need at least 24 hours to react, so the new closing time must be at least a day from now", code="close_time_too_soon")
             if new_close is not None and new_close < until and (old_close is None or new_close < old_close):
-                raise bad("The closing time can not be earlier than the end of the exit window (%d hours from now)" % round(economy_exit_h()))
+                raise bad("The closing time can not be earlier than the end of the exit window (%d hours from now)" % round(economy_exit_h()), code="close_time_too_soon")
         plan["exitUntil"] = until
         plan["note"] = ("This is a material change. Everyone involved is told, and for %d hours anyone who bet under the old rules may "
                         "withdraw that bet and get back exactly what they paid." % round(economy_exit_h()))
@@ -759,7 +759,7 @@ def edit_apply(user, m, body):
     rid = body.get("requestId") if isinstance(body, dict) else None
     if rid is not None:
         if not isinstance(rid, str) or not re.fullmatch(r"[A-Za-z0-9_-]{8,64}", rid):
-            raise bad("Invalid request id")
+            raise bad("Invalid request id", code="invalid_request_id")
         key = f"edit:{user['id']}:{m['id']}:{rid}"
         seen = db().setdefault("idem", {}).get(key)
         if seen:
@@ -815,20 +815,20 @@ def withdraw(user, m, body):
     key = None
     if rid is not None:
         if not isinstance(rid, str) or not re.fullmatch(r"[A-Za-z0-9_-]{8,64}", rid):
-            raise bad("Invalid request id")
+            raise bad("Invalid request id", code="invalid_request_id")
         key = f"withdraw:{user['id']}:{m['id']}:{rid}"
         seen = db().setdefault("idem", {}).get(key)
         if seen:
             return {**seen["result"], "duplicate": True}
     if m["status"] != "open":
-        raise bad("This market is no longer open", 409)
+        raise bad("This market is no longer open", 409, code="market_not_open")
     if not exit_open(m):
-        raise bad("The exit window for this change has ended", 409)
+        raise bad("The exit window for this change has ended", 409, code="exit_window_closed")
     toks = m["positions"].get(user["id"], {})
     token = body.get("token")
     pos = toks.get(token) if isinstance(token, str) else None
     if not pos or not pos.get("pre") or pos["shares"] <= EPS:
-        raise bad("You have no bet from before the change to withdraw", 404)
+        raise bad("You have no bet from before the change to withdraw", 404, code="nothing_to_withdraw")
     shares = min(pos["pre"]["sh"], pos["shares"])
     basis = round2(pos["invested"] * (shares / pos["shares"])) if shares < pos["shares"] - EPS else round2(pos["invested"])
     i, side = int(token[1:]), token[0]

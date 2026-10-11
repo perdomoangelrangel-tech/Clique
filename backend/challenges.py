@@ -184,7 +184,7 @@ def _pay(user, item, now, auto):
     cid = item["id"]
     w = week_state(user, item["id"].rsplit(":", 1)[0])
     if cid in w["claimed"]:
-        raise bad("You already claimed that reward", 409)
+        raise bad("You already claimed that reward", 409, code="already_claimed")
     with Txn(users=[user]):
         row = ledger.post(user, acct, item["reward_c"] / 100, f"challenge.{acct}", ref=cid, external=True, txid=f"chal:{cid}:{user['id']}",
                           note=item["title"] + (" (credited at the weekly close)" if auto else ""))
@@ -196,21 +196,21 @@ def _pay(user, item, now, auto):
 def claim(user, cid, now=None):
     now = now_ms() if now is None else now
     if not isinstance(cid, str) or ":" not in cid:
-        raise bad("That challenge does not exist", 404)
+        raise bad("That challenge does not exist", 404, code="challenge_not_found")
     week = cid.rsplit(":", 1)[0]
     a = db().get("challenges", {}).get(week)
     item = next((i for i in (a["items"] if a else []) if i["id"] == cid), None)
     if item is None:
-        raise bad("That challenge does not exist", 404)
+        raise bad("That challenge does not exist", 404, code="challenge_not_found")
     w = week_state(user, week)
     if cid in w["claimed"]:
-        raise bad("You already claimed that reward", 409)
+        raise bad("You already claimed that reward", 409, code="already_claimed")
     if now >= item["end"]:
-        raise bad("That week is over. Challenges you had finished were credited automatically when it closed.", 409)
+        raise bad("That week is over. Challenges you had finished were credited automatically when it closed.", 409, code="week_over")
     if _value(item, w["facts"]) < item["target"]:
-        raise bad("That challenge is not finished yet")
+        raise bad("That challenge is not finished yet", code="goal_not_reached")
     if now < item["start"]:
-        raise bad("That week has not started")
+        raise bad("That week has not started", code="week_not_started")
     return _pay(user, item, now, auto=False)
 
 
