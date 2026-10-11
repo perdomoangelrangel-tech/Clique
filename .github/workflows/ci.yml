@@ -1,0 +1,87 @@
+# Cada cambio de cualquier encargo se prueba solo, en Linux y en Windows.
+# Falla solo por pruebas en rojo que no estén en equipo/ROJOS_CONOCIDOS.json (scripts/correr_pruebas.py).
+name: CI
+
+on:
+  push:
+    branches: ["e*-*", "integracion", "main"]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: linux · Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12"]           # el dueño tiene 3.11; el Dockerfile usa 3.12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - uses: actions/setup-node@v4          # las pruebas de pantallas y de recuperación usan Node
+        with:
+          node-version: 22
+      - run: pip install -r requirements-dev.txt
+      - run: python scripts/correr_pruebas.py
+
+  windows:
+    name: windows · Python ${{ matrix.python }}
+    runs-on: windows-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pip install -r requirements-dev.txt
+      - run: python scripts/correr_pruebas.py
+        env:
+          PYTHONUTF8: "1"
+
+  js:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Desde Node 21, --test recibe patrones y no carpetas: "tests/js/" sola se toma como un archivo.
+      - run: node --test "tests/js/*.test.mjs"
+
+  ganchos:
+    name: ganchos · ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node herramientas/ganchos.test.mjs && node herramientas/ganchos.en-vivo.test.mjs
+        shell: bash
