@@ -7,6 +7,7 @@ import { S } from './state.js';
 import { createVoiceCore, ERRORS } from './voicecore.js';
 import { avatar, esc } from './util.js';
 import { icon } from './icons.js';
+import { t, th, tp } from './i18n.js';
 
 const dock = () => document.getElementById('voice-dock');
 let audioBox = null, ctx = null;
@@ -55,11 +56,11 @@ const core = createVoiceCore({
 
 // ---- the dock: a compact panel that follows you through every section ----
 function statusText(st) {
-  if (st.status === 'requesting') return 'Waiting for your microphone permission…';
-  if (st.status === 'joining') return 'Connecting…';
-  if (st.status === 'reconnecting') return 'Reconnecting…';
+  if (st.status === 'requesting') return t('Esperando el permiso del micrófono…');
+  if (st.status === 'joining') return t('Conectando…');
+  if (st.status === 'reconnecting') return t('Reconectando…');
   const others = st.people.length - 1;
-  return others > 0 ? `Connected · ${st.people.length} in the room` : 'Connected · you are the only one here';
+  return others > 0 ? tp(st.people.length, 'Conectado · {n} en la sala', 'Conectado · {n} en la sala') : t('Conectado · eres el único aquí');
 }
 
 function paintDock() {
@@ -72,17 +73,17 @@ function paintDock() {
   if (!visible) { el.innerHTML = ''; return; }
   const people = st.people.map((p) => {
     const speaking = st.speaking[p.id] && !p.muted, link = st.peers[p.id];
-    return `<span class="vd-p ${speaking ? 'speaking' : ''} ${p.muted ? 'muted' : ''} ${p.id !== S.user.id && link === 'failed' ? 'bad' : ''}" title="${esc(p.username)}${p.muted ? ' (muted)' : ''}${p.deaf ? ' (deafened)' : ''}">${avatar(p.username, 28)}<em>${esc(p.username)}</em>${p.muted ? `<i class="vd-off">${icon('microphone-slash', 11)}</i>` : ''}</span>`;
+    return `<span class="vd-p ${speaking ? 'speaking' : ''} ${p.muted ? 'muted' : ''} ${p.id !== S.user.id && link === 'failed' ? 'bad' : ''}" title="${esc(p.username)}${p.muted ? ' ' + esc(t('(silenciado)')) : ''}${p.deaf ? ' ' + esc(t('(sin oír)')) : ''}">${avatar(p.username, 28)}<em>${esc(p.username)}</em>${p.muted ? `<i class="vd-off">${icon('microphone-slash', 11)}</i>` : ''}</span>`;
   }).join('');
-  const err = st.error ? `<div class="vd-err" role="alert"><span>${esc(st.error.message)}</span>${['busy', 'denied', 'nodevice'].includes(st.error.code) && live ? '<button data-a="mic">Try the microphone</button>' : ''}<button data-a="dismiss">Dismiss</button></div>` : '';
+  const err = st.error ? `<div class="vd-err" role="alert"><span>${esc(t(st.error.message))}</span>${['busy', 'denied', 'nodevice'].includes(st.error.code) && live ? `<button data-a="mic">${t('Probar el micrófono')}</button>` : ''}<button data-a="dismiss">${t('Cerrar')}</button></div>` : '';
   el.innerHTML = `<div class="vd-in">
-    ${live ? `<div class="vd-info"><span class="vd-dot ${st.status}"></span><div class="vd-txt"><b>Voice · ${esc(st.circleName)}</b><small>${esc(statusText(st))}</small></div></div>
-      <div class="vd-people" aria-label="People in the call">${people}</div>
+    ${live ? `<div class="vd-info"><span class="vd-dot ${st.status}"></span><div class="vd-txt"><b>${th('Voz · {circulo}', { circulo: st.circleName })}</b><small>${esc(statusText(st))}</small></div></div>
+      <div class="vd-people" aria-label="${esc(t('Gente en la llamada'))}">${people}</div>
       <div class="vd-btns">
-        <button data-a="mic" class="${st.muted ? 'off' : ''}" aria-pressed="${st.muted}" title="${st.muted ? 'Unmute your microphone' : 'Mute your microphone'}">${icon(st.muted ? 'microphone-slash' : 'microphone', 18)}<span>${st.muted ? 'Unmute' : 'Mute'}</span></button>
-        <button data-a="deaf" class="${st.deaf ? 'off' : ''}" aria-pressed="${st.deaf}" title="${st.deaf ? 'Hear everyone again' : 'Stop hearing everyone'}">${icon(st.deaf ? 'speaker-simple-slash' : 'headphones', 18)}<span>${st.deaf ? 'Undeafen' : 'Deafen'}</span></button>
-        <a class="vd-room" href="#/circle/${esc(st.circleId)}" data-a="room" title="Back to the circle">${icon('users-three', 18)}<span>Room</span></a>
-        <button data-a="leave" class="leave" title="Leave the call">${icon('phone-disconnect', 18)}<span>Leave</span></button></div>` : ''}
+        <button data-a="mic" class="${st.muted ? 'off' : ''}" aria-pressed="${st.muted}" title="${esc(st.muted ? t('Activar tu micrófono') : t('Silenciar tu micrófono'))}">${icon(st.muted ? 'microphone-slash' : 'microphone', 18)}<span>${st.muted ? t('Activar') : t('Silenciar')}</span></button>
+        <button data-a="deaf" class="${st.deaf ? 'off' : ''}" aria-pressed="${st.deaf}" title="${esc(st.deaf ? t('Volver a oír a todos') : t('Dejar de oír a todos'))}">${icon(st.deaf ? 'speaker-simple-slash' : 'headphones', 18)}<span>${st.deaf ? t('Oír') : t('No oír')}</span></button>
+        <a class="vd-room" href="#/circle/${esc(st.circleId)}" data-a="room" title="${esc(t('Volver al círculo'))}">${icon('users-three', 18)}<span>${t('Sala')}</span></a>
+        <button data-a="leave" class="leave" title="${esc(t('Salir de la llamada'))}">${icon('phone-disconnect', 18)}<span>${t('Salir')}</span></button></div>` : ''}
     ${err}</div>`;
 }
 

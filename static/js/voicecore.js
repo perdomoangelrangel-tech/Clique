@@ -8,18 +8,20 @@
 
    Nothing is recorded: audio is never sent to the server, and this code has no way to save it. */
 
-export const ERRORS = {
-  denied: "Microphone permission was denied. Allow the microphone for this site in your browser's settings, then join again.",
-  nodevice: 'No microphone was found. Plug one in (or turn it on) and join again.',
-  busy: 'Your microphone is being used by another app, or could not be started. Close the other app and join again.',
-  unsupported: "This browser can't do voice calls. Try a recent Chrome, Edge, Firefox or Safari.",
-  insecure: 'Voice calls need a secure (https) connection.',
-  taken: 'You joined this call from another tab, so this one hung up.',
-  removed: 'You are no longer in this circle, so you were taken out of the call.',
-  full: 'This voice room is full.',
-  lost: 'The connection to the server was lost. Trying to get you back in...',
-  failed: 'Could not join the call.',
-};
+// The messages are keys for t() (static/js/i18n.js): the pages that show them translate them, so this file stays free of the page.
+export const ERRORS = {                                 // i18n: claves ↓
+  denied: 'No diste permiso para el micrófono. Permítelo para este sitio en los ajustes de tu navegador y vuelve a entrar.',
+  nodevice: 'No encontramos ningún micrófono. Conecta uno (o enciéndelo) y vuelve a entrar.',
+  busy: 'Otra app está usando tu micrófono, o no se pudo encender. Cierra la otra app y vuelve a entrar.',
+  unsupported: 'Este navegador no puede hacer llamadas de voz. Prueba un Chrome, Edge, Firefox o Safari reciente.',
+  insecure: 'Las llamadas de voz necesitan una conexión segura (https).',
+  taken: 'Entraste a esta llamada desde otra pestaña, así que esta colgó.',
+  removed: 'Ya no estás en este círculo, así que te sacamos de la llamada.',
+  full: 'Esta sala de voz está llena.',
+  lost: 'Se perdió la conexión con el servidor. Intentando regresarte...',
+  failed: 'No se pudo entrar a la llamada.',
+  stopped: 'Tu micrófono se detuvo. Toca el botón del micrófono para intentarlo otra vez.',
+};                                                      // i18n: fin
 
 const SPEAK_ON = 0.025, SPEAK_OFF = 0.012, SPEAK_HOLD_MS = 350;
 
@@ -63,7 +65,7 @@ export function createVoiceCore(env) {
       t.enabled = !state.muted;
       t.onended = () => {                                        // unplugged, or the browser took it away
         if (state.status === 'idle' || local !== stream) return;
-        set({ error: { code: 'busy', message: 'Your microphone stopped. Press the microphone button to try again.' }, muted: true });
+        set({ error: { code: 'busy', message: ERRORS.stopped }, muted: true });
         pushState();
       };
     }
