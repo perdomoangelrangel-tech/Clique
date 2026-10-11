@@ -86,7 +86,7 @@ class Store:
                     f.write(blob)
                     f.flush()
                     os.fsync(f.fileno())
-                os.replace(tmp, self.path)
+                _replace(tmp, self.path)
                 self._last = (self.path, blob)
             with self._m:
                 self._written = seq
@@ -94,6 +94,19 @@ class Store:
     def save(self):
         """Stage and commit in one go. For the background loops, start-up, shutdown and scripts."""
         self.commit(self.stage())
+
+
+def _replace(src, dst, tries=50, pause=0.02):
+    """os.replace, waiting a moment if the file is busy. On Windows a file that somebody has open for reading cannot be
+    replaced (PermissionError); readers only hold it for a moment, so a short retry is enough. Gives up after about a second."""
+    for n in range(tries):
+        try:
+            os.replace(src, dst)
+            return
+        except PermissionError:
+            if n == tries - 1:
+                raise
+            time.sleep(pause)
 
 
 store = Store(os.path.join(config.DATA_DIR, "db.json"))
