@@ -1,5 +1,5 @@
 import { S, bus, balanceNow } from '../state.js';
-import { money, moneyFull, parseAmount, floorCents } from '../util.js';
+import { money, moneyFull, parseAmount, floorCents, esc } from '../util.js';
 
 /**
  * Bet amount box shared by all games.
@@ -12,8 +12,8 @@ export function betPanel(host, { label = 'Bet Amount', key = 'bet', start = 1, p
   let locked = false;
   const cbs = [];
 
-  host.innerHTML = `<div class="bp ${compact ? 'compact' : ''}">${compact ? '' : `<div class="bp-top"><label for="bp-amt">${label}</label></div>`}
-    <div class="bp-input"><span class="bp-cur">$</span><input id="bp-amt" inputmode="decimal" autocomplete="off" value="${saved}" aria-label="${label}">
+  host.innerHTML = `<div class="bp ${compact ? 'compact' : ''}">${compact ? '' : `<div class="bp-top"><label for="bp-amt">${esc(label)}</label></div>`}
+    <div class="bp-input"><span class="bp-cur">$</span><input id="bp-amt" inputmode="decimal" autocomplete="off" value="${saved}" aria-label="${esc(label)}">
       <button type="button" data-k="half" title="Half your bet">1/2</button><button type="button" data-k="dbl" title="Double your bet">2x</button><button type="button" data-k="max" title="All in">Max</button></div>
     ${presets.length ? `<div class="bp-presets">${presets.map((p) => `<button type="button" data-p="${p}">${money(p, { noCents: true })}</button>`).join('')}</div>` : ''}
     <div class="bp-err" id="bp-err"></div></div>`;

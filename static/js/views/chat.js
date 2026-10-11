@@ -61,8 +61,8 @@ export default {
       const el = $('#ch-head'); if (!el) return;
       let sub = '';
       if (cur.kind === 'global') sub = 'Everybody on Clique';
-      else if (cur.kind === 'circle') sub = `${cur.members} members · <a href="#/circle/${esc(cur.circleId)}">open the circle</a>`;
-      else if (cur.kind === 'group') sub = `${cur.members} people`;
+      else if (cur.kind === 'circle') sub = `${Number(cur.members)} members · <a href="#/circle/${esc(cur.circleId)}">open the circle</a>`;
+      else if (cur.kind === 'group') sub = `${Number(cur.members)} people`;
       else { const f = friendMap.get(cur.with); sub = f ? esc(activityText(f)) : 'Not friends any more'; }
       const icon = cur.kind === 'global' ? `<span class="ch-ico globe">${ICON.globe}</span>` : cur.kind === 'circle' ? circleMark({ emoji: cur.emoji, name: cur.name, id: cur.circleId }, 40)
         : cur.kind === 'dm' ? presenceAvatar({ username: cur.name, ...(friendMap.get(cur.with) || {}) }, 40) : `<span class="ch-ico group">${ICON.users}</span>`;

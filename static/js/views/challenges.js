@@ -39,7 +39,7 @@ export default {
         </div></article>`;
     };
 
-    const column = (key, rows) => `<section aria-label="${ACCT[key].head}"><div class="gl-colhead ${ACCT[key].cls}"><h2>${ACCT[key].tag}</h2><p><b>${ACCT[key].head}.</b> ${ACCT[key].note}</p></div>${rows.map((c) => card(c)).join('')}</section>`;
+    const column = (key, rows) => `<section aria-label="${esc(ACCT[key].head)}"><div class="gl-colhead ${ACCT[key].cls}"><h2>${esc(ACCT[key].tag)}</h2><p><b>${esc(ACCT[key].head)}.</b> ${esc(ACCT[key].note)}</p></div>${rows.map((c) => card(c)).join('')}</section>`;
 
     const history = () => {
       if (!D.history.length) return '';

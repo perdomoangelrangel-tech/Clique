@@ -39,7 +39,7 @@ export default {
       const visible = A.parts.filter((p) => p.amount > 0);
       const rows = A.parts.filter((p) => p.amount > 0 || p.key === 'cash');
       return `<section class="pfo-card card-box" aria-label="${esc(title)}">
-        <div class="pfo-head"><div><span class="kicker">${kicker}</span><h2>${title}</h2></div><b class="num pfo-total" title="${moneyFull(A.total)}">${money(A.total)}</b></div>
+        <div class="pfo-head"><div><span class="kicker">${kicker}</span><h2>${esc(title)}</h2></div><b class="num pfo-total" title="${moneyFull(A.total)}">${money(A.total)}</b></div>
         <p class="spread-line">${summary(kind, A)}</p>
         ${visible.length ? `<div class="spread-bar" role="img" aria-label="${esc(visible.map((p) => `${p.label} ${fmtPct(pct(p.amount, A.total))}`).join(', '))}">
           ${visible.map((p) => `<i class="${looks[p.key][1]}" style="flex:${Math.max(p.amount, A.total * 0.012)};--fill:${looks[p.key][0]}" title="${esc(p.label)}: ${moneyFull(p.amount)}"></i>`).join('')}</div>` : '<div class="spread-bar pfo-none" aria-hidden="true"></div>'}

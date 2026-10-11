@@ -137,7 +137,7 @@ export default {
       const price = tokenPrice();
       const optBtns = M.binary
         ? O.map((x, i) => `<button class="opt ${i === 0 ? 'y' : 'n'} ${st.outcome === i ? 'sel' : ''}" data-opt="${i}:yes">${esc(x.name)} ${cents(x.yes)}</button>`).join('')
-        : `<button class="opt y ${st.side === 'yes' ? 'sel' : ''}" data-opt="${st.outcome}:yes">Yes ${cents(o.yes)}</button><button class="opt n ${st.side === 'no' ? 'sel' : ''}" data-opt="${st.outcome}:no">No ${cents(o.no)}</button>`;
+        : `<button class="opt y ${st.side === 'yes' ? 'sel' : ''}" data-opt="${st.outcome}:yes">Yes ${cents(o.yes)}</button><button class="opt n ${st.side === 'no' ? 'sel' : ''}" data-opt="${st.outcome}:no">No ${cents(o.no)}</button>`;      // html: seguro (st.outcome es un índice numérico)
       const amt = parseAmount(st.amt);
       const q = st.quote;
       let warn = st.quoteErr, canGo = false;
@@ -245,7 +245,7 @@ export default {
         <div class="modal-actions"><button type="button" class="btn btn-secondary" data-close>Back</button><button type="button" class="btn btn-primary" id="cf-ok" disabled>${buy ? 'Confirm bet' : 'Confirm sale'}</button></div>`);
       const box = sheet.el.querySelector('#cf'), errEl = sheet.el.querySelector('#cf-err'), ok = sheet.el.querySelector('#cf-ok');
       let q = null, sending = false;
-      const row = (label, value, cls = '') => `<div class="r ${cls}"><span>${label}</span><i></i><b>${value}</b></div>`;
+      const row = (label, value, cls = '') => `<div class="r ${cls}"><span>${esc(label)}</span><i></i><b>${value}</b></div>`;
       const paint = () => {
         if (!q) { box.innerHTML = ''; ok.disabled = true; return; }
         const others = M.outcomes.map((o, i) => `<span>${esc(o.name)} <b>${q.pctAfter[i]}%</b></span>`).join('');

@@ -1,6 +1,27 @@
 import { esc } from './util.js';
 import { icon } from './icons.js';
 
+// ---- putting text people wrote on the page (names, messages, market titles, punishments) without it ever becoming markup.
+// The check that keeps it that way: tests/js/html_seguro.test.mjs.
+
+/** Text, ready to sit inside HTML: & < > " ' become entities. (The same as esc() in util.js.) */
+export const escape = esc;
+
+/** Puts text on the page as text. Prefer it to innerHTML whenever there is no markup to add. */
+export function setText(el, text) {
+  if (el) el.textContent = text === null || text === undefined ? '' : String(text);
+  return el;
+}
+
+/** Markup this code built itself, to pass through html`` untouched. Never wrap something a person typed in it. */
+export const raw = (markup) => ({ __html: String(markup ?? '') });
+
+/** html`<b>${name}</b> said ${raw(icon('chat'))}`: every value is escaped unless it is raw(); arrays are joined. Returns a string. */
+export function html(strings, ...values) {
+  const one = (v) => (v && typeof v === 'object' && '__html' in v ? v.__html : esc(v));
+  return strings.reduce((out, s, i) => out + s + (i < values.length ? (Array.isArray(values[i]) ? values[i].map(one).join('') : one(values[i])) : ''), '');
+}
+
 export function toast(msg, kind = '', opts = {}) {
   const root = document.getElementById('toasts');
   const el = document.createElement('div');

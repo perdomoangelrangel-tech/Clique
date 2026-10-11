@@ -76,7 +76,7 @@ async function companyPage(root, sym, every) {
     const iv = interval === 'live' ? '1m' : interval;
     D = await get(`/api/stocks/${sym}?interval=${iv}&limit=${interval === 'live' ? 15 : 240}`);
   };
-  try { await load(); } catch (ex) { root.innerHTML = `<div class="page">${emptyState({ art: 'wheel', tone: 'verm', kicker: 'No such company', title: 'That ticker does not exist.', text: ex.message, actions: '<a class="btn btn-primary" href="#/exchange">Back to the exchange</a>' })}</div>`; return { unmount() {} }; }
+  try { await load(); } catch (ex) { root.innerHTML = `<div class="page">${emptyState({ art: 'wheel', tone: 'verm', kicker: 'No such company', title: 'That ticker does not exist.', text: esc(ex.message), actions: '<a class="btn btn-primary" href="#/exchange">Back to the exchange</a>' })}</div>`; return { unmount() {} }; }
 
   const head = () => `<div class="section-head"><div><span class="kicker mono">${D.symbol} · ${esc(D.sector)}</span><h1 class="page-title">${esc(D.name)} ${SIM}</h1></div>
     <div class="ex-price"><b class="num" id="px">${price(D.price)}</b><span class="num ${sign(D.change)}" id="chg">${arrow(D.change)} ${price(Math.abs(D.change))} (${num(Math.abs(D.changePct), 2)}%) today</span></div></div>

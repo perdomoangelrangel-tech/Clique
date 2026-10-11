@@ -40,7 +40,7 @@ export default {
         const names = D.hotSeat.map((u) => esc(u.username)).join(' &amp; ');
         const val = rows.find((r) => r.user.id === D.hotSeat[0].id);
         return `<div class="hotseat"><span class="lbl">In the hot seat</span>${sticker('flame', { size: 64, bg: 'cream', rot: 6 })}
-          <div class="who">${D.hotSeat.slice(0, 3).map((u) => avatar(u.username, 56)).join('')}<div><b>${names}</b><div class="val">${val ? money(val.delta, { plus: true }) : ''} this week · worst week</div></div></div>
+          <div class="who">${D.hotSeat.slice(0, 3).map((u) => avatar(u.username, 56)).join('')}<div><b>${names}</b>${''/* html: seguro (names se escapó al armarlo) */}<div class="val">${val ? money(val.delta, { plus: true }) : ''} this week · worst week</div></div></div>
           <div class="pun">${lead ? `Leading sentence: <b>${esc(lead.text)}</b> (${lead.votes} vote${lead.votes === 1 ? '' : 's'})` : "Nobody's suggested a punishment. Be creative. Be cruel, but fair."}</div>${riskLine}</div>`;
       }
       const r = D.recap;
@@ -76,7 +76,7 @@ export default {
     function minimum() {
       const R = D.rules.requirements, req = D.me && D.me.req;
       if (!R || !req || !(R.polls || R.casino)) return '';
-      const bar = (label, have, need) => need ? `<div class="req-row ${have >= need ? 'done' : ''}"><div class="req-top"><span>${label}</span><b class="num">${Math.min(have, need)} / ${need}</b></div>
+      const bar = (label, have, need) => need ? `<div class="req-row ${have >= need ? 'done' : ''}"><div class="req-top"><span>${esc(label)}</span><b class="num">${Math.min(have, need)} / ${need}</b></div>
           <div class="req-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${need}" aria-valuenow="${Math.min(have, need)}" aria-label="${esc(label)}"><i style="width:${Math.min(100, (have / need) * 100)}%"></i></div></div>` : '';
       const cur = D.isCurrent;
       let note, tone = '';
@@ -86,7 +86,7 @@ export default {
       else { note = D.me.out ? 'You missed the minimum, so you lost this week: the punishment, and no reward.' : 'You kept the minimum.'; tone = D.me.out ? 'warn' : 'ok'; }
       return `<div class="req ${tone}"><div class="lbl">The weekly minimum</div>
         ${bar(plural(R.polls, 'poll bet', 'poll bets'), req.polls.have, R.polls)}${bar(plural(R.casino, 'casino bet', 'casino bets'), req.casino.have, R.casino)}
-        <p>${note}</p></div>`;
+        <p>${esc(note)}</p></div>`;
     }
     const place = (n) => `${n}${[, 'st', 'nd', 'rd'][(n % 100 >> 3) ^ 1 && n % 10] || 'th'}`;
     function ruleLines() {

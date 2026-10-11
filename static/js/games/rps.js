@@ -4,7 +4,7 @@ import { get, post } from '../api.js';
 import { setUser, refreshMe } from '../state.js';
 import { betPanel } from './betpanel.js';
 import { deduct, burst, resultPop, shake, fmtX } from './common.js';
-import { money, sleep } from '../util.js';
+import { money, sleep, esc } from '../util.js';
 import { toast } from '../ui.js';
 
 const STROKE = 'stroke="#0E0C0A" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"';
@@ -42,7 +42,7 @@ export default async function mount(host, ctx = {}) {
         <div class="rp-side"><small>House</small><div class="rp-pick" id="house"><span class="q">?</span></div></div>
       </div>
       <div class="rp-msg" id="msg">Place a bet, then pick your move.</div>
-      <div class="rp-choices" id="choices">${MOVES.map((m) => `<button class="rp-choice" data-m="${m}" disabled><span class="rp-ico">${ICONS[m]}</span><b>${NAME[m]}</b></button>`).join('')}</div>
+      <div class="rp-choices" id="choices">${MOVES.map((m) => `<button class="rp-choice" data-m="${m}" disabled><span class="rp-ico">${ICONS[m]}</span><b>${esc(NAME[m])}</b></button>`).join('')}</div>
     </div>
   </div>`;
   const $ = (s) => host.querySelector(s);

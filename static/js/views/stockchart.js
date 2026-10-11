@@ -35,7 +35,7 @@ export function drawStockChart(host, { type = 'line', ticks = [], candles = [], 
       <circle cx="${x(last.t)}" cy="${y(last.c)}" r="4" fill="${col}" stroke="#0E0C0A" stroke-width="1.5"/>`;
   }
   const lastP = rows[rows.length - 1].c;
-  host.innerHTML = `<div class="sc-wrap"><div class="sc-read" aria-live="off"></div><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Price chart">${grid}${xl}${body}
+  host.innerHTML = `<div class="sc-wrap"><div class="sc-read" aria-live="off"></div><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Price chart">${grid}${xl}${body}${''/* html: seguro (grid, xl y body son SVG que arma este archivo con números) */}
     <line x1="0" x2="${W - PR}" y1="${y(lastP)}" y2="${y(lastP)}" stroke="${up ? 'var(--pos)' : 'var(--neg)'}" stroke-width="1" stroke-dasharray="1 3"/>
     <rect x="${W - PR + 2}" y="${y(lastP) - 9}" width="${PR - 4}" height="18" fill="${up ? 'var(--pos)' : 'var(--neg)'}"/><text x="${W - PR + 7}" y="${y(lastP) + 4}" fill="#0E0C0A" font-size="11" font-weight="700" font-family="var(--f-mono)">${fmtP(lastP)}</text>
     <line class="sc-cross" y1="${PT}" y2="${H - PB}" stroke="var(--text-2)" stroke-width="1" style="display:none"/><rect class="sc-hit" x="0" y="0" width="${W - PR}" height="${H}" fill="transparent"/></svg></div>`;

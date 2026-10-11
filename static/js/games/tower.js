@@ -2,7 +2,7 @@ import { get, post } from '../api.js';
 import { setUser, refreshMe } from '../state.js';
 import { betPanel } from './betpanel.js';
 import { deduct, burst, resultPop, shake, fmtX, progressHtml, paintProgress } from './common.js';
-import { money, sleep } from '../util.js';
+import { money, sleep, esc } from '../util.js';
 import { glyph } from '../art.js';
 import { toast } from '../ui.js';
 
@@ -18,7 +18,7 @@ export default async function mount(host, ctx = {}) {
     <div class="gm-panel">
       <div id="bet"></div>
       <div class="gm-field"><label for="risk">Risk</label>
-        <select class="gm-select" id="risk">${Object.keys(RISKS).map((k) => `<option value="${k}">${LABEL[k] || k}</option>`).join('')}</select>
+        <select class="gm-select" id="risk">${Object.keys(RISKS).map((k) => `<option value="${k}">${esc(LABEL[k] || k)}</option>`).join('')}</select>
         <small class="muted" id="risk-info"></small></div>
       ${progressHtml()}
       <button class="btn-bet" id="go">Bet</button>

@@ -187,7 +187,7 @@ function subnavHtml(sec, path, query) {
   if (sec === 'casino') {
     const m = path.match(/^\/games\/(\w+)/); const key = m ? m[1] : /^\/poker/.test(path) ? 'poker' : 'lobby';
     return `<div class="subnav-in"><a class="sub ${key === 'lobby' ? 'on' : ''}" href="#/games">Lobby</a>
-      ${GAME_LIST.map((g) => `<a class="sub ${key === g.id ? 'on' : ''}" href="${g.href || '#/games/' + g.id}"><span class="sub-ico">${gameSticker(g.id, 26)}</span>${g.name}</a>`).join('')}
+      ${GAME_LIST.map((g) => `<a class="sub ${key === g.id ? 'on' : ''}" href="${g.href || '#/games/' + g.id}"><span class="sub-ico">${gameSticker(g.id, 26)}</span>${esc(g.name)}</a>`).join('')}
       <span class="nav-spacer"></span>
       <div class="profit hide-sm"><span class="lbl">Today</span><b class="num" id="st-today">$0</b><span class="lbl">Week</span><b class="num" id="st-week">$0</b><span class="lbl">All time</span><b class="num" id="st-total">$0</b></div></div>`;
   }
@@ -200,7 +200,7 @@ function subnavHtml(sec, path, query) {
     const me = esc(S.user.username);
     const L = [['profile', `#/u/${me}`, 'Profile', /^\/u\//.test(path)], ['portfolio', '#/portfolio', 'Portfolio', /^\/portfolio/.test(path)], ['statement', '#/statement', 'Statement', /^\/statement/.test(path)],
       ['challenges', '#/challenges', 'Challenges', /^\/challenges/.test(path)], ['progress', '#/progress', 'Rank & milestones', /^\/progress/.test(path)], ['loans', '#/loans', 'Loans', /^\/loans/.test(path)], ['transfers', '#/transfers', 'Transfers', /^\/transfers/.test(path)], ['ranking', '#/ranking', 'Global ranking', /^\/ranking/.test(path)]];
-    return `<div class="subnav-in">${L.map(([k, href, label, on]) => `<a class="sub ${on ? 'on' : ''}" href="${href}">${label}</a>`).join('')}</div>`;
+    return `<div class="subnav-in">${L.map(([k, href, label, on]) => `<a class="sub ${on ? 'on' : ''}" href="${href}">${esc(label)}</a>`).join('')}</div>`;
   }
   return `<div class="subnav-in"><span class="sub-kicker">${esc(TAGLINES[sec] || '')}</span></div>`;
 }
@@ -277,7 +277,7 @@ async function refreshTicker() {
     const lead = m.outcomes.reduce((a, b) => (b.yes > a.yes ? b : a));
     const label = yn ? 'YES' : esc(trunc(lead.name, 14));
     const p = yn ? m.outcomes[0].yes : lead.yes;
-    items.push(`<span class="tk">${esc(trunc(m.question, 44))} <b class="num ${p >= 0.5 ? 'up' : 'down'}">${label} ${cents(p)}</b></span>`);
+    items.push(`<span class="tk">${esc(trunc(m.question, 44))} <b class="num ${p >= 0.5 ? 'up' : 'down'}">${label} ${cents(p)}</b></span>`);      // html: seguro (label es 'YES' o ya pasó por esc())
   });
   if (!items.length) items.push('<span class="tk">Quiet night. Nobody has lost anything yet. Give it time.</span>', '<span class="tk">Propose a bet. Put money on it. Regret it.</span>');
   const html = items.join('<i class="tk-sep"></i>') + '<i class="tk-sep"></i>';
@@ -435,7 +435,7 @@ function openEmailModal({ forced }) {
     const changing = em().address && em().verified;
     box.innerHTML = `<span class="lbl">${forced ? 'One quick thing' : 'Your account'}</span><h2>${changing ? 'Change your email' : 'Add your email'}</h2>
       <p class="lede">${forced ? 'Everybody needs an email on their account now. ' : ''}If you ever forget your password, we will send a code to this address so you can set a new one. Nobody else can see it.</p>
-      ${note}
+      ${note}${''/* html: seguro (note es HTML del propio código; hoy nadie lo pasa) */}
       <form id="em-form">
         <div class="field"><label for="em-addr">Email</label><input class="input" id="em-addr" type="email" autocomplete="email" required placeholder="you@example.com" value="${esc(changing ? '' : (em().address || ''))}"></div>
         ${changing ? '<div class="field"><label for="em-pw">Your password</label><input class="input" id="em-pw" type="password" autocomplete="current-password" required placeholder="to make sure it is you"></div>' : ''}
@@ -465,7 +465,7 @@ function openEmailModal({ forced }) {
     const target = em().pending || em().address;
     box.innerHTML = `<span class="lbl">Check your email</span><h2>Confirm it is yours</h2>
       <p class="lede">We sent a 6-digit code to <b>${esc(target)}</b>. It can take a minute (look in spam too). Type it here so the address can be used to reset your password.</p>
-      ${hint()}${note}
+      ${hint()}${note}${''/* html: seguro (note es HTML del propio código; hoy nadie lo pasa) */}
       <form id="em-form">
         <div class="field"><label for="em-code">Code</label><input class="input" id="em-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required placeholder="123456"></div>
         <div class="error-text" id="em-err" style="min-height:18px"></div>

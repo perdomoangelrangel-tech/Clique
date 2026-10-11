@@ -83,5 +83,5 @@ export function wireCards(root) {
  */
 export function emptyState({ art = 'slip', tone = 'cream', kicker = '', title, text = '', actions = '', tight = false }) {
   return `<div class="empty ${tight ? 'tight' : ''}"><div class="empty-art">${sticker(art, { size: tight ? 84 : 120, bg: tone })}</div>
-    <div class="empty-copy">${kicker ? `<span class="kicker">${esc(kicker)}</span>` : ''}<h3>${title}</h3>${text ? `<p>${text}</p>` : ''}${actions ? `<div class="btns">${actions}</div>` : ''}</div></div>`;
+    <div class="empty-copy">${kicker ? `<span class="kicker">${esc(kicker)}</span>` : ''}<h3>${title}</h3>${text ? `<p>${text}</p>` : ''}${''/* html: seguro (title y text son HTML de quien llama; quien llama escapa lo de personas) */}${actions ? `<div class="btns">${actions}</div>` : ''}</div></div>`;
 }

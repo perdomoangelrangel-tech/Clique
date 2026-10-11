@@ -49,7 +49,7 @@ export default {
     if (mine && edit) return openEditor(root, prof, PF);
 
     root.innerHTML = `<div class="page">
-      ${pfHead(PF, prof.user.username, editBtn)}
+      ${pfHead(PF, prof.user.username, editBtn)}${''/* html: seguro (pfHead escapa el nombre por dentro) */}
       ${mine ? `<div class="acct-cards" style="margin-top:22px"><div class="card-box pad-lg acct"><span class="lbl">Weekly account</span><b class="num" title="${moneyFull(P.balance)}">${money(P.balance)}</b><p class="muted">This week's chips. Set up again every Monday. <a href="#/portfolio">Where is it?</a></p></div>
         <div class="card-box pad-lg acct"><span class="lbl">Accumulated account</span><b class="num" title="${moneyFull(prof.accounts.accumulated)}">${money(prof.accounts.accumulated)}</b><p class="muted">What you keep. <a href="#/portfolio">Portfolio</a> · <a href="#/store">Store</a> · <a href="#/exchange">Exchange</a> · <a href="#/statement">Statement</a></p></div></div>` : ''}
       ${mine ? `<div class="card-box pad lang-pick" style="margin-top:16px"><div class="field" style="margin:0"><label for="pf-lang">${t('Idioma de la app')}</label>
@@ -137,7 +137,7 @@ async function openEditor(root, prof, startProfile) {
       const usable = i.owned, on = sel[kind] === i.id;
       const note = usable ? (i.free ? 'Free' : 'Owned') : i.state === 'locked' ? 'Locked' : `Store · ${money(i.price, { noCents: true })}`;
       return `<button type="button" class="pick ${on ? 'on' : ''} ${usable ? '' : 'na'}" data-slot="${kind}" data-id="${i.id}" ${usable ? '' : 'data-store="1"'} title="${esc(i.name)}${usable ? '' : ' (not yours yet)'}" aria-pressed="${on}">
-        <span class="pick-art">${productArt(i, { name: S.user.username, size: 40, fonts: store.fonts })}</span><span class="pick-name">${esc(i.name)}</span><span class="pick-note ${usable ? '' : 'buy'}">${note}</span></button>`;
+        <span class="pick-art">${productArt(i, { name: S.user.username, size: 40, fonts: store.fonts })}</span><span class="pick-name">${esc(i.name)}</span><span class="pick-note ${usable ? '' : 'buy'}">${esc(note)}</span></button>`;
     });
     if (kind === 'avatar') {
       opts.unshift(`<button type="button" class="pick ${sel.avatar === 'upload' ? 'on' : ''} ${upload ? '' : 'na'}" data-slot="avatar" data-id="upload" ${upload ? '' : 'disabled'} aria-pressed="${sel.avatar === 'upload'}">

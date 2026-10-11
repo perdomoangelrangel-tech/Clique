@@ -18,7 +18,7 @@ const layout = ['big', '', '', 'wide', '', '', '', '', 'wide', 'wide', 'wide', '
 const poster = (g, i, cls = layout[i] ?? '') => `<a class="pstr ${cls}" href="${g.href || '#/games/' + g.id}">
   <button class="fav ${favs().includes(g.id) ? 'on' : ''}" data-fav="${g.id}" title="Favourite" aria-label="Favourite ${esc(g.name)}">${favs().includes(g.id) ? ICON.starOn : ICON.star}</button>
   ${g.art({ wide: cls === 'wide', banner: cls === 'full' })}
-  <div class="pstr-label"><h3>${g.name}</h3><p>${g.tag}</p><div class="meta"><span>${g.rtp ? 'Returns ' + g.rtp : g.meta || ''}</span><span>Play ${ICON.arrowR}</span></div></div></a>`;
+  <div class="pstr-label"><h3>${esc(g.name)}</h3><p>${esc(g.tag)}</p><div class="meta"><span>${g.rtp ? 'Returns ' + g.rtp : g.meta || ''}</span><span>Play ${ICON.arrowR}</span></div></div></a>`;
 
 export default {
   async mount(root, _p, query) {
@@ -51,7 +51,7 @@ export default {
           <td class="r">${w.mult.toLocaleString()}x</td><td class="r up">${money(w.profit, { plus: true })}</td><td class="r muted">${ago(w.t)}</td></tr>`).join('')}</tbody></table></div>`
           : emptyState({ art: 'trophy', tone: 'lime', tight: true, kicker: 'No winners', title: 'Nobody has won big. Yet.', text: 'Win something at 2x or better and your name goes up here.' })}</div>`;
     }
-    root.innerHTML = `<div class="page">${head}${body}</div>`;
+    root.innerHTML = `<div class="page">${head}${body}</div>`;      // html: seguro (head y body se arman arriba con esc())
 
     root.addEventListener('click', (e) => {
       const f = e.target.closest('[data-fav]');
