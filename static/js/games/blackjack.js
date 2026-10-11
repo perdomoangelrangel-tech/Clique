@@ -2,27 +2,28 @@ import { get, post } from '../api.js';
 import { setUser, refreshMe, wallet } from '../state.js';
 import { betPanel } from './betpanel.js';
 import { deduct, burst, resultPop, shake, cardEl, fillFront } from './common.js';
-import { money, sleep, ICON } from '../util.js';
+import { money, sleep, ICON, esc } from '../util.js';
 import { toast } from '../ui.js';
+import { t } from '../i18n.js';
 
 const CHIPS = [0.1, 1, 5, 10, 25, 100, 500];
-const chipLabel = (v) => (v >= 1000 ? `${v / 1000}K` : String(v));
+const chipLabel = (v) => (v >= 1000 ? `${v / 1000}K` : String(v));      // i18n: no (a chip face)
 
 export default async function mount(host, ctx = {}) {
   host.innerHTML = `<div class="gm solo bj">
     <div class="gm-stage bj-stage" id="stage">
       <div class="bj-shoe"><i></i><i></i><i></i></div>
       <div class="bj-oval">
-        <div class="bj-zone bj-dealer"><div class="bj-label">Dealer <span class="bj-total" id="d-total"></span></div><div class="bj-cards" id="d-cards"></div></div>
-        <div class="bj-ribbon">BLACKJACK PAYS 3 TO 2<small>DEALER STANDS ON 17</small></div>
+        <div class="bj-zone bj-dealer"><div class="bj-label">${t('Crupier')} <span class="bj-total" id="d-total"></span></div><div class="bj-cards" id="d-cards"></div></div>
+        <div class="bj-ribbon">${t('EL BLACKJACK PAGA 3 A 2')}<small>${t('EL CRUPIER SE PLANTA EN 17')}</small></div>
         <div class="bj-hands" id="hands"></div>
       </div>
-      <button class="btn-bet bj-deal" id="deal">Deal</button>
+      <button class="btn-bet bj-deal" id="deal">${t('Repartir')}</button>
       <div class="bj-bar">
         <div class="bj-actions" id="actions">
-          <button data-a="double"><b>x2</b> Double</button><button data-a="hit">${ICON.plus} Hit</button><button data-a="stand">${ICON.hand} Stand</button><button data-a="split">${ICON.split} Split</button></div>
+          <button data-a="double"><b>x2</b> ${t('Doblar')}</button><button data-a="hit">${ICON.plus} ${t('Pedir')}</button><button data-a="stand">${ICON.hand} ${t('Plantarse')}</button><button data-a="split">${ICON.split} ${t('Dividir')}</button></div>
         <div class="bj-betrow">
-          <div class="rl-chips sm" id="chips">${CHIPS.map((v) => `<button class="rchip v${String(v).replace('.', '_')}" data-v="${v}" title="Add ${money(v)}"><span>${chipLabel(v)}</span></button>`).join('')}</div>
+          <div class="rl-chips sm" id="chips">${CHIPS.map((v) => `<button class="rchip v${String(v).replace('.', '_')}" data-v="${v}" title="${esc(t('Agregar {cantidad}', { cantidad: money(v) }))}"><span>${chipLabel(v)}</span></button>`).join('')}</div>
           <div id="bet" class="bj-bet-in"></div>
         </div>
       </div>
@@ -34,7 +35,7 @@ export default async function mount(host, ctx = {}) {
 
   $('#chips').addEventListener('click', (e) => { const c = e.target.closest('[data-v]'); if (c && !busy && !(st && st.phase === 'player')) bp.add(Number(c.dataset.v)); });
 
-  const totalText = (h) => (h.status === 'bust' ? 'Bust' : h.blackjack ? 'Blackjack' : h.soft && h.total < 21 ? `Soft ${h.total}` : String(h.total));
+  const totalText = (h) => (h.status === 'bust' ? t('Te pasaste') : h.blackjack ? 'Blackjack' : h.soft && h.total < 21 ? t('Suave {n}', { n: h.total }) : String(h.total));
 
   function buildHands(hands) {
     handsEl.innerHTML = ''; handEls = [];
@@ -91,7 +92,7 @@ export default async function mount(host, ctx = {}) {
     if (state.phase === 'done') {                                   // dealer reveals and draws
       if (holeEl && !state.dealer[1].hidden) { fillFront(holeEl, state.dealer[1]); holeEl.classList.remove('down'); holeEl = null; await sleep(650); }
       while (dealerCount < state.dealer.length) { await addCard(dCards, state.dealer[dealerCount]); dealerCount++; await sleep(250); }
-      dTotal.textContent = state.dealer.length === 2 && state.dealerTotal === 21 ? 'Blackjack' : state.dealerTotal > 21 ? `Bust (${state.dealerTotal})` : String(state.dealerTotal);
+      dTotal.textContent = state.dealer.length === 2 && state.dealerTotal === 21 ? 'Blackjack' : state.dealerTotal > 21 ? t('Se pasó ({n})', { n: state.dealerTotal }) : String(state.dealerTotal);
     } else dTotal.textContent = String(state.dealerTotal);
   }
 
@@ -111,16 +112,16 @@ export default async function mount(host, ctx = {}) {
     state.hands.forEach((h, i) => {
       const r = handEls[i].el.querySelector('.bj-res'); r.classList.remove('hidden');
       r.className = `bj-res ${h.result === 'win' || h.result === 'blackjack' ? 'w' : h.result === 'push' ? 'p' : 'l'}`;
-      r.textContent = { win: 'Win', blackjack: 'Blackjack', push: 'Push', lose: 'Lose', bust: 'Bust' }[h.result];
+      r.textContent = { win: t('Ganas'), blackjack: 'Blackjack', push: t('Empate'), lose: t('Pierdes'), bust: t('Te pasaste') }[h.result];
       handEls[i].el.classList.add(h.result === 'win' || h.result === 'blackjack' ? 'won' : h.result === 'push' ? 'pushed' : 'lost');
     });
     const profit = Math.round((state.payout - state.totalBet) * 100) / 100;
     const hasBJ = state.hands.some((h) => h.result === 'blackjack');
     if (profit > 0) {
-      resultPop({ net: profit, label: hasBJ ? 'Blackjack' : 'You beat the dealer', bet: state.totalBet });
+      resultPop({ net: profit, label: hasBJ ? 'Blackjack' : t('Le ganaste al crupier'), bet: state.totalBet });
       const r = stage.getBoundingClientRect(); burst(stage, r.width / 2, r.height * 0.55, { count: 44, power: 300 });
-    } else if (profit === 0) resultPop({ net: 0, label: 'Nobody wins' });
-    else { resultPop({ net: profit, label: state.hands.every((h) => h.status === 'bust') ? 'You busted' : 'Dealer wins' }); shake(stage); }
+    } else if (profit === 0) resultPop({ net: 0, label: t('Nadie gana') });
+    else { resultPop({ net: profit, label: state.hands.every((h) => h.status === 'bust') ? t('Te pasaste') : t('Gana el crupier') }); shake(stage); }
   }
 
   async function finishRound(state, user) {
@@ -158,7 +159,7 @@ export default async function mount(host, ctx = {}) {
   // resume a hand that was in progress
   try {
     const cur = await get('/api/games/state');
-    if (cur.blackjack && !dead) { busy = true; await sync(cur.blackjack, { instant: true }); busy = false; setControls(cur.blackjack); toast('Your hand was waiting for you.'); }
+    if (cur.blackjack && !dead) { busy = true; await sync(cur.blackjack, { instant: true }); busy = false; setControls(cur.blackjack); toast(t('Tu mano te estaba esperando.')); }
     else setControls(null);
   } catch { setControls(null); }
 

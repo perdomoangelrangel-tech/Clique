@@ -2,12 +2,13 @@ import { get, post } from '../api.js';
 import { S, setUser, refreshMe } from '../state.js';
 import { betPanel } from './betpanel.js';
 import { deduct, burst, resultPop, shake } from './common.js';
-import { money, sleep } from '../util.js';
+import { money, sleep, esc } from '../util.js';
 import { toast } from '../ui.js';
+import { t, intlLocale } from '../i18n.js';
 
 const LANE_W = 100, START_W = 170, END_W = 140;
 const CAR_COLORS = ['#ef476f', '#ffd166', '#06d6a0', '#4cc9f0', '#b388ff', '#ff9f1c', '#f8f9fa', '#118ab2'];
-const DIFFS = [['easy', 'Easy'], ['medium', 'Medium'], ['hard', 'Hard'], ['hardcore', 'Hardcore']];
+const DIFFS = [['easy', 'Fácil'], ['medium', 'Medio'], ['hard', 'Difícil'], ['hardcore', 'Extremo']];      // i18n: claves
 
 const CHICKEN_SVG = `<svg viewBox="0 0 64 72" width="58" height="65" fill="none" stroke="#0E0C0A" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
   <path d="M28 59v8M38 59v8M23 69h9M34 69h9" stroke-width="6"/><path d="M28 59v8M38 59v8M23 69h9M34 69h9" stroke="#C6F432" stroke-width="2.2"/>
@@ -26,22 +27,22 @@ export default async function mount(host, ctx = {}) {
   const meta = await get('/api/games/meta');
   const CK = meta.chicken;
   host.innerHTML = `<div class="gm solo chicken">
-    <div class="gm-stage ck-stage" id="stage"><div class="ck-scene" id="scene"></div><div class="ck-msg" id="msg">Pick your poison. Place your bet.</div></div>
+    <div class="gm-stage ck-stage" id="stage"><div class="ck-scene" id="scene"></div><div class="ck-msg" id="msg">${t('Elige tu veneno. Haz tu apuesta.')}</div></div>
     <div class="ck-bar">
       <div class="ck-bar-l"><div id="bet"></div></div>
       <div class="ck-bar-c">
-        <button class="btn-cross" id="step">Cross</button>
-        <div class="ck-profit"><span>Profit</span><b id="profit" class="num">$0.00</b><em id="curx">0.00x</em></div>
-        <button class="btn-bet" id="play">Bet</button>
-        <button class="btn-bet cash hidden" id="cash">Cash out</button>
+        <button class="btn-cross" id="step">${t('Cruzar')}</button>
+        <div class="ck-profit"><span>${t('Ganancia')}</span><b id="profit" class="num">${money(0)}</b><em id="curx">0.00x</em></div>
+        <button class="btn-bet" id="play">${t('Apostar')}</button>
+        <button class="btn-bet cash hidden" id="cash">${t('Plantarme')}</button>
       </div>
-      <div class="ck-bar-r"><label for="diff">Risk</label>
-        <select class="gm-select" id="diff">${DIFFS.map(([k, l]) => `<option value="${k}" ${k === 'medium' ? 'selected' : ''}>${l}</option>`).join('')}</select>
+      <div class="ck-bar-r"><label for="diff">${t('Riesgo')}</label>
+        <select class="gm-select" id="diff">${DIFFS.map(([k, l]) => `<option value="${k}" ${k === 'medium' ? 'selected' : ''}>${esc(t(l))}</option>`).join('')}</select>
         <small id="diff-info" class="muted"></small></div>
     </div>
   </div>`;
   const $ = (s) => host.querySelector(s);
-  const bp = betPanel($('#bet'), { label: 'Bet Amount', key: 'bet-chicken' });
+  const bp = betPanel($('#bet'), { key: 'bet-chicken' });
   const stage = $('#stage'), scene = $('#scene'), msg = $('#msg'), playBtn = $('#play'), stepBtn = $('#step'), cashBtn = $('#cash'), diffSel = $('#diff');
   let diff = 'medium', game = null, busy = false, dead = false, chickenEl = null, stepNow = 0;
 
@@ -49,7 +50,7 @@ export default async function mount(host, ctx = {}) {
   const lanesOf = (d) => CK[d].lanes;
   const multOf = (d, k) => CK[d].mults[k];
   const centerX = (k) => (k === 0 ? START_W / 2 : START_W + (k - 1) * LANE_W + LANE_W / 2);
-  const fmtM = (m) => m.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'x';
+  const fmtM = (m) => m.toLocaleString(intlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'x';
 
   function buildScene(d, atStep = 0) {
     const n = lanesOf(d), w = START_W + n * LANE_W + END_W, h = roadH();
@@ -80,11 +81,11 @@ export default async function mount(host, ctx = {}) {
   function markNext() { scene.querySelectorAll('.ck-lane').forEach((l) => l.classList.toggle('next', !!game && +l.dataset.i === stepNow)); }
   function refreshReadout() {
     const d = game ? game.difficulty : diff;
-    $('#diff-info').textContent = `${(CK[d].chance * 100).toFixed(0)}% safe per lane · ${CK[d].lanes} lanes · tops out at ${fmtM(CK[d].mults[CK[d].lanes])}`;
+    $('#diff-info').textContent = t('{pct}% seguro por carril · {n} carriles · hasta {max}', { pct: (CK[d].chance * 100).toFixed(0), n: CK[d].lanes, max: fmtM(CK[d].mults[CK[d].lanes]) });
     if (game) {
       const m = multOf(d, stepNow), pay = game.bet * m;
       $('#profit').textContent = money(Math.max(0, pay - game.bet)); $('#curx').textContent = fmtM(stepNow ? m : 0);
-      cashBtn.textContent = stepNow ? `Cash out ${money(pay)}` : 'Cash out';
+      cashBtn.textContent = stepNow ? t('Plantarme con {cantidad}', { cantidad: money(pay) }) : t('Plantarme');
     } else { $('#profit').textContent = '$0.00'; $('#curx').textContent = '0.00x'; }
   }
   function setUi() {
@@ -98,7 +99,7 @@ export default async function mount(host, ctx = {}) {
   bp.onChange(() => { if (!game) playBtn.disabled = busy || !bp.valid(); });
   diffSel.addEventListener('change', () => { if (game || busy) return; diff = diffSel.value; buildScene(diff, 0); setUi(); });
 
-  const say = (t) => { msg.textContent = t; };
+  const say = (text) => { msg.textContent = text; };
   const hopTo = async (k) => {
     chickenEl.classList.remove('hop'); void chickenEl.offsetWidth; chickenEl.classList.add('hop');
     placeChicken(k); await sleep(470); chickenEl.classList.remove('hop');
@@ -107,7 +108,7 @@ export default async function mount(host, ctx = {}) {
 
   async function resetRound(delay = 1800) {
     await sleep(delay); if (dead) return;
-    game = null; busy = false; buildScene(diff, 0); say('Pick your poison. Place your bet.'); setUi();
+    game = null; busy = false; buildScene(diff, 0); say(t('Elige tu veneno. Haz tu apuesta.')); setUi();
   }
 
   playBtn.addEventListener('click', async () => {
@@ -116,7 +117,7 @@ export default async function mount(host, ctx = {}) {
     const prev = deduct(amount);
     try {
       const res = await post('/api/games/chicken/start', { amount, difficulty: diff });
-      setUser(res.user); game = res; stepNow = 0; buildScene(res.difficulty, 0); say('Hit Cross. The chicken has no idea what it is doing.'); markNext();
+      setUser(res.user); game = res; stepNow = 0; buildScene(res.difficulty, 0); say(t('Dale a Cruzar. El pollito no tiene idea de lo que hace.')); markNext();
     } catch (ex) { toast(ex.message, 'err'); setUser(prev); refreshMe().catch(() => {}); }
     busy = false; setUi();
   });
@@ -134,8 +135,8 @@ export default async function mount(host, ctx = {}) {
         chickenEl.classList.add('smash'); lane.classList.add('crash');
         const [x, y] = chickenPos(); burst(stage, x, y, { count: 34, colors: ['#fff', '#f1f3f5', '#ffe066', '#e5383b'], power: 280, size: 8, shape: 'rect' });
         shake(stage); stage.classList.add('flash-red'); setTimeout(() => stage.classList.remove('flash-red'), 500);
-        say(`Splat. Lane ${stepNow + 1} had a car in it.`);
-        resultPop({ net: -game.bet, label: `Flattened on lane ${stepNow + 1}` });
+        say(t('¡Splat! En el carril {n} venía un coche.', { n: stepNow + 1 }));
+        resultPop({ net: -game.bet, label: t('Aplastado en el carril {n}', { n: stepNow + 1 }) });
         setUser(res.user); ctx.refreshBets?.(); game = null; busy = true; setUi();
         return resetRound(2200);
       }
@@ -143,12 +144,12 @@ export default async function mount(host, ctx = {}) {
       lane.classList.add('done'); lane.classList.remove('next'); stepNow = res.step; game = { ...game, ...res };
       const [x, y] = chickenPos(); burst(stage, x, y - 30, { count: 10, colors: ['#ffd23f', '#ffe9a8'], power: 140, size: 8, shape: 'round', life: 700 });
       if (res.finished) {
-        say(`Made it across. Somehow. ${fmtM(res.mult)}`);
-        resultPop({ net: res.payout - game.bet, label: `All ${res.lanes} lanes`, detail: fmtM(res.mult), bet: game.bet });
+        say(t('Cruzó. Quién sabe cómo. {x}', { x: fmtM(res.mult) }));
+        resultPop({ net: res.payout - game.bet, label: t('Los {n} carriles', { n: res.lanes }), detail: fmtM(res.mult), bet: game.bet });
         const r = stage.getBoundingClientRect(); burst(stage, r.width / 2, r.height / 2, { count: 70, power: 360 });
         setUser(res.user); ctx.refreshBets?.(); game = null; busy = true; setUi(); return resetRound(2600);
       }
-      say(`Lane ${res.step} cleared. ${fmtM(res.mult)} · ${money(res.payoutNow)} if you leave now`);
+      say(t('Carril {n} superado. {x} · {cantidad} si te plantas ahora', { n: res.step, x: fmtM(res.mult), cantidad: money(res.payoutNow) }));
       markNext();
     } catch (ex) { toast(ex.message, 'err'); refreshMe().catch(() => {}); }
     busy = false; setUi();
@@ -161,8 +162,8 @@ export default async function mount(host, ctx = {}) {
       const res = await post('/api/games/chicken/cashout', {});
       chickenEl.classList.add('cheer');
       const [x, y] = chickenPos(); burst(stage, x, y - 20, { count: 42, power: 300 });
-      resultPop({ net: res.payout - game.bet, label: `Left at ${fmtM(res.mult)}`, bet: game.bet });
-      say(`Banked ${money(res.payout)}. Smart. Or scared.`);
+      resultPop({ net: res.payout - game.bet, label: t('Te plantaste en {x}', { x: fmtM(res.mult) }), bet: game.bet });
+      say(t('Te llevas {cantidad}. Listo. O miedoso.', { cantidad: money(res.payout) }));
       setUser(res.user); ctx.refreshBets?.(); game = null; setUi(); return resetRound(2200);
     } catch (ex) { toast(ex.message, 'err'); refreshMe().catch(() => {}); }
     busy = false; setUi();
@@ -181,7 +182,7 @@ export default async function mount(host, ctx = {}) {
     const cur = await get('/api/games/state');
     if (cur.chicken && !dead) {
       game = cur.chicken; diff = game.difficulty; stepNow = game.step; diffSel.value = diff;
-      buildScene(diff, stepNow); say(stepNow ? `Back already? ${fmtM(game.mult)} · ${money(game.payoutNow)} if you leave` : 'Hit Cross. The chicken has no idea what it is doing.'); markNext();
+      buildScene(diff, stepNow); say(stepNow ? t('¿Ya de vuelta? {x} · {cantidad} si te plantas', { x: fmtM(game.mult), cantidad: money(game.payoutNow) }) : t('Dale a Cruzar. El pollito no tiene idea de lo que hace.')); markNext();
     } else buildScene(diff, 0);
   } catch { buildScene(diff, 0); }
   setUi();

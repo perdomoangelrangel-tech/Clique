@@ -48,10 +48,10 @@ export function pct(p) {
   return Math.round(c) + '%';
 }
 
-export const ago = (t) => agoI18n(t);
-export const until = (t) => untilI18n(t);
-export const dateShort = (t) => dateShortI18n(t);
-export const dateLong = (t) => dateTime(t);
+export const ago = (ts) => agoI18n(ts);
+export const until = (ts) => untilI18n(ts);
+export const dateShort = (ts) => dateShortI18n(ts);
+export const dateLong = (ts) => dateTime(ts);
 
 function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 export const hues = (seed) => { const h = hash(String(seed)); return [h % 360, (h >> 8) % 360]; };
@@ -103,14 +103,14 @@ export const ICON = {
 /** Flat two-colour odds bar: lime for YES, vermillion for NO. */
 export const oddsBar = (p) => `<div class="oddsbar" style="--p:${(Math.max(0, Math.min(1, p)) * 100).toFixed(1)}%" aria-hidden="true"><i></i></div>`;
 
-export const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+export const debounce = (fn, ms) => { let timer; return (...a) => { clearTimeout(timer); timer = setTimeout(() => fn(...a), ms); }; };
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** Reads a money-ish string. Returns NaN for junk. Accepts "1,200.5", "$40". No upper limit. */
 export function parseAmount(s) {
-  const t = String(s ?? '').replace(/[$,\s]/g, '');
-  if (!t || !/^\d*\.?\d*$/.test(t) || t === '.') return NaN;
-  return parseFloat(t);
+  const txt = String(s ?? '').replace(/[$,\s]/g, '');
+  if (!txt || !/^\d*\.?\d*$/.test(txt) || txt === '.') return NaN;
+  return parseFloat(txt);
 }
 export const floorCents = (x) => Math.floor(x * 100 + 1e-9) / 100;
 

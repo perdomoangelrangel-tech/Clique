@@ -51,7 +51,7 @@ export function openJoinByCode() {
   const m = modal(`<span class="lbl">${t('Contraseña en la puerta')}</span><h2>${t('¿Tienes un código?')}</h2><p class="lede">${t('Seis letras. Las tiene quien administra el círculo.')}</p>
     <form id="jc-form" autocomplete="off"><div class="field"><input class="input" id="jc-code" maxlength="6" placeholder="ABC123" style="text-transform:uppercase;letter-spacing:.3em;font-weight:700;text-align:center;font-size:20px;height:52px"></div>
     <div class="error-text" id="jc-err" style="min-height:18px"></div>
-    <div class="modal-actions"><button type="button" class="btn btn-secondary" data-close>${t('Cancelar')}</button><button class="btn btn-primary">${t('Pasar')}</button></div></form>`);
+    <div class="modal-actions"><button type="button" class="btn btn-secondary" data-close>${t('Cancelar')}</button><button class="btn btn-primary">${t('Pásale')}</button></div></form>`);
   m.el.querySelector('#jc-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     try {

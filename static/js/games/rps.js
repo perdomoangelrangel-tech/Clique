@@ -6,6 +6,7 @@ import { betPanel } from './betpanel.js';
 import { deduct, burst, resultPop, shake, fmtX } from './common.js';
 import { money, sleep, esc } from '../util.js';
 import { toast } from '../ui.js';
+import { t } from '../i18n.js';
 
 const STROKE = 'stroke="#0E0C0A" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"';
 const ICONS = {
@@ -15,8 +16,9 @@ const ICONS = {
     <circle cx="19" cy="54" r="8" fill="#C6F432"/><circle cx="45" cy="54" r="8" fill="#FF4B2B"/><circle cx="32" cy="29" r="3.6" fill="#0E0C0A"/></g></svg>`,
 };
 const MOVES = ['rock', 'paper', 'scissors'];
-const NAME = { rock: 'Rock', paper: 'Paper', scissors: 'Scissors' };
-const VERB = { rock: 'breaks', paper: 'covers', scissors: 'cuts' };
+const NAME = { rock: 'Piedra', paper: 'Papel', scissors: 'Tijera' };                                          // i18n: claves
+const WINS_LINE = { rock: 'La piedra rompe la tijera.', paper: 'El papel envuelve la piedra.', scissors: 'La tijera corta el papel.' };      // i18n: claves
+const DRAW_LINE = { rock: 'Los dos sacaron piedra.', paper: 'Los dos sacaron papel.', scissors: 'Los dos sacaron tijera.' };            // i18n: claves
 const BEATS = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
 
 export default async function mount(host, ctx = {}) {
@@ -25,32 +27,32 @@ export default async function mount(host, ctx = {}) {
   host.innerHTML = `<div class="gm rps">
     <div class="gm-panel">
       <div id="bet"></div>
-      <button class="btn-bet" id="play">Bet</button>
-      <button class="btn-bet cash hidden" id="cash">Cash out</button>
+      <button class="btn-bet" id="play">${t('Apostar')}</button>
+      <button class="btn-bet cash hidden" id="cash">${t('Plantarme')}</button>
       <div class="hl-read" aria-live="polite">
-        <div><small>Total payout</small><b class="num" id="pay">$0.00</b></div>
-        <div><small>Profit</small><b class="num" id="profit">$0.00</b></div>
-        <div><small>Multiplier</small><b class="num" id="mult">0.00x</b></div>
+        <div><small>${t('Pago total')}</small><b class="num" id="pay">${money(0)}</b></div>
+        <div><small>${t('Ganancia')}</small><b class="num" id="profit">${money(0)}</b></div>
+        <div><small>${t('Multiplicador')}</small><b class="num" id="mult">0.00x</b></div>
       </div>
-      <div class="gm-note">Pick rock, paper or scissors against the house. Win and you climb: the first win pays 1.96x and every win after that doubles it, up to ${LADDER.length} in a row. A draw is simply played again and costs nothing. Lose and the bet is gone. Cash out after any win. Every step returns 98% on average.</div>
+      <div class="gm-note">${t('Elige piedra, papel o tijera contra la casa. Si ganas, subes: el primer triunfo paga 1.96x y cada triunfo después lo dobla, hasta {n} seguidos. Un empate se repite sin costo. Si pierdes, se va la apuesta. Plántate después de cualquier triunfo. Cada paso devuelve 98% en promedio.', { n: LADDER.length })}</div>
     </div>
     <div class="gm-stage rp-stage" id="stage">
-      <div class="rp-ladder" id="ladder" aria-label="The ladder"></div>
+      <div class="rp-ladder" id="ladder" aria-label="${esc(t('La escalera'))}"></div>
       <div class="rp-duel">
-        <div class="rp-side"><small>You</small><div class="rp-pick" id="you"><span class="q">?</span></div></div>
+        <div class="rp-side"><small>${t('Tú')}</small><div class="rp-pick" id="you"><span class="q">?</span></div></div>
         <div class="rp-vs">VS</div>
-        <div class="rp-side"><small>House</small><div class="rp-pick" id="house"><span class="q">?</span></div></div>
+        <div class="rp-side"><small>${t('La casa')}</small><div class="rp-pick" id="house"><span class="q">?</span></div></div>
       </div>
-      <div class="rp-msg" id="msg">Place a bet, then pick your move.</div>
-      <div class="rp-choices" id="choices">${MOVES.map((m) => `<button class="rp-choice" data-m="${m}" disabled><span class="rp-ico">${ICONS[m]}</span><b>${esc(NAME[m])}</b></button>`).join('')}</div>
+      <div class="rp-msg" id="msg">${t('Haz una apuesta y luego elige tu jugada.')}</div>
+      <div class="rp-choices" id="choices">${MOVES.map((m) => `<button class="rp-choice" data-m="${m}" disabled><span class="rp-ico">${ICONS[m]}</span><b>${esc(t(NAME[m]))}</b></button>`).join('')}</div>
     </div>
   </div>`;
   const $ = (s) => host.querySelector(s);
-  const bp = betPanel($('#bet'), { label: 'Bet Amount', key: 'bet-rps' });
+  const bp = betPanel($('#bet'), { key: 'bet-rps' });
   const stage = $('#stage'), msg = $('#msg'), playBtn = $('#play'), cashBtn = $('#cash'), you = $('#you'), house = $('#house');
   let game = null, busy = false, dead = false;
 
-  const say = (t) => { msg.textContent = t; };
+  const say = (text) => { msg.textContent = text; };
   const pickBox = (el, move, cls = '') => { el.className = `rp-pick ${cls}`; el.innerHTML = move ? ICONS[move] : '<span class="q">?</span>'; };
   const drawLadder = () => {
     const wins = game ? game.wins : 0;
@@ -67,14 +69,14 @@ export default async function mount(host, ctx = {}) {
     $('#pay').textContent = money(game ? game.payoutNow : 0);
     $('#profit').textContent = money(game && game.wins ? Math.max(0, game.payoutNow - bet) : 0);
     $('#mult').textContent = fmtX(game && game.wins ? game.mult : 0);
-    cashBtn.textContent = game && game.wins ? `Cash out ${money(game.payoutNow)}` : 'Cash out';
+    cashBtn.textContent = game && game.wins ? t('Plantarme con {cantidad}', { cantidad: money(game.payoutNow) }) : t('Plantarme');
     drawLadder();
   }
   bp.onChange(() => { if (!game) playBtn.disabled = busy || !bp.valid(); });
 
   async function resetRound(delay = 2000) {
     await sleep(delay); if (dead) return;
-    game = null; busy = false; pickBox(you, null); pickBox(house, null); say('Place a bet, then pick your move.'); setUi();
+    game = null; busy = false; pickBox(you, null); pickBox(house, null); say(t('Haz una apuesta y luego elige tu jugada.')); setUi();
   }
   const finish = (res, label, bet, detail = '') => {
     resultPop({ net: res.payout - bet, label, detail, bet });
@@ -87,7 +89,7 @@ export default async function mount(host, ctx = {}) {
     const prev = deduct(amount);
     try {
       const res = await post('/api/games/rps/start', { amount });
-      setUser(res.user); game = res; pickBox(you, null); pickBox(house, null); say('Pick your move.');
+      setUser(res.user); game = res; pickBox(you, null); pickBox(house, null); say(t('Elige tu jugada.'));
     } catch (ex) { toast(ex.message, 'err'); setUser(prev); refreshMe().catch(() => {}); }
     busy = false; setUi();
   });
@@ -103,20 +105,20 @@ export default async function mount(host, ctx = {}) {
       pickBox(house, res.house, res.result === 'lose' ? 'win' : res.result === 'win' ? 'lose' : 'draw');
       you.classList.add(res.result === 'win' ? 'win' : res.result === 'lose' ? 'lose' : 'draw');
       const r = stage.getBoundingClientRect();
-      if (res.result === 'draw') { say(`Both picked ${NAME[pick].toLowerCase()}. A draw: go again, it costs nothing.`); game = res; }
+      if (res.result === 'draw') { say(`${t(DRAW_LINE[pick])} ${t('Empate: otra vez, no cuesta nada.')}`); game = res; }
       else if (res.result === 'win') {
-        say(`${NAME[pick]} ${VERB[pick]} ${res.house}. ${fmtX(res.mult)} · ${money(res.payoutNow)} if you leave now.`);
+        say(`${t(WINS_LINE[pick])} ${t('{x} · {cantidad} si te plantas ahora.', { x: fmtX(res.mult), cantidad: money(res.payoutNow) })}`);
         burst(stage, r.width / 2, r.height * 0.45, { count: 18, colors: ['#C6F432', '#EFE6D2'], power: 200, size: 8, life: 800 });
         game = res;
         if (res.finished) {
-          say(`${res.wins} wins in a row. That is the top of the ladder: paid out.`);
+          say(t('{n} triunfos seguidos. Llegaste a lo más alto de la escalera: pagado.', { n: res.wins }));
           burst(stage, r.width / 2, r.height / 2, { count: 80, power: 380 });
-          finish(res, `${res.wins} wins in a row`, old.bet, fmtX(res.mult)); return resetRound(2800);
+          finish(res, t('{n} triunfos seguidos', { n: res.wins }), old.bet, fmtX(res.mult)); return resetRound(2800);
         }
       } else {
         shake(stage); stage.classList.add('flash-red'); setTimeout(() => stage.classList.remove('flash-red'), 500);
-        say(`${NAME[res.house]} ${VERB[res.house]} ${pick}. The house wins.`);
-        finish(res, `Lost to ${res.house}`, old.bet); return resetRound(2400);
+        say(`${t(WINS_LINE[res.house])} ${t('Gana la casa.')}`);
+        finish(res, t('Perdiste contra {jugada}', { jugada: t(NAME[res.house]) }), old.bet); return resetRound(2400);
       }
     } catch (ex) { toast(ex.message, 'err'); refreshMe().catch(() => {}); pickBox(house, null); }
     busy = false; setUi();
@@ -129,8 +131,8 @@ export default async function mount(host, ctx = {}) {
     try {
       const res = await post('/api/games/rps/cashout', {});
       const r = stage.getBoundingClientRect(); burst(stage, r.width / 2, r.height / 2, { count: 50, power: 320 });
-      say(`Banked ${money(res.payout)}. Smart. Or scared.`);
-      finish(res, `Left at ${fmtX(res.mult)}`, old.bet); return resetRound(2200);
+      say(t('Te llevas {cantidad}. Listo. O miedoso.', { cantidad: money(res.payout) }));
+      finish(res, t('Te plantaste en {x}', { x: fmtX(res.mult) }), old.bet); return resetRound(2200);
     } catch (ex) { toast(ex.message, 'err'); refreshMe().catch(() => {}); }
     busy = false; setUi();
   });
@@ -138,7 +140,7 @@ export default async function mount(host, ctx = {}) {
   const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   try {                                                         // pick up a round that was in progress
     const cur = await get('/api/games/state');
-    if (cur.rps && !dead) { game = cur.rps; say(game.wins ? `Welcome back. ${fmtX(game.mult)} · ${money(game.payoutNow)} if you leave now.` : 'Pick your move.'); }
+    if (cur.rps && !dead) { game = cur.rps; say(game.wins ? t('Bienvenido de vuelta. {x} · {cantidad} si te plantas ahora.', { x: fmtX(game.mult), cantidad: money(game.payoutNow) }) : t('Elige tu jugada.')); }
   } catch { /* an empty table */ }
   setUi();
   return { unmount() { dead = true; bp.destroy(); } };

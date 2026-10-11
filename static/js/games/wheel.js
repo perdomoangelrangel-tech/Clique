@@ -6,8 +6,10 @@ import { betPanel } from './betpanel.js';
 import { deduct, burst, resultPop, shake, fmtX } from './common.js';
 import { money, sleep, esc } from '../util.js';
 import { toast } from '../ui.js';
+import { t } from '../i18n.js';
 
-const RISKS = [['low', 'Low'], ['medium', 'Medium'], ['high', 'High'], ['risky', 'Risky']];
+const RISKS = [['low', 'Bajo'], ['medium', 'Medio'], ['high', 'Alto'], ['risky', 'Arriesgado']];      // i18n: claves
+const riskName = (k) => { const r = RISKS.find(([id]) => id === k); return r ? t(r[1]) : k; };
 const SIZE = 420, CX = 210, R_OUT = 198, R_IN = 82;
 const TONES = ['#F2C230', '#5ED16B', '#4DABF7', '#FF8A3D', '#FF6B9D', '#B388FF'];          // from the smallest winning multiplier up
 const ZERO = '#3A3530';
@@ -29,7 +31,7 @@ function wheelSvg(layout, colors) {
     const a0 = i * seg, a1 = (i + 1) * seg;
     return `<path d="M${pt(R_OUT, a0)}A${R_OUT} ${R_OUT} 0 0 1 ${pt(R_OUT, a1)}L${pt(R_IN, a1)}A${R_IN} ${R_IN} 0 0 0 ${pt(R_IN, a0)}Z" fill="${colors.get(key(m))}" stroke="#0E0C0A" stroke-width="2"><title>${fmtX(m)}</title></path>`;
   }).join('');
-  return `<svg class="wh-svg" viewBox="0 0 ${SIZE} ${SIZE}" role="img" aria-label="The wheel">
+  return `<svg class="wh-svg" viewBox="0 0 ${SIZE} ${SIZE}" role="img" aria-label="${esc(t('La rueda'))}">
     <circle cx="${CX}" cy="${CX}" r="${R_OUT + 6}" fill="#1C1815" stroke="#0E0C0A" stroke-width="4"/>
     <g class="wh-rot" id="rot">${paths}</g>
     <circle cx="${CX}" cy="${CX}" r="${R_IN - 2}" fill="#141110" stroke="#0E0C0A" stroke-width="4"/>
@@ -42,19 +44,19 @@ export default async function mount(host, ctx = {}) {
   host.innerHTML = `<div class="gm wheel">
     <div class="gm-panel">
       <div id="bet"></div>
-      <div class="gm-field"><label>Risk</label><div class="seg stretch" id="risk">${RISKS.map(([k, l]) => `<button data-r="${k}" class="${k === 'low' ? 'active' : ''}">${l}</button>`).join('')}</div></div>
-      <button class="btn-bet" id="spin">Spin</button>
-      <div class="wh-table" id="table" aria-label="What each segment pays"></div>
-      <div class="gm-note">The wheel has 50 segments and the server picks one at random. Low risk has many small wins, Risky has almost none and a few huge ones. Every risk level returns 96% on average.</div>
+      <div class="gm-field"><label>${t('Riesgo')}</label><div class="seg stretch" id="risk">${RISKS.map(([k, l]) => `<button data-r="${k}" class="${k === 'low' ? 'active' : ''}">${esc(t(l))}</button>`).join('')}</div></div>
+      <button class="btn-bet" id="spin">${t('Girar')}</button>
+      <div class="wh-table" id="table" aria-label="${esc(t('Lo que paga cada segmento'))}"></div>
+      <div class="gm-note">${t('La rueda tiene 50 segmentos y el servidor elige uno al azar. El riesgo bajo tiene muchos premios chicos; Arriesgado casi no tiene, pero unos cuantos son enormes. Todos los niveles devuelven 96% en promedio.')}</div>
     </div>
     <div class="gm-stage wh-stage" id="stage">
-      <div class="wh-hist" id="hist" aria-label="Recent spins"></div>
+      <div class="wh-hist" id="hist" aria-label="${esc(t('Giros recientes'))}"></div>
       <div class="wh-board" id="board"></div>
-      <div class="wh-result" id="result" aria-live="polite"><b class="num" id="rx">Spin it</b><small id="rs">Pick a risk level and a bet.</small></div>
+      <div class="wh-result" id="result" aria-live="polite"><b class="num" id="rx">${t('Gírala')}</b><small id="rs">${t('Elige un nivel de riesgo y una apuesta.')}</small></div>
     </div>
   </div>`;
   const $ = (s) => host.querySelector(s);
-  const bp = betPanel($('#bet'), { label: 'Bet Amount', key: 'bet-wheel' });
+  const bp = betPanel($('#bet'), { key: 'bet-wheel' });
   const stage = $('#stage'), board = $('#board'), spinBtn = $('#spin');
   let risk = 'low', busy = false, dead = false, rot = 0, rotEl = null, colors = null;
   const recent = [];
@@ -68,7 +70,7 @@ export default async function mount(host, ctx = {}) {
     $('#table').innerHTML = R.table.slice().sort((a, b) => a.mult - b.mult).map((r) => `<div class="wh-row"><i style="background:${colors.get(key(r.mult))}"></i><b class="num">${fmtX(r.mult)}</b><span class="num">${(r.chance * 100).toFixed(0)}%</span></div>`).join('');
   }
   const drawHist = () => {
-    $('#hist').innerHTML = recent.slice(-9).map((h) => `<span class="num" style="background:${h.color}" title="${esc(h.risk)}: ${fmtX(h.mult)}">${h.mult > 0 ? h.mult.toFixed(2) + 'x' : '0x'}</span>`).join('');
+    $('#hist').innerHTML = recent.slice(-9).map((h) => `<span class="num" style="background:${h.color}" title="${esc(riskName(h.risk))}: ${fmtX(h.mult)}">${h.mult > 0 ? h.mult.toFixed(2) + 'x' : '0x'}</span>`).join('');
   };
   function setUi() {
     bp.lock(busy);
@@ -79,7 +81,7 @@ export default async function mount(host, ctx = {}) {
   $('#risk').addEventListener('click', (e) => {
     const b = e.target.closest('[data-r]'); if (!b || busy) return;
     risk = b.dataset.r; host.querySelectorAll('#risk button').forEach((x) => x.classList.toggle('active', x === b)); draw();
-    $('#rx').textContent = 'Spin it'; $('#rs').textContent = `${b.textContent} risk.`;
+    $('#rx').textContent = t('Gírala'); $('#rs').textContent = t('Riesgo {nivel}.', { nivel: b.textContent });
   });
 
   function spinTo(index) {
@@ -95,21 +97,21 @@ export default async function mount(host, ctx = {}) {
     if (busy || !bp.valid()) return;
     const amount = bp.value(); busy = true; setUi();
     const prev = deduct(amount);
-    $('#rx').textContent = '…'; $('#rs').textContent = 'No more bets.';
+    $('#rx').textContent = '…'; $('#rs').textContent = t('No va más.');
     try {
       const res = await post('/api/games/wheel', { risk, amount });
       await spinTo(res.index);
       if (dead) return;
       const color = colors.get(key(res.mult));
       recent.push({ mult: res.mult, color, risk }); drawHist();
-      $('#rx').textContent = res.mult > 0 ? fmtX(res.mult) : 'No luck';
-      $('#rs').textContent = res.mult > 0 ? `Paid ${money(res.payout)}` : 'The wheel keeps it.';
+      $('#rx').textContent = res.mult > 0 ? fmtX(res.mult) : t('Sin suerte');
+      $('#rs').textContent = res.mult > 0 ? t('Pagó {cantidad}', { cantidad: money(res.payout) }) : t('La rueda se lo queda.');
       const r = stage.getBoundingClientRect();
       if (res.win) burst(stage, r.width / 2, r.height / 2, { count: res.mult >= 5 ? 80 : 36, power: res.mult >= 5 ? 380 : 260 });
       else if (res.mult === 0) { shake(stage); stage.classList.add('flash-red'); setTimeout(() => stage.classList.remove('flash-red'), 450); }
-      resultPop({ net: res.payout - amount, label: `${risk[0].toUpperCase() + risk.slice(1)} risk`, detail: res.mult > 0 ? fmtX(res.mult) : 'no luck', bet: amount });
+      resultPop({ net: res.payout - amount, label: t('Riesgo {nivel}', { nivel: riskName(risk) }), detail: res.mult > 0 ? fmtX(res.mult) : t('sin suerte'), bet: amount });
       setUser(res.user); ctx.refreshBets?.();
-    } catch (ex) { toast(ex.message, 'err'); setUser(prev); refreshMe().catch(() => {}); $('#rx').textContent = 'Spin it'; $('#rs').textContent = ''; }
+    } catch (ex) { toast(ex.message, 'err'); setUser(prev); refreshMe().catch(() => {}); $('#rx').textContent = t('Gírala'); $('#rs').textContent = ''; }
     busy = false; setUi();
   });
 

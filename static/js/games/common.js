@@ -2,6 +2,7 @@ import { S, setUser, wallet } from '../state.js';
 import { tween } from '../ui.js';
 import { suitSvg } from '../art.js';
 import { money, esc, ICON } from '../util.js';
+import { t, intlLocale } from '../i18n.js';
 
 /** Show the stake leaving the wallet right away (the server's answer replaces it afterwards). */
 export function deduct(amount) {
@@ -70,11 +71,11 @@ export function fillFront(el, card) {
   el.querySelector('.pc-front').innerHTML = `<span class="tl">${card.r}${suitSvg(card.s, 15)}</span><span class="mid">${suitSvg(card.s, 44)}</span><span class="br">${card.r}${suitSvg(card.s, 15)}</span>`;
 }
 
-export const fmtX = (m) => (m == null ? '—' : m.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'x');
+export const fmtX = (m) => (m == null ? '—' : m.toLocaleString(intlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'x');
 
 /** "Current profit  >  Next" readout used by the step games (Mines, Moles, Tower). */
 export const progressHtml = () => `<div class="gm-prog" aria-live="polite">
-  <div class="pr-top"><div><small>Current profit</small><b class="num" data-pr="profit">$0.00</b></div><span class="pr-arrow">${ICON.chevR}</span><div><small>Next</small><b class="num" data-pr="next">$0.00</b></div></div>
+  <div class="pr-top"><div><small>${t('Ganancia actual')}</small><b class="num" data-pr="profit">${money(0)}</b></div><span class="pr-arrow">${ICON.chevR}</span><div><small>${t('Siguiente')}</small><b class="num" data-pr="next">${money(0)}</b></div></div>
   <div class="pr-bot"><span class="num" data-pr="mult">0.00x</span><span class="num" data-pr="nextmult">—</span></div></div>`;
 
 /** bet = the stake in play (or the amount typed), mult = current multiplier (null before the round starts). */
@@ -82,7 +83,7 @@ export function paintProgress(root, { bet = 0, mult = null, nextMult = null } = 
   const q = (k) => root.querySelector(`[data-pr="${k}"]`);
   const b = Number.isFinite(bet) ? bet : 0;
   q('profit').textContent = money(mult ? Math.max(0, b * mult - b) : 0);
-  q('next').textContent = nextMult ? money(Math.max(0, b * nextMult - b)) : '$0.00';
+  q('next').textContent = nextMult ? money(Math.max(0, b * nextMult - b)) : money(0);
   q('mult').textContent = fmtX(mult ?? 0);
   q('nextmult').textContent = nextMult ? fmtX(nextMult) : '—';
 }
@@ -107,13 +108,13 @@ export function resultPop({ net = 0, label = '', detail = '', bet = null, ms = 4
   closeResultPop();
   const cents = Math.round(net * 100), kind = cents > 0 ? 'win' : cents < 0 ? 'lose' : 'push';
   const amount = Math.abs(cents) / 100, sign = kind === 'win' ? '+' : '\u2212';
-  const meta = [label, detail, bet != null ? `Bet ${money(bet)}` : ''].filter(Boolean).map(esc).join(' \u00b7 ');
+  const meta = [label, detail, bet != null ? t('Apuesta {cantidad}', { cantidad: money(bet) }) : ''].filter(Boolean).map(esc).join(' \u00b7 ');
   const el = document.createElement('div');
   el.className = `gm-pop ${kind}`;
   el.setAttribute('role', 'alert');
-  el.innerHTML = `<button class="gm-pop-x" aria-label="Close">${ICON.x}</button>${S.demo ? '<span class="gm-pop-demo">Demo bets</span>' : ''}
-    <span class="gm-pop-head">${kind === 'win' ? 'You won' : kind === 'lose' ? 'You lost' : 'Push'}</span>
-    <b class="gm-pop-amt num">${kind === 'push' ? 'Bet back' : sign + money(0)}</b>${meta ? `<span class="gm-pop-meta">${meta}</span>` : ''}
+  el.innerHTML = `<button class="gm-pop-x" aria-label="${esc(t('Cerrar'))}">${ICON.x}</button>${S.demo ? `<span class="gm-pop-demo">${t('Práctica')}</span>` : ''}
+    <span class="gm-pop-head">${kind === 'win' ? t('Ganaste') : kind === 'lose' ? t('Perdiste') : t('Empate')}</span>
+    <b class="gm-pop-amt num">${kind === 'push' ? t('Apuesta devuelta') : sign + money(0)}</b>${meta ? `<span class="gm-pop-meta">${meta}</span>` : ''}
     <i class="gm-pop-bar" style="animation-duration:${ms}ms"></i>`;
   document.body.appendChild(el);
   pop = el;

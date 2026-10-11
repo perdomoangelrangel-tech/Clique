@@ -48,8 +48,8 @@ const core = createVoiceCore({
   makeAnalyser, attachAudio,
   setDeaf: (deaf) => { for (const el of remote.values()) el.muted = deaf; },
   now: () => Date.now(),
-  setTimeout: (f, ms) => setTimeout(f, ms), clearTimeout: (t) => clearTimeout(t),
-  setInterval: (f, ms) => setInterval(f, ms), clearInterval: (t) => clearInterval(t),
+  setTimeout: (f, ms) => setTimeout(f, ms), clearTimeout: (id) => clearTimeout(id),
+  setInterval: (f, ms) => setInterval(f, ms), clearInterval: (id) => clearInterval(id),
   genId: () => (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 24) : Math.random().toString(36).slice(2) + Date.now().toString(36)),
   beacon: (path, body) => { try { navigator.sendBeacon(path, new Blob([JSON.stringify(body)], { type: 'application/json' })); } catch { /* the server will notice we went quiet */ } },
 });

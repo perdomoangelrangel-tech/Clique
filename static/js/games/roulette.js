@@ -1,14 +1,17 @@
 import { post } from '../api.js';
 import { S, bus, setUser, refreshMe, balanceNow } from '../state.js';
 import { deduct, burst, resultPop, countUp } from './common.js';
-import { money, parseAmount, ICON } from '../util.js';
+import { money, parseAmount, ICON, esc } from '../util.js';
 import { toast } from '../ui.js';
+import { t, CHIP_SIGN, intlLocale } from '../i18n.js';
+
+const COLOR = { red: 'rojo', black: 'negro', green: 'verde' };      // i18n: claves
 
 const ORDER = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
 const REDS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
 const colorOf = (n) => (n === 0 ? 'green' : REDS.has(n) ? 'red' : 'black');
 const STEP = 360 / 37, CX = 160, CY = 160;
-const pt = (a, r) => { const t = (a * Math.PI) / 180; return [CX + r * Math.sin(t), CY - r * Math.cos(t)]; };
+const pt = (a, r) => { const rad = (a * Math.PI) / 180; return [CX + r * Math.sin(rad), CY - r * Math.cos(rad)]; };
 const CHIPS = [0.1, 1, 5, 10, 25, 100, 500];
 const chipLabel = (v) => (v >= 1000 ? `${v / 1000}K` : String(v));
 
@@ -36,9 +39,9 @@ function tableHtml() {
     cells += `<div class="rc ${colorOf(n)}" data-bet="straight:${n}" style="grid-column:${col};grid-row:${row}"><span>${n}</span></div>`;
   }
   [3, 2, 1].forEach((c, i) => { cells += `<div class="rc out" data-bet="column:${c}" style="grid-column:14;grid-row:${i + 1}"><span>2:1</span></div>`; });
-  [['1 to 12', 1], ['13 to 24', 2], ['25 to 36', 3]].forEach(([l, d], i) => { cells += `<div class="rc out" data-bet="dozen:${d}" style="grid-column:${2 + i * 4}/span 4;grid-row:4"><span>${l}</span></div>`; });
-  [['1 to 18', 'low', ''], ['Even', 'even', ''], ['', 'red', 'red'], ['', 'black', 'black'], ['Odd', 'odd', ''], ['19 to 36', 'high', '']].forEach(([l, t, c], i) => {
-    cells += `<div class="rc out ${c}" data-bet="${t}" style="grid-column:${2 + i * 2}/span 2;grid-row:5"><span>${c ? '<i class="diamond ' + c + '"></i>' : l}</span></div>`;
+  [[t('1 a 12'), 1], [t('13 a 24'), 2], [t('25 a 36'), 3]].forEach(([l, d], i) => { cells += `<div class="rc out" data-bet="dozen:${d}" style="grid-column:${2 + i * 4}/span 4;grid-row:4"><span>${esc(l)}</span></div>`; });
+  [[t('1 a 18'), 'low', ''], [t('Par'), 'even', ''], ['', 'red', 'red'], ['', 'black', 'black'], [t('Impar'), 'odd', ''], [t('19 a 36'), 'high', '']].forEach(([l, kind, c], i) => {
+    cells += `<div class="rc out ${c}" data-bet="${kind}" style="grid-column:${2 + i * 2}/span 2;grid-row:5"><span>${c ? '<i class="diamond ' + c + '"></i>' : esc(l)}</span></div>`;
   });
   return cells;
 }
@@ -46,25 +49,25 @@ function tableHtml() {
 export default async function mount(host, ctx = {}) {
   host.innerHTML = `<div class="gm roulette">
     <div class="gm-panel">
-      <div class="gm-field"><label>Total on the table</label><div class="gm-ro lg"><span>$</span><input id="total" readonly value="0.00"></div></div>
-      <div class="gm-field"><label>Last payout</label><div class="gm-ro"><span>$</span><input id="payout" readonly value="0.00"><em id="payx">0.00x</em></div></div>
-      <button class="btn-bet" id="go">Spin</button>
-      <div class="rl-tools"><button class="mini" id="clear">Clear table</button><button class="mini" id="x2">Double it all</button></div>
+      <div class="gm-field"><label>${t('Total en la mesa')}</label><div class="gm-ro lg"><span>${CHIP_SIGN}</span><input id="total" readonly value="0.00"></div></div>
+      <div class="gm-field"><label>${t('Último pago')}</label><div class="gm-ro"><span>${CHIP_SIGN}</span><input id="payout" readonly value="0.00"><em id="payx">0.00x</em></div></div>
+      <button class="btn-bet" id="go">${t('Girar')}</button>
+      <div class="rl-tools"><button class="mini" id="clear">${t('Limpiar la mesa')}</button><button class="mini" id="x2">${t('Doblar todo')}</button></div>
       <div class="bp-err" id="rl-err"></div>
-      <div class="gm-note">Pick a chip, tap the table, stack as much as you dare. One number pays 35 to 1. Right-click a spot to pull your chips off it.</div>
+      <div class="gm-note">${t('Elige una ficha, toca la mesa y apila lo que te atrevas. Un número solo paga 35 a 1. Clic derecho en un lugar para quitar tus fichas.')}</div>
     </div>
     <div class="gm-stage rl-stage" id="stage">
       <div class="rl-top"><div class="wheel-wrap" id="wheel-wrap">${wheelSvg()}<div class="rl-result hidden" id="result"></div></div>
         <div class="rl-hist" id="hist"></div></div>
-      <p class="board-hint" aria-hidden="true">The table is wider than your screen: swipe it sideways.</p>
+      <p class="board-hint" aria-hidden="true">${t('La mesa es más ancha que tu pantalla: deslízala de lado.')}</p>
       <div class="rl-board">
-        <button class="rl-side" id="undo" title="Undo">${ICON.undo}</button>
-        <div class="rl-table-wrap board-scroll" tabindex="0" role="group" aria-label="Roulette table (scrolls sideways)"><div class="rl-table" id="table">${tableHtml()}</div></div>
-        <button class="rl-side" id="rebet" title="Repeat your last bets">${ICON.redo}</button>
+        <button class="rl-side" id="undo" title="${esc(t('Deshacer'))}">${ICON.undo}</button>
+        <div class="rl-table-wrap board-scroll" tabindex="0" role="group" aria-label="${esc(t('Mesa de ruleta (se desliza de lado)'))}"><div class="rl-table" id="table">${tableHtml()}</div></div>
+        <button class="rl-side" id="rebet" title="${esc(t('Repetir tus últimas apuestas'))}">${ICON.redo}</button>
       </div>
       <div class="rl-chips" id="chips">${CHIPS.map((v) => `<button class="rchip v${String(v).replace('.', '_')}" data-v="${v}" title="${money(v)}"><span>${chipLabel(v)}</span></button>`).join('')}
-        <button class="rchip custom" id="chip-custom" title="Custom chip value">${ICON.pencil}</button>
-        <input class="chip-in hidden" id="chip-in" inputmode="decimal" placeholder="0.00" autocomplete="off" aria-label="Custom chip value"></div>
+        <button class="rchip custom" id="chip-custom" title="${esc(t('Valor de ficha a tu gusto'))}">${ICON.pencil}</button>
+        <input class="chip-in hidden" id="chip-in" inputmode="decimal" placeholder="0.00" autocomplete="off" aria-label="${esc(t('Valor de ficha a tu gusto'))}"></div>
     </div></div>`;
   const $ = (s) => host.querySelector(s);
   const stage = $('#stage'), table = $('#table'), wheel = $('#wheel'), ball = $('#ball'), ballHl = $('#ball-hl'), go = $('#go'), err = $('#rl-err');
@@ -86,7 +89,7 @@ export default async function mount(host, ctx = {}) {
     if (v.includes('.')) { const [a, b] = v.split('.'); v = a + '.' + b.slice(0, 2); }
     e.target.value = v;
     const n = parseAmount(v);
-    if (n >= S.minBet - 1e-9) { chipVal = Math.round(n * 100) / 100; err.textContent = ''; } else err.textContent = v ? `Smallest chip is ${money(S.minBet)}.` : '';
+    if (n >= S.minBet - 1e-9) { chipVal = Math.round(n * 100) / 100; err.textContent = ''; } else err.textContent = v ? t('La ficha más chica es {cantidad}.', { cantidad: money(S.minBet) }) : '';
     markChip();
   });
   markChip();
@@ -101,11 +104,12 @@ export default async function mount(host, ctx = {}) {
       const cell = table.querySelector(`[data-bet="${k}"]`); if (!cell) continue;
       const c = document.createElement('div'); c.className = `chip ${chipClass(v)}`; c.textContent = fmtChip(v); c.title = money(v); cell.appendChild(c);
     }
-    const t = total(); $('#total').value = t.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const over = t > balanceNow() + 1e-9;
+    const tot = total(); $('#total').value = tot.toLocaleString(intlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const over = tot > balanceNow() + 1e-9;
     go.disabled = busy || !bets.size || over;
     $('#total').closest('.gm-ro').classList.toggle('bad', over);
-    if (over) err.textContent = 'Not enough chips. Add funds or bet less.'; else if (err.textContent.startsWith('Not enough chips')) err.textContent = '';
+    const short = t('No te alcanzan las fichas. Agrega fichas o apuesta menos.');
+    if (over) err.textContent = short; else if (err.textContent === short) err.textContent = '';
   }
   const onUser = () => drawChips();
   bus.addEventListener('user', onUser);
@@ -113,7 +117,7 @@ export default async function mount(host, ctx = {}) {
   table.addEventListener('click', (e) => {
     if (busy) return;
     const cell = e.target.closest('[data-bet]'); if (!cell) return;
-    if (!(chipVal >= S.minBet - 1e-9)) { toast(`Smallest chip is ${money(S.minBet)}.`, 'err'); return; }
+    if (!(chipVal >= S.minBet - 1e-9)) { toast(t('La ficha más chica es {cantidad}.', { cantidad: money(S.minBet) }), 'err'); return; }
     const k = cell.dataset.bet;
     bets.set(k, Math.round(((bets.get(k) || 0) + chipVal) * 100) / 100); stack.push({ k, v: chipVal }); drawChips();
   });
@@ -168,7 +172,7 @@ export default async function mount(host, ctx = {}) {
 
   async function spin() {
     if (busy || !bets.size) return;
-    const t = total(); if (t > balanceNow() + 1e-9) return toast('Not enough chips.', 'err');
+    if (total() > balanceNow() + 1e-9) return toast(t('No te alcanzan las fichas.'), 'err');
     busy = true; go.disabled = true; table.classList.add('locked');
     const payload = [...bets].map(([k, amount]) => { const [type, v] = k.split(':'); return { type, value: v === undefined ? undefined : parseInt(v, 10), amount }; });
     lastBets = new Map(bets);
@@ -184,7 +188,7 @@ export default async function mount(host, ctx = {}) {
       $('#payout').value = res.payout.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       $('#payx').textContent = (res.total ? res.payout / res.total : 0).toFixed(2) + 'x';
       const net = Math.round((res.payout - res.total) * 100) / 100;
-      resultPop({ net, label: `${res.number} ${res.color}`, detail: res.payout > 0 ? `Paid out ${money(res.payout)}` : '', bet: res.total });
+      resultPop({ net, label: `${res.number} ${COLOR[res.color] ? t(COLOR[res.color]) : res.color}`, detail: res.payout > 0 ? t('Pagó {cantidad}', { cantidad: money(res.payout) }) : '', bet: res.total });
       if (net > 0) { const rect = stage.getBoundingClientRect(); burst(stage, rect.width * 0.5, rect.height * 0.3, { count: 50, power: 320 }); }
       setUser(res.user); ctx.refreshBets?.();
       bets.clear(); stack = [];

@@ -2,8 +2,9 @@ import { get, post } from '../api.js';
 import { setUser, refreshMe } from '../state.js';
 import { betPanel } from './betpanel.js';
 import { deduct, burst, resultPop, shake } from './common.js';
-import { money, sleep, ICON } from '../util.js';
+import { money, sleep, ICON, esc } from '../util.js';
 import { tween, toast } from '../ui.js';
+import { t, CHIP_SIGN } from '../i18n.js';
 
 const WIN_COLORS = ['#C6F432', '#EFE6D2', '#FF4B2B'];
 const MAX_COUNT = 9800;                       // 98.00% is the most likely bet allowed
@@ -21,24 +22,24 @@ export default async function mount(host, ctx = {}) {
   host.innerHTML = `<div class="gm dice">
     <div class="gm-panel">
       <div id="bet"></div>
-      <div class="gm-field"><label>Payout</label><div class="gm-ro"><span>$</span><input id="payout" readonly value="0.00"><em id="payx">2.0000x</em></div></div>
-      <button class="btn-bet" id="go">Roll</button>
-      <div class="gm-note">The roll is a number from 0.00 to 99.99. Roll Over wins on your number or higher, Roll Under wins below it. Slide the line, or type a multiplier, a number or a chance. The smaller the chance, the bigger the payout, up to 9,900x.</div>
+      <div class="gm-field"><label>${t('Pago')}</label><div class="gm-ro"><span>${CHIP_SIGN}</span><input id="payout" readonly value="0.00"><em id="payx">2.0000x</em></div></div>
+      <button class="btn-bet" id="go">${t('Tirar')}</button>
+      <div class="gm-note">${t('La tirada es un número de 0.00 a 99.99. Arriba gana con tu número o más; Abajo gana por debajo de él. Mueve la línea, o escribe un multiplicador, un número o una probabilidad. Entre menor la probabilidad, mayor el pago, hasta 9,900x.')}</div>
     </div>
     <div class="gm-stage dc-stage" id="stage">
       <div class="dc-hist" id="hist"></div>
-      <div class="dc-ticket"><div class="dc-num" id="roll">50.00</div><div class="dc-cap" id="cap">Slide it. Then roll.</div></div>
+      <div class="dc-ticket"><div class="dc-num" id="roll">50.00</div><div class="dc-cap" id="cap">${t('Mueve la línea. Luego tira.')}</div></div>
       <div class="dc-rail">
         <div class="dc-scale"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
         <div class="dc-track" id="track"><i class="dc-lose" id="lose"></i><i class="dc-win" id="win"></i>
-          <input type="range" class="dc-slider" id="slider" min="0" max="10000" step="1" aria-label="Target number">
+          <input type="range" class="dc-slider" id="slider" min="0" max="10000" step="1" aria-label="${esc(t('Número objetivo'))}">
           <div class="dc-pin" id="pin"><span id="pin-n">50.00</span></div>
           <div class="dc-lane" id="lane">${dieHtml()}${dieHtml()}</div></div>
       </div>
       <div class="dc-fields">
-        <div class="gm-field"><label for="f-mult">Multiplier</label><div class="gm-input"><input id="f-mult" inputmode="decimal" autocomplete="off"><span class="x">${ICON.x}</span></div></div>
-        <div class="gm-field"><label for="f-target" id="f-dir">Roll over</label><div class="gm-input"><input id="f-target" inputmode="decimal" autocomplete="off"><button type="button" class="swap" id="swap" title="Flip over/under" aria-label="Flip over or under">${ICON.redo}</button></div></div>
-        <div class="gm-field"><label for="f-chance">Win chance</label><div class="gm-input"><input id="f-chance" inputmode="decimal" autocomplete="off"><span>%</span></div></div>
+        <div class="gm-field"><label for="f-mult">${t('Multiplicador')}</label><div class="gm-input"><input id="f-mult" inputmode="decimal" autocomplete="off"><span class="x">${ICON.x}</span></div></div>
+        <div class="gm-field"><label for="f-target" id="f-dir">${t('Arriba de')}</label><div class="gm-input"><input id="f-target" inputmode="decimal" autocomplete="off"><button type="button" class="swap" id="swap" title="${esc(t('Cambiar arriba/abajo'))}" aria-label="${esc(t('Cambiar entre arriba y abajo'))}">${ICON.redo}</button></div></div>
+        <div class="gm-field"><label for="f-chance">${t('Probabilidad de ganar')}</label><div class="gm-input"><input id="f-chance" inputmode="decimal" autocomplete="off"><span>%</span></div></div>
       </div>
     </div></div>`;
   const $ = (s) => host.querySelector(s);
@@ -60,16 +61,16 @@ export default async function mount(host, ctx = {}) {
     lane.classList.add('on');
     const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const w = lane.clientWidth, fromLeft = roll >= 50;                         // always start from the longer side
-    throws.forEach((t, i) => {
+    throws.forEach((throwEl, i) => {
       const off = i ? GAP : -GAP;
-      t.style.left = roll + '%'; t.style.marginLeft = (off - DIE / 2) + 'px';
+      throwEl.style.left = roll + '%'; throwEl.style.marginLeft = (off - DIE / 2) + 'px';
       const dx = (fromLeft ? -70 : w + 70) - (w * roll / 100 + off);            // how far from the landing spot the throw starts
       const turns = Math.max(1, Math.round(Math.abs(dx) / (4 * DIE))), way = dx < 0 ? 1 : -1;       // a cube turns a quarter for every die-width it rolls
       const from = poses[i];
       poses[i] = pose(values[i]); dice[i].style.transform = poses[i];
       if (calm) return;
       const d = ms + i * 130, delay = i * 90, o = { duration: d, delay, fill: 'backwards' };
-      t.animate([{ transform: `translateX(${dx}px)` }, { transform: 'translateX(0)' }], { ...o, easing: 'cubic-bezier(.1, .62, .2, 1)' });
+      throwEl.animate([{ transform: `translateX(${dx}px)` }, { transform: 'translateX(0)' }], { ...o, easing: 'cubic-bezier(.1, .62, .2, 1)' });
       hops[i].animate([
         { transform: 'translateY(-58px)', easing: 'ease-in' }, { transform: 'translateY(0)', offset: .2, easing: 'ease-out' },
         { transform: 'translateY(-24px)', offset: .36, easing: 'ease-in' }, { transform: 'translateY(0)', offset: .5, easing: 'ease-out' },
@@ -96,11 +97,11 @@ export default async function mount(host, ctx = {}) {
     if (skip !== 'mult') $('#f-mult').value = fmtMult(m);
     if (skip !== 'target') $('#f-target').value = p.toFixed(2);
     if (skip !== 'chance') $('#f-chance').value = fmtChance(c);
-    $('#f-dir').textContent = dir === 'over' ? 'Roll over' : 'Roll under';
+    $('#f-dir').textContent = dir === 'over' ? t('Arriba de') : t('Abajo de');
     $('#payx').textContent = fmtMult(m) + 'x';
     const a = bp.value();
     $('#payout').value = Number.isFinite(a) ? (a * m).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
-    go.textContent = dir === 'over' ? `Roll over ${p.toFixed(2)}` : `Roll under ${p.toFixed(2)}`;
+    go.textContent = dir === 'over' ? t('Tirar arriba de {n}', { n: p.toFixed(2) }) : t('Tirar abajo de {n}', { n: p.toFixed(2) });
     go.disabled = busy || !bp.valid();
   }
   bp.onChange(() => paint());
@@ -129,16 +130,16 @@ export default async function mount(host, ctx = {}) {
       num.classList.toggle('w', res.win); num.classList.toggle('l', !res.win);
       hist.push({ roll: res.roll, win: res.win }); drawHist(); setUser(res.user);
       if (res.win) {
-        $('#cap').textContent = `${res.roll.toFixed(2)} is ${dir} ${res.target.toFixed(2)}. Pays ${res.mult.toFixed(4)}x.`;
-        resultPop({ net: res.payout - amount, label: `Rolled ${res.roll.toFixed(2)}`, detail: `${res.mult.toFixed(4)}x`, bet: amount });
+        $('#cap').textContent = dir === 'over' ? t('{tirada} está arriba de {objetivo}. Paga {x}x.', { tirada: res.roll.toFixed(2), objetivo: res.target.toFixed(2), x: res.mult.toFixed(4) }) : t('{tirada} está abajo de {objetivo}. Paga {x}x.', { tirada: res.roll.toFixed(2), objetivo: res.target.toFixed(2), x: res.mult.toFixed(4) });
+        resultPop({ net: res.payout - amount, label: t('Salió {x}', { x: res.roll.toFixed(2) }), detail: `${res.mult.toFixed(4)}x`, bet: amount });
         const r = stage.getBoundingClientRect(); burst(stage, r.width / 2, r.height * 0.3, { count: 48, power: 300, colors: WIN_COLORS });
       } else {
-        $('#cap').textContent = `${res.roll.toFixed(2)}. Not ${dir} ${res.target.toFixed(2)}. Rough.`;
-        resultPop({ net: -amount, label: `Rolled ${res.roll.toFixed(2)}` });
+        $('#cap').textContent = dir === 'over' ? t('{tirada}. No está arriba de {objetivo}. Ni modo.', { tirada: res.roll.toFixed(2), objetivo: res.target.toFixed(2) }) : t('{tirada}. No está abajo de {objetivo}. Ni modo.', { tirada: res.roll.toFixed(2), objetivo: res.target.toFixed(2) });
+        resultPop({ net: -amount, label: t('Salió {x}', { x: res.roll.toFixed(2) }) });
         shake(stage);
       }
       ctx.refreshBets?.();
-    } catch (ex) { toast(ex.message, 'err'); setUser(prev); refreshMe().catch(() => {}); $('#cap').textContent = 'Slide it. Then roll.'; }
+    } catch (ex) { toast(ex.message, 'err'); setUser(prev); refreshMe().catch(() => {}); $('#cap').textContent = t('Mueve la línea. Luego tira.'); }
     busy = false; slider.disabled = false; bp.lock(false); paint();
   });
 

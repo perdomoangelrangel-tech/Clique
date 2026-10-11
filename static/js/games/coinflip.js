@@ -5,7 +5,9 @@ import { deduct, burst, resultPop, shake, fmtX } from './common.js';
 import { money, sleep, ICON } from '../util.js';
 import { coinFace } from '../art.js';
 import { toast } from '../ui.js';
+import { t, tp, intlLocale, CHIP_SIGN } from '../i18n.js';
 
+const sideWord = (s) => (s === 'heads' ? t('Águila') : t('Sol'));
 const WIN_COLORS = ['#C6F432', '#EFE6D2', '#FF4B2B'];
 
 export default async function mount(host, ctx = {}) {
@@ -14,21 +16,21 @@ export default async function mount(host, ctx = {}) {
   host.innerHTML = `<div class="gm coinflip">
     <div class="gm-panel">
       <div id="bet"></div>
-      <div class="gm-field"><label>Mode</label><div class="seg" id="mode"><button data-m="classic" class="active">Classic</button><button data-m="target">Streak</button></div></div>
-      <div class="gm-field hidden" id="flips-f"><label for="flips">Flips in a row <b class="num" id="flips-n">2</b></label><input type="range" class="gm-range" id="flips" min="1" max="${MAX}" value="2"></div>
-      <div class="gm-field"><label>Your call</label>
-        <div class="cf-sides" id="sides"><button data-s="heads" class="on">${ICON.crown} Heads</button><button data-s="tails">${ICON.star} Tails</button></div></div>
-      <div class="gm-field"><label>Payout</label><div class="gm-ro"><span>$</span><input id="payout" readonly value="0.00"><em id="payx">1.98x</em></div></div>
-      <button class="btn-bet" id="go">Flip</button>
-      <div class="gm-note">Classic pays 1.98x. Streak mode: call the same side several flips in a row. Two in a row pays 3.96x, ten pays 1,013.76x. One wrong flip and it is over.</div>
+      <div class="gm-field"><label>${t('Modo')}</label><div class="seg" id="mode"><button data-m="classic" class="active">${t('Clásico')}</button><button data-m="target">${t('Racha')}</button></div></div>
+      <div class="gm-field hidden" id="flips-f"><label for="flips">${t('Volados seguidos')} <b class="num" id="flips-n">2</b></label><input type="range" class="gm-range" id="flips" min="1" max="${MAX}" value="2"></div>
+      <div class="gm-field"><label>${t('Lo que cantas')}</label>
+        <div class="cf-sides" id="sides"><button data-s="heads" class="on">${ICON.crown} ${t('Águila')}</button><button data-s="tails">${ICON.star} ${t('Sol')}</button></div></div>
+      <div class="gm-field"><label>${t('Pago')}</label><div class="gm-ro"><span>${CHIP_SIGN}</span><input id="payout" readonly value="0.00"><em id="payx">1.98x</em></div></div>
+      <button class="btn-bet" id="go">${t('Lanzar')}</button>
+      <div class="gm-note">${t('El clásico paga 1.98x. Modo racha: canta el mismo lado varios volados seguidos. Dos seguidos pagan 3.96x, diez pagan 1,013.76x. Un solo fallo y se acabó.')}</div>
     </div>
     <div class="gm-stage cf-stage" id="stage">
       <div class="cf-toss" id="toss"><div class="cf-coin" id="coin"><div class="cf-face">${coinFace('heads')}</div><div class="cf-face back">${coinFace('tails')}</div></div></div>
       <div class="cf-trail" id="trail"></div>
-      <div class="cf-sub" id="sub">Call it. Then flip.</div>
+      <div class="cf-sub" id="sub">${t('Canta. Luego lanza.')}</div>
       <div class="cf-stats">
-        <div class="gm-field"><label>Multiplier</label><div class="gm-ro"><input id="mult" readonly><span>x</span></div></div>
-        <div class="gm-field"><label>Chance</label><div class="gm-ro"><input id="chance" readonly><span>%</span></div></div>
+        <div class="gm-field"><label>${t('Multiplicador')}</label><div class="gm-ro"><input id="mult" readonly><span>x</span></div></div>
+        <div class="gm-field"><label>${t('Probabilidad')}</label><div class="gm-ro"><input id="chance" readonly><span>%</span></div></div>
       </div>
     </div></div>`;
   const $ = (s) => host.querySelector(s);
@@ -39,11 +41,11 @@ export default async function mount(host, ctx = {}) {
   const count = () => (mode === 'classic' ? 1 : flips);
   const refresh = () => {
     const n = count(), mult = MULTS[n - 1], a = bp.value();
-    $('#payout').value = Number.isFinite(a) ? (a * mult).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+    $('#payout').value = Number.isFinite(a) ? (a * mult).toLocaleString(intlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
     $('#payx').textContent = fmtX(mult);
     $('#mult').value = mult.toFixed(2); $('#chance').value = (100 / 2 ** n).toFixed(n > 7 ? 3 : 2);
     $('#flips-n').textContent = String(flips);
-    go.textContent = mode === 'classic' ? 'Flip' : `Flip ${n}`;
+    go.textContent = mode === 'classic' ? t('Lanzar') : t('Lanzar {n}', { n });
     go.disabled = busy || !bp.valid();
   };
   bp.onChange(refresh);
@@ -67,12 +69,12 @@ export default async function mount(host, ctx = {}) {
     coin.style.transform = `rotateY(${a}deg)`; angle = a;
     await sleep(1050);
   }
-  const chip = (win) => `<i class="cf-chip ${win ? 'w' : 'l'}" title="${win ? 'Matched' : 'Missed'}">${win ? ICON.check : ICON.x}</i>`;
+  const chip = (win) => `<i class="cf-chip ${win ? 'w' : 'l'}" title="${win ? t('Atinaste') : t('Fallaste')}">${win ? ICON.check : ICON.x}</i>`;
 
   go.addEventListener('click', async () => {
     if (busy || !bp.valid()) return;
     const amount = bp.value(); busy = true; go.disabled = true; bp.lock(true); trail.innerHTML = '';
-    const prev = deduct(amount); sub.textContent = 'In the air...';
+    const prev = deduct(amount); sub.textContent = t('En el aire...');
     try {
       const body = { amount, side, mode };
       if (mode === 'target') body.flips = flips;
@@ -86,16 +88,16 @@ export default async function mount(host, ctx = {}) {
       setUser(res.user);
       const last = res.results[res.results.length - 1];
       if (res.win) {
-        sub.textContent = `${last === 'heads' ? 'Heads' : 'Tails'}. ${res.flips > 1 ? `${res.flips} in a row. ` : ''}Pays ${fmtX(res.mult)}.`;
-        resultPop({ net: res.payout - amount, label: res.flips > 1 ? `${res.flips} in a row` : 'Called it', detail: fmtX(res.mult), bet: amount });
+        sub.textContent = res.flips > 1 ? t('{lado}. {n} seguidos. Paga {x}.', { lado: sideWord(last), n: res.flips, x: fmtX(res.mult) }) : t('{lado}. Paga {x}.', { lado: sideWord(last), x: fmtX(res.mult) });
+        resultPop({ net: res.payout - amount, label: res.flips > 1 ? t('{n} seguidos', { n: res.flips }) : t('Le atinaste'), detail: fmtX(res.mult), bet: amount });
         const r = stage.getBoundingClientRect(); burst(stage, r.width / 2, r.height * 0.4, { count: 54, power: 320, colors: WIN_COLORS });
       } else {
-        sub.textContent = `${last === 'heads' ? 'Heads' : 'Tails'}. Wrong side. The coin does not care.`;
-        resultPop({ net: -amount, label: last === 'heads' ? 'Heads' : 'Tails' });
+        sub.textContent = t('{lado}. Lado equivocado. A la moneda le da igual.', { lado: sideWord(last) });
+        resultPop({ net: -amount, label: sideWord(last) });
         shake(stage);
       }
       ctx.refreshBets?.();
-    } catch (ex) { toast(ex.message, 'err'); setUser(prev); refreshMe().catch(() => {}); sub.textContent = 'Call it. Then flip.'; }
+    } catch (ex) { toast(ex.message, 'err'); setUser(prev); refreshMe().catch(() => {}); sub.textContent = t('Canta. Luego lanza.'); }
     busy = false; bp.lock(false); refresh();
   });
 

@@ -1,8 +1,9 @@
 import { get, post } from '../api.js';
 import { S, bus, setUser } from '../state.js';
-import { esc, detailText, money, ago, ICON } from '../util.js';
+import { esc, detailText, money, ago, ICON, num } from '../util.js';
 import { modal, toast } from '../ui.js';
-import { gameById } from '../gamelist.js';
+import { gameById, gameName, gameInfo } from '../gamelist.js';
+import { t, th } from '../i18n.js';
 import { gameSticker } from '../art.js';
 import { emptyState } from './components.js';
 
@@ -25,27 +26,27 @@ const LOADERS = {
 export default {
   async mount(root, [name]) {
     const g = gameById(name);
-    if (!g || !LOADERS[name]) { root.innerHTML = `<div class="page">${emptyState({ art: 'wheel', tone: 'verm', kicker: 'No such game', title: 'We do not have that one.', text: 'Thirteen games. Pick one of the thirteen.', actions: '<a class="btn btn-primary" href="#/games">Back to the lobby</a>' })}</div>`; return; }
+    if (!g || !LOADERS[name]) { root.innerHTML = `<div class="page">${emptyState({ art: 'wheel', tone: 'verm', kicker: t('Ese juego no existe'), title: esc(t('No tenemos ese.')), text: esc(t('Trece juegos. Elige uno de los trece.')), actions: `<a class="btn btn-primary" href="#/games">${t('Volver al vestíbulo')}</a>` })}</div>`; return; }
     root.innerHTML = `<div class="page">
       <div class="cg" id="cg">
-        <div class="cg-head"><button id="g-info" title="How to play" aria-label="How to play">${ICON.info}</button><span class="nm">${gameSticker(name, 36)}${esc(g.name)}</span>
-          <div class="demo-ctl"><div class="acct-switch" id="g-acct" role="group" aria-label="Play with which account"><button type="button" data-a="weekly" class="weekly"><span>Weekly</span><b class="num"></b></button><button type="button" data-a="accumulated" class="accum"><span><i class="full">Accumulated</i><i class="short">Saved</i></span><b class="num"></b></button></div>
-            <button class="demo-switch" id="g-demo" role="switch" aria-checked="false" title="Practice with pretend chips. Nothing counts."><i></i><span>Demo bets</span></button>
-            <span class="demo-bal hidden" id="demo-bal" title="Your demo balance"></span><button class="demo-reset hidden" id="demo-reset" title="Refill the demo balance to $1,000">Refill</button></div>
-          <button class="fair" id="g-fair">${ICON.shield} Fair play</button></div>
+        <div class="cg-head"><button id="g-info" title="${esc(t('Cómo se juega'))}" aria-label="${esc(t('Cómo se juega'))}">${ICON.info}</button><span class="nm">${gameSticker(name, 36)}${esc(gameName(name))}</span>
+          <div class="demo-ctl"><div class="acct-switch" id="g-acct" role="group" aria-label="${esc(t('Con qué cuenta juegas'))}"><button type="button" data-a="weekly" class="weekly"><span>${t('Semanal')}</span><b class="num"></b></button><button type="button" data-a="accumulated" class="accum"><span><i class="full">${t('Acumulada')}</i><i class="short">${t('Acum.')}</i></span><b class="num"></b></button></div>
+            <button class="demo-switch" id="g-demo" role="switch" aria-checked="false" title="${esc(t('Practica con fichas de mentira. Nada cuenta.'))}"><i></i><span>${t('Práctica')}</span></button>
+            <span class="demo-bal hidden" id="demo-bal" title="${esc(t('Tus fichas de práctica'))}"></span><button class="demo-reset hidden" id="demo-reset" title="${esc(t('Rellenar las fichas de práctica a {cantidad}', { cantidad: money(1000, { noCents: true }) }))}">${t('Rellenar')}</button></div>
+          <button class="fair" id="g-fair">${ICON.shield} ${t('Juego limpio')}</button></div>
         <div class="cg-body" id="game-host"></div>
-        <div class="cg-foot"><button id="g-full" title="Fullscreen" aria-label="Fullscreen">${ICON.expand}</button><div class="wm">clique</div></div>
+        <div class="cg-foot"><button id="g-full" title="${esc(t('Pantalla completa'))}" aria-label="${esc(t('Pantalla completa'))}">${ICON.expand}</button><div class="wm">clique</div></div>
       </div>
-      <div class="cg-tabs"><button class="active" data-t="mine">My bets</button><button data-t="wins">Big wins</button></div>
+      <div class="cg-tabs"><button class="active" data-t="mine">${t('Mis apuestas')}</button><button data-t="wins">${t('Ganancias grandes')}</button></div>
       <div id="bets"></div></div>`;
 
     root.querySelector('#g-info').addEventListener('click', () => {
-      modal(`<span class="lbl">How it works</span><h2>${esc(g.name)}</h2><p class="lede">${esc(g.info)}</p><div class="modal-actions"><button class="btn btn-primary" data-close>Got it</button></div>`);
+      modal(`<span class="lbl">${t('Cómo funciona')}</span><h2>${esc(gameName(name))}</h2><p class="lede">${esc(gameInfo(g))}</p><div class="modal-actions"><button class="btn btn-primary" data-close>${t('Entendido')}</button></div>`);
     });
-    root.querySelector('#g-fair').addEventListener('click', () => modal(`<span class="lbl">No funny business</span><h2>Fair play</h2>
-      <p class="lede">Every card, roll and spin comes from the server's secure random number generator, and the game state lives on the server too. Nobody can change an outcome from their browser.</p>
-      <p style="margin-top:-6px;color:var(--text-2)">Return to player on ${esc(g.name)} is <b class="num">${esc(g.rtp)}</b>. That's the long-run average. Tonight is a different story.</p>
-      <div class="modal-actions"><button class="btn btn-primary" data-close>Fine</button></div>`));
+    root.querySelector('#g-fair').addEventListener('click', () => modal(`<span class="lbl">${t('Sin trucos')}</span><h2>${t('Juego limpio')}</h2>
+      <p class="lede">${t('Cada carta, tirada y giro sale del generador de números aleatorios seguro del servidor, y el estado del juego también vive en el servidor. Nadie puede cambiar un resultado desde su navegador.')}</p>
+      <p style="margin-top:-6px;color:var(--text-2)">${th('El retorno al jugador en {juego} es <b class="num">{pct}</b>. Ese es el promedio a la larga. Esta noche es otra historia.', { juego: gameName(name), pct: g.rtp })}</p>
+      <div class="modal-actions"><button class="btn btn-primary" data-close>${t('Va')}</button></div>`));
     root.querySelector('#g-full').addEventListener('click', () => {
       const el = root.querySelector('#cg');
       if (document.fullscreenElement) document.exitFullscreen(); else el.requestFullscreen?.().catch(() => {});
@@ -57,13 +58,13 @@ export default {
       const box = root.querySelector('#bets'); if (!box || dead) return;
       if (mode === 'mine') {
         const d = await get('/api/games/history'); const rows = d.history.filter((h) => h.game === name).slice(0, 12);
-        box.innerHTML = rows.length ? `<div class="card-box tbl-wrap"><table class="tbl"><thead><tr><th class="r">Bet</th><th class="r">Payout</th><th class="r">Multiplier</th><th>Result</th><th class="r">When</th></tr></thead><tbody>
-          ${rows.map((h) => `<tr><td class="r">${money(h.bet)}</td><td class="r ${h.profit > 0 ? 'up' : h.profit < 0 ? 'down' : ''}">${money(h.payout)}</td><td class="r">${h.mult ? h.mult.toLocaleString() + 'x' : '—'}</td><td class="muted mono" style="font-size:12px">${detailText(h.detail)}</td><td class="r muted">${ago(h.t)}</td></tr>`).join('')}</tbody></table></div>`
-          : emptyState({ art: 'snake', tone: 'cream', tight: true, kicker: 'No bets', title: 'Nothing here yet.', text: 'Your bets on this game show up here. Both kinds.' });
+        box.innerHTML = rows.length ? `<div class="card-box tbl-wrap"><table class="tbl"><thead><tr><th class="r">${t('Apuesta')}</th><th class="r">${t('Pago')}</th><th class="r">${t('Multiplicador')}</th><th>${t('Resultado')}</th><th class="r">${t('Cuándo')}</th></tr></thead><tbody>
+          ${rows.map((h) => `<tr><td class="r">${money(h.bet)}</td><td class="r ${h.profit > 0 ? 'up' : h.profit < 0 ? 'down' : ''}">${money(h.payout)}</td><td class="r">${h.mult ? num(h.mult) + 'x' : '—'}</td><td class="muted mono" style="font-size:12px">${detailText(h.detail)}</td><td class="r muted">${ago(h.t)}</td></tr>`).join('')}</tbody></table></div>`
+          : emptyState({ art: 'snake', tone: 'cream', tight: true, kicker: t('Sin apuestas'), title: esc(t('Nada por aquí todavía.')), text: esc(t('Tus apuestas en este juego aparecen aquí. De las dos cuentas.')) });
       } else {
         const d = await get('/api/games/feed'); const rows = d.feed.filter((w) => w.game === name);
-        box.innerHTML = rows.length ? `<div class="card-box pad">${rows.map((w) => `<div class="list-row"><div class="grow"><b>${esc(w.user)}</b></div><span class="tag good">${w.mult.toLocaleString()}x</span><b class="num up" style="width:120px;text-align:right">${money(w.profit, { plus: true })}</b><span class="muted mono" style="width:80px;text-align:right;font-size:12px">${ago(w.t)}</span></div>`).join('')}</div>`
-          : emptyState({ art: 'trophy', tone: 'lime', tight: true, kicker: 'No big wins', title: 'Nobody has hit it big here.', text: 'Wins of 2x or more land on this board.' });
+        box.innerHTML = rows.length ? `<div class="card-box pad">${rows.map((w) => `<div class="list-row"><div class="grow"><b>${esc(w.user)}</b></div><span class="tag good">${num(w.mult)}x</span><b class="num up" style="width:120px;text-align:right">${money(w.profit, { plus: true })}</b><span class="muted mono" style="width:80px;text-align:right;font-size:12px">${ago(w.t)}</span></div>`).join('')}</div>`
+          : emptyState({ art: 'trophy', tone: 'lime', tight: true, kicker: t('Sin ganancias grandes'), title: esc(t('Nadie ha pegado en grande aquí.')), text: esc(t('Las ganancias de 2x o más llegan a esta pizarra.')) });
       }
     };
     root.querySelector('.cg-tabs').addEventListener('click', (e) => {
@@ -107,7 +108,7 @@ export default {
       cg.classList.toggle('is-demo', S.demo);
       demoBtn.setAttribute('aria-checked', String(S.demo));
       demoBal.classList.toggle('hidden', !S.demo); refillBtn.classList.toggle('hidden', !S.demo);
-      if (S.demo && S.demoUser) demoBal.textContent = 'Demo ' + money(S.demoUser.balance);
+      if (S.demo && S.demoUser) demoBal.textContent = t('Práctica {cantidad}', { cantidad: money(S.demoUser.balance) });
       paintAcct();
     };
     const onWallet = (e) => { if (e.detail?.demo) paintDemo(); };
@@ -123,7 +124,7 @@ export default {
     demoBtn.addEventListener('click', () => setDemo(!S.demo));
     refillBtn.addEventListener('click', async () => {
       demoBtn.disabled = true; refillBtn.disabled = true;
-      try { const d = await post('/api/games/demo/reset', {}); setUser(d.user); paintDemo(); await boot(); drawBets().catch(() => {}); toast('Demo chips refilled. Lose them again.', 'ok'); }
+      try { const d = await post('/api/games/demo/reset', {}); setUser(d.user); paintDemo(); await boot(); drawBets().catch(() => {}); toast(t('Fichas de práctica rellenadas. A perderlas otra vez.'), 'ok'); }
       catch (ex) { toast(ex.message, 'err'); }
       demoBtn.disabled = false; refillBtn.disabled = false;
     });

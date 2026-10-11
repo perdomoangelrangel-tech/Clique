@@ -200,7 +200,7 @@ async function openEditor(root, prof, startProfile) {
   }
   const icon_ = (n) => (ICON[n] || '');
 
-  const flash = (t, bad) => { const m = root.querySelector('#ed-msg'); if (m) { m.textContent = t; m.className = bad ? 'error-text' : 'muted'; } };
+  const flash = (text, bad) => { const m = root.querySelector('#ed-msg'); if (m) { m.textContent = text; m.className = bad ? 'error-text' : 'muted'; } };
   const refreshAll = async () => { const [a, b] = await Promise.all([get('/api/profile'), get('/api/store')]); P = a.profile; Object.assign(store, b); items.length = 0; items.push(...b.items); for (const i of items) byId[i.id] = i; upload = P.upload; };
 
   root.addEventListener('click', async (e) => {

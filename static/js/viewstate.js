@@ -45,17 +45,17 @@ export function keepDraft(form, key, names) {
   const saved = loadDraft(key);
   let restored = false;
   if (saved) for (const n of names) { const el = form.elements[n] || form.querySelector(`[name="${n}"],#${n}`); if (el && saved[n] != null && saved[n] !== '') { el.value = saved[n]; restored = true; } }
-  let t;
+  let timer;
   const save = () => {
-    clearTimeout(t);
-    t = setTimeout(() => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
       const v = {}; let any = false;
       for (const n of names) { const el = form.elements[n] || form.querySelector(`[name="${n}"],#${n}`); if (el && el.value) { v[n] = el.value; any = true; } }
       if (any) saveDraft(key, v); else clearDraft(key);
     }, 250);
   };
   form.addEventListener('input', save);
-  return { restored, clear: () => { clearTimeout(t); clearDraft(key); } };
+  return { restored, clear: () => { clearTimeout(timer); clearDraft(key); } };
 }
 
 // ---- history entries and scroll -----------------------------------------------------------------------------------

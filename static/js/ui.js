@@ -99,9 +99,9 @@ export function confirmBox({ title, text, confirm = t('Confirmar'), danger = fal
 export async function copyText(text) {
   try { await navigator.clipboard.writeText(text); }
   catch {
-    const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select();
+    const area = document.createElement('textarea'); area.value = text; document.body.appendChild(area); area.select();
     try { document.execCommand('copy'); } catch { /* ignore */ }
-    t.remove();
+    area.remove();
   }
   toast(t('¡Copiado!'), 'ok');
 }
@@ -109,8 +109,8 @@ export async function copyText(text) {
 /** Animates a number inside an element. */
 export function tween(el, from, to, fmt, ms = 600) {
   const t0 = performance.now();
-  const step = (t) => {
-    const k = Math.min(1, (t - t0) / ms);
+  const step = (at) => {
+    const k = Math.min(1, (at - t0) / ms);
     const e = 1 - Math.pow(1 - k, 3);
     el.textContent = fmt(from + (to - from) * e);
     if (k < 1) requestAnimationFrame(step);

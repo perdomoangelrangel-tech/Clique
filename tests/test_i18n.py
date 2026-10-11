@@ -31,18 +31,14 @@ I18N_CALLS = {"t", "th", "tp"}
 
 # Frases sin t() anotadas por archivo (10-oct, al empezar la ronda 1). Solo pueden bajar: cuando migras un archivo, baja su número.
 BASE = {
-    "art.js": 6, "cosmetics.js": 2, "gamelist.js": 25, "games/betpanel.js": 10, "games/blackjack.js": 21, "games/chicken.js": 25,
-    "games/coinflip.js": 30, "games/common.js": 9, "games/dice.js": 19, "games/hilo.js": 30, "games/limbo.js": 11, "games/mines.js": 21,
-    "games/moles.js": 20, "games/roulette.js": 24, "games/rps.js": 28, "games/tower.js": 25, "games/war.js": 40, "games/wheel.js": 20,
-    "views/challenges.js": 36, "views/chat.js": 81, "views/exchange.js": 112, "views/friends.js": 43, "views/game.js": 41,
-    "views/games.js": 35, "views/loans.js": 81, "views/poker.js": 55, "views/pokerfmt.js": 2, "views/pokertable.js": 185,
-    "views/portfolio.js": 65, "views/profile.js": 138, "views/spread.js": 15, "views/statement.js": 58, "views/stockchart.js": 3,
-    "views/store.js": 43, "views/transfers.js": 127,
+    "art.js": 6, "cosmetics.js": 2, "views/challenges.js": 36, "views/chat.js": 81, "views/exchange.js": 112, "views/friends.js": 43,
+    "views/loans.js": 81, "views/portfolio.js": 65, "views/profile.js": 138, "views/spread.js": 15, "views/statement.js": 58,
+    "views/stockchart.js": 3, "views/store.js": 43, "views/transfers.js": 127,
 }
 
 # Lo que se queda igual en cualquier idioma (nombres propios, unidades).
 NO_TRADUCIR = {
-    "clique", "Clique", "XP", "x", "vs", "VS", "OK", "Aa", "ABC123", "123456", "Hi-Lo", "Blackjack", "Limbo", "Coinflip", "Plinko", "Hold'em", "Texas Hold'em",
+    "clique", "Clique", "XP", "x", "vs", "VS", "OK", "Aa", "ABC123", "123456", "SB", "BB", "D", "Hi-Lo", "Blackjack", "Limbo", "Coinflip", "Plinko", "Hold'em", "Texas Hold'em",
 }
 
 # Llamadas cuyas cadenas son código, no texto: selectores, eventos, clases, rutas del servidor, nombres de íconos.

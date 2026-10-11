@@ -4,26 +4,27 @@ import { betPanel } from './betpanel.js';
 import { deduct, burst, shake, resultPop } from './common.js';
 import { money, ICON } from '../util.js';
 import { toast } from '../ui.js';
+import { t, th, intlLocale, CHIP_SIGN } from '../i18n.js';
 
 const RTP = 0.99, MIN_T = 1.01, MAX_T = 1000000;
-const clampT = (t) => Math.min(MAX_T, Math.max(MIN_T, Math.round((Number.isFinite(t) ? t : 2) * 100) / 100));
-const fmtX = (v) => v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'x';
+const clampT = (v) => Math.min(MAX_T, Math.max(MIN_T, Math.round((Number.isFinite(v) ? v : 2) * 100) / 100));
+const fmtX = (v) => v.toLocaleString(intlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'x';
 
 export default async function mount(host, ctx = {}) {
   host.innerHTML = `<div class="gm">
     <div class="gm-panel">
       <div id="bet"></div>
-      <div class="gm-field"><label>Payout</label><div class="gm-ro"><span>$</span><input id="payout" readonly value="0.00"><em id="payx">2.00x</em></div></div>
-      <button class="btn-bet" id="go">Bet</button>
-      <div class="gm-note">Your chance of winning is 99 divided by your target. Targets run from 1.01x to 1,000,000x. Greed is allowed.</div>
+      <div class="gm-field"><label>${t('Pago')}</label><div class="gm-ro"><span>${CHIP_SIGN}</span><input id="payout" readonly value="0.00"><em id="payx">2.00x</em></div></div>
+      <button class="btn-bet" id="go">${t('Apostar')}</button>
+      <div class="gm-note">${t('Tu probabilidad de ganar es 99 entre tu objetivo. Los objetivos van de 1.01x a 1,000,000x. La ambición está permitida.')}</div>
     </div>
     <div class="gm-stage limbo-stage" id="stage"><canvas id="cv"></canvas>
       <div class="limbo-hist" id="hist"></div>
       <div class="limbo-card" id="card"><div class="limbo-num" id="num">1.00x</div></div>
-      <div class="limbo-sub" id="sub">Pick a number. Hit bet.</div>
+      <div class="limbo-sub" id="sub">${t('Elige un número. Dale a Apostar.')}</div>
       <div class="limbo-ctl">
-        <div class="gm-field"><label for="target">Multiplier</label><div class="gm-input"><input id="target" inputmode="decimal" value="2.00" autocomplete="off"><span class="x">${ICON.x}</span></div></div>
-        <div class="gm-field"><label for="chance">Chance</label><div class="gm-input"><input id="chance" inputmode="decimal" autocomplete="off"><span>%</span></div></div>
+        <div class="gm-field"><label for="target">${t('Multiplicador')}</label><div class="gm-input"><input id="target" inputmode="decimal" value="2.00" autocomplete="off"><span class="x">${ICON.x}</span></div></div>
+        <div class="gm-field"><label for="chance">${t('Probabilidad')}</label><div class="gm-input"><input id="chance" inputmode="decimal" autocomplete="off"><span>%</span></div></div>
       </div>
     </div>
   </div>`;
@@ -41,8 +42,8 @@ export default async function mount(host, ctx = {}) {
     $('#payx').textContent = fmtX(target);
     go.disabled = busy || !bp.valid();
   };
-  const setTarget = (t, fromChance = false) => {
-    target = clampT(t);
+  const setTarget = (v, fromChance = false) => {
+    target = clampT(v);
     if (!fromChance) tIn.value = target.toFixed(2);
     cIn.value = fmtChance(Math.min(98.02, RTP / target * 100));
     updatePayout();
@@ -128,7 +129,7 @@ export default async function mount(host, ctx = {}) {
     return new Promise((resolve) => {
       const result = res.result;
       const dur = Math.min(3600, 800 + Math.log10(result) * 800);
-      numEl.className = 'limbo-num flying'; card.className = 'limbo-card'; sub.textContent = `Target ${fmtX(res.target)}`;
+      numEl.className = 'limbo-num flying'; card.className = 'limbo-card'; sub.textContent = t('Objetivo {x}', { x: fmtX(res.target) });
       speed = 0.35; fly.result = Math.max(1.01, result); fly.v = 1; fly.p = 0; fly.on = result > 1.005; fly.boom = null;
       const t0 = performance.now();
       const step = (now) => {
@@ -142,10 +143,10 @@ export default async function mount(host, ctx = {}) {
         const rx = fly.rx || W * .12, ry = fly.ry || GY - 30;
         fly.on = false;
         if (res.win) {
-          numEl.className = 'limbo-num win'; card.className = 'limbo-card win'; sub.innerHTML = `<b style="color:#C6F432">${money(res.payout - bp.value(), { plus: true })}</b> · cleared ${fmtX(res.target)}`;
+          numEl.className = 'limbo-num win'; card.className = 'limbo-card win'; sub.innerHTML = `<b style="color:#C6F432">${money(res.payout - bp.value(), { plus: true })}</b> · ${th('superó {x}', { x: fmtX(res.target) })}`;
           burst(stage, rx, ry, { count: 46, power: 300 });
         } else {
-          fly.boom = true; numEl.className = 'limbo-num lose'; card.className = 'limbo-card lose'; sub.innerHTML = `<b style="color:#FF4B2B">−${money(bp.value())}</b> · needed ${fmtX(res.target)}`;
+          fly.boom = true; numEl.className = 'limbo-num lose'; card.className = 'limbo-card lose'; sub.innerHTML = `<b style="color:#FF4B2B">−${money(bp.value())}</b> · ${th('necesitaba {x}', { x: fmtX(res.target) })}`;
           spawn(rx, ry, 60, { s: 220, life: 0.9, c: ['#FF4B2B', '#C6F432', '#EFE6D2', '#0E0C0A'], r: 4.5 }); shake(stage);
           setTimeout(() => { fly.boom = null; }, 700);
         }
@@ -165,7 +166,7 @@ export default async function mount(host, ctx = {}) {
       await animate(res);
       hist.unshift({ r: res.result, win: res.win }); drawHist();
       setUser(res.user); ctx.refreshBets?.();
-      resultPop({ net: res.win ? res.payout - amount : -amount, label: `Rolled ${fmtX(res.result)}`, detail: `Target ${fmtX(res.target)}`, bet: res.win ? amount : null });
+      resultPop({ net: res.win ? res.payout - amount : -amount, label: t('Salió {x}', { x: fmtX(res.result) }), detail: t('Objetivo {x}', { x: fmtX(res.target) }), bet: res.win ? amount : null });
     } catch (ex) { toast(ex.message, 'err'); setUser(prev); refreshMe().catch(() => {}); }
     busy = false; bp.lock(false); updatePayout();
   }
