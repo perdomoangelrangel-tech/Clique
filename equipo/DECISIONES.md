@@ -21,11 +21,12 @@ contradice una decisión, se para y se anota en la bitácora; nunca se elige un 
 | **D12** | **La monetización no está decidida y se conservan sus piezas:** la compra de fichas (apagada, D3) y el pase de temporada siguen en el plan. El modelo lo decide el dueño después del dictamen legal (D10). Guía: el documento del dueño "Clique: un casino que no es casino" (las fichas no valen dinero; se cobra por estilo y acceso, nunca por probabilidades; los premios son de estatus). | 11-oct | Conversación con E0 |
 | **D13** | **El repositorio pasa a privado.** Lo cambia el dueño en GitHub (Settings → General → Danger Zone → Change visibility → Private): el proxy de los agentes no lo permite. Mientras siga público, nada de secretos ni datos reales. Con el repositorio privado, los minutos de GitHub Actions cuentan (E1). | 11-oct | Conversación con E0 |
 | **D14** | **La app es para escritorio y para celular.** El celular de referencia es el iPhone del dueño: Safari dibuja a 60 cuadros por segundo como máximo, y la meta es 60 sin caídas. Un modelo en vivo no pasa de 8 mil triángulos (la ruleta quedó en 7,206). | 11-oct | `equipo/contratos/arte3d.md` §6 |
+| **D15** | **Textos de casino, sí, mientras no prometan dinero real.** Se aprueban las propuestas de E5: "fichas" o un ícono de ficha en vez del signo $, "Plantarte" por "Cash out", "Agregar fichas", "Préstamos de fichas" y "Enviar fichas". Clique habla como casino, pero nunca de dinero que se cobra o se retira. | 11-oct | `equipo/contratos/textos.md` §5 (E5) |
+| **D16** | **Cada juego tiene su sala y entras a ella.** Los juegos se ven como un casino de verdad: la forma y los colores del dibujo con acabado real (laca, esmalte, latón, fieltro) y luz cálida, dentro de un salón (alfombra, nogal, terciopelo, candiles, otras mesas). Al abrir un juego la cámara entra al salón y baja a la mesa. La sala de ruleta es la muestra; las demás siguen cuando el dueño la apruebe. Afina D11: la idea del dibujo se queda, el acabado plano no. | 11-oct | `equipo/contratos/arte3d.md` §14 |
 
 ## Preguntas abiertas para el dueño
 
 | Fecha | Pregunta | Quién la necesita |
 |---|---|---|
 | 10-oct | Cuentas: ¿pasamos el registro a Supabase Auth (correo verificado, Google, Apple) en la ronda 2? | E2, E5 |
-| 11-oct | Los 14 juegos en el estilo del dibujo (`docs/arte/juegos-3d.webp`, hoja 2D contra 3D) ya están en la app: ¿les das el visto bueno o cambias alguno? | E6 |
-| 11-oct | Textos que suenan a dinero real: el signo $ de las fichas, "Cash out", "Add funds", préstamos y envíos. E5 propone "fichas" o un ícono de ficha, "Plantarte", "Agregar fichas", "Préstamos de fichas" y "Enviar fichas" (`equipo/contratos/textos.md` §5, en la rama e5-frontend) | E5, E4 |
+| 11-oct | La sala de ruleta (D16) es la muestra de cómo se ven todos los juegos: ¿la apruebas para hacer las otras? | E6, E5 |

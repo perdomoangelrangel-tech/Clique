@@ -1,14 +1,15 @@
 # Orden 1 · E5 · Frontend · la app en español de México, navegación de celular, instalable y sin HTML inseguro · 10-oct
 
-> **Adenda · 11-oct (E0).** El dueño decidió D11 y D14: los juegos se ven como los dibujos pero en 3D, y la app es
-> para escritorio y celular (iPhone, 60 cuadros). Sigue con tus entregables 1 a 7 y suma este:
+> **Adenda · 11-oct (E0).** El dueño decidió D11, D14, D15 y D16: los juegos se ven como un casino de verdad, cada uno
+> en su sala; la app es para escritorio y celular (iPhone, 60 cuadros), y los textos de casino van mientras no
+> prometan dinero real. Sigue con tus entregables 1 a 7 y suma estos:
 >
 > | # | Qué | Cómo se comprueba | Hecho cuando |
 > |---|---|---|---|
-> | 8 | **La ruleta en vivo en la pantalla de la ruleta.** Lleva `static/3d/ruleta.glb` con `docs/arte/ruleta-animacion.mjs` (`planSpin`) y `docs/arte/estilo-toon.mjs` (`applyToon`, `addOutlines`) tal cual (cópialos a `static/js/` o pide a E6 que los ponga ahí). Arranca en 2D con `static/3d/ruleta-dibujo-2d.webp` y pasa a 3D cuando cargó; se queda en 2D sin WebGL o con menos movimiento. **El número lo manda el servidor (D8)** y la animación cae en él. El número que cayó se ve **grande fuera de la rueda** (en 390 px los del anillo miden unos 6 px). Solo dibuja durante la tirada. three.js y el decodificador de meshopt desde `static/vendor/`, no de un CDN. Las rutas de `static/casino-icons/` llevan `?v=` (los 14 dibujos cambiaron con el mismo nombre) | `python -m unittest tests.test_layout` con un caso de la ruleta en vivo, y en Chrome a 1366×768 y 390×844: "el servidor dijo N · cayó en N" con tres números | en verde, y el dueño la ve en su iPhone a 60 cuadros |
+> | 8 | **La sala de ruleta en la pantalla de la ruleta (D16).** Lleva `static/3d/ruleta.glb`, el panorama `static/3d/salas/ruleta.webp`, `docs/arte/sala-ruleta.mjs` (la sala, su luz y la entrada) y `docs/arte/ruleta-animacion.mjs` (`planSpin`) tal cual (cópialos a `static/js/` o pide a E6 que los ponga ahí). Al abrir el juego, la entrada: el telón se levanta y la cámara baja del salón a la mesa (2.4 s; sin animación con menos movimiento). Arranca en 2D y pasa a 3D cuando cargó; se queda en 2D sin WebGL. **El número lo manda el servidor (D8)** y la animación cae en él. El número que cayó se ve **grande fuera de la rueda**. Solo dibuja mientras algo se mueve. three.js y el decodificador de meshopt desde `static/vendor/`, no de un CDN. Las rutas de `static/casino-icons/` llevan `?v=` | `python -m unittest tests.test_layout` con un caso de la sala, y en Chrome a 1366×768 y 390×844: "el servidor dijo N · cayó en N" con tres números | en verde, y el dueño la ve en su iPhone a 60 cuadros |
+> | 9 | **Los textos de casino aprobados (D15):** "fichas" o un ícono de ficha en vez de $, "Plantarte", "Agregar fichas", "Préstamos de fichas", "Enviar fichas" | `python -m unittest tests.test_i18n` | ningún texto visible promete dinero real |
 >
-> Referencia completa: `docs/arte/prueba-ruleta.html` y `equipo/contratos/arte3d.md` §12 y §13. Las preguntas de textos
-> que suenan a dinero real ya están en DECISIONES como preguntas abiertas para el dueño.
+> Referencia completa: `docs/arte/prueba-ruleta.html` y `equipo/contratos/arte3d.md` §12 y §14.
 
 ## Objetivo (una frase)
 Que toda la interfaz hable español de México con un sistema de traducciones medido, que en el celular se navegue con una barra inferior y el botón de apostar siempre se vea, que la app se pueda instalar, y que ningún dato de una persona se pinte con `innerHTML`.
