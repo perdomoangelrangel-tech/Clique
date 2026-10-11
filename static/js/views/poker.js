@@ -57,7 +57,7 @@ export default {
         if (tb.money === 'real' && tb.status === 'playing') {
           confirm = await new Promise((res) => {
             const m = modal(`<span class="lbl">${t('Fichas de tu saldo')}</span><h2>${t('¿Entrar con {cantidad}?', { cantidad: amt(tb.stack, tb.scale) })}</h2><p class="lede">${t('Esta mesa juega con fichas de tu saldo. La entrada sale de tu cuenta ahora, se queda frente a ti y regresa a tu cuenta cuando te levantas.')}</p>
-              <div class="modal-actions"><button class="btn btn-secondary" data-no>${t('Mejor no')}</button><button class="btn btn-primary" data-yes>${t('Entrar')}</button></div>`);
+              <div class="modal-actions"><button class="btn btn-secondary" data-no>${t('Mejor no')}</button><button class="btn btn-primary" data-yes>${t('Entrar a la mesa')}</button></div>`);
             m.el.querySelector('[data-yes]').addEventListener('click', () => { m.close(); res(true); });
             m.el.querySelector('[data-no]').addEventListener('click', () => { m.close(); res(false); });
           });

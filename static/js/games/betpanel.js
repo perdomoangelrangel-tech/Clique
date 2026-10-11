@@ -15,7 +15,7 @@ export function betPanel(host, { label = t('Cantidad a apostar'), key = 'bet', s
 
   host.innerHTML = `<div class="bp ${compact ? 'compact' : ''}">${compact ? '' : `<div class="bp-top"><label for="bp-amt">${esc(label)}</label></div>`}
     <div class="bp-input"><span class="bp-cur">${CHIP_SIGN}</span><input id="bp-amt" inputmode="decimal" autocomplete="off" value="${saved}" aria-label="${esc(label)}">
-      <button type="button" data-k="half" title="${esc(t('La mitad de tu apuesta'))}">1/2</button><button type="button" data-k="dbl" title="${esc(t('El doble de tu apuesta'))}">2x</button><button type="button" data-k="max" title="${esc(t('Todo'))}">${t('Máx.')}</button></div>
+      <button type="button" data-k="half" title="${esc(t('La mitad de tu apuesta'))}">1/2</button><button type="button" data-k="dbl" title="${esc(t('El doble de tu apuesta'))}">2x</button><button type="button" data-k="max" title="${esc(t('Con todo'))}">${t('Máx.')}</button></div>
     ${presets.length ? `<div class="bp-presets">${presets.map((p) => `<button type="button" data-p="${p}">${money(p, { noCents: true })}</button>`).join('')}</div>` : ''}
     <div class="bp-err" id="bp-err"></div></div>`;
   const input = host.querySelector('#bp-amt'), err = host.querySelector('#bp-err');

@@ -83,7 +83,7 @@ function paintDock() {
         <button data-a="mic" class="${st.muted ? 'off' : ''}" aria-pressed="${st.muted}" title="${esc(st.muted ? t('Activar tu micrófono') : t('Silenciar tu micrófono'))}">${icon(st.muted ? 'microphone-slash' : 'microphone', 18)}<span>${st.muted ? t('Activar') : t('Silenciar')}</span></button>
         <button data-a="deaf" class="${st.deaf ? 'off' : ''}" aria-pressed="${st.deaf}" title="${esc(st.deaf ? t('Volver a oír a todos') : t('Dejar de oír a todos'))}">${icon(st.deaf ? 'speaker-simple-slash' : 'headphones', 18)}<span>${st.deaf ? t('Oír') : t('No oír')}</span></button>
         <a class="vd-room" href="#/circle/${esc(st.circleId)}" data-a="room" title="${esc(t('Volver al círculo'))}">${icon('users-three', 18)}<span>${t('Sala')}</span></a>
-        <button data-a="leave" class="leave" title="${esc(t('Salir de la llamada'))}">${icon('phone-disconnect', 18)}<span>${t('Salir')}</span></button></div>` : ''}
+        <button data-a="leave" class="leave" title="${esc(t('Salir de la llamada'))}">${icon('phone-disconnect', 18)}<span>${t('Colgar')}</span></button></div>` : ''}
     ${err}</div>`;
 }
 

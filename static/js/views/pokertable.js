@@ -406,7 +406,7 @@ export default {
         const real = V.settings.money === 'real' && V.status === 'playing';
         if (real) {
           const ok = await new Promise((res) => {
-            const m = modal(`<span class="lbl">${t('Fichas de tu saldo')}</span><h2>${t('¿Entrar con {cantidad}?', { cantidad: A(V.settings.stack) })}</h2><p class="lede">${t('Sale de tu cuenta ahora y regresa cuando te levantes.')}</p><div class="modal-actions"><button class="btn btn-secondary" data-no>${t('Mejor no')}</button><button class="btn btn-primary" data-yes>${t('Entrar')}</button></div>`);
+            const m = modal(`<span class="lbl">${t('Fichas de tu saldo')}</span><h2>${t('¿Entrar con {cantidad}?', { cantidad: A(V.settings.stack) })}</h2><p class="lede">${t('Sale de tu cuenta ahora y regresa cuando te levantes.')}</p><div class="modal-actions"><button class="btn btn-secondary" data-no>${t('Mejor no')}</button><button class="btn btn-primary" data-yes>${t('Entrar a la mesa')}</button></div>`);
             m.el.querySelector('[data-yes]').addEventListener('click', () => { m.close(); res(true); });
             m.el.querySelector('[data-no]').addEventListener('click', () => { m.close(); res(false); });
           });
