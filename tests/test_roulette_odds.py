@@ -76,9 +76,15 @@ class TheMathIsExact(unittest.TestCase):
         block = text[text.index("id: 'roulette'"):]
         block = block[:block.index("},\n")] if "},\n" in block else block
         self.assertIn(f"rtp: '{36 / 37 * 100:.1f}%'", block)
-        self.assertIn("pays 35 to 1", block)         # 36 back including the stake
-        self.assertIn("2 to 1", block)
-        self.assertIn("1 to 1", block)
+        self.assertIn("paga 35 a 1", block)          # 36 back including the stake
+        self.assertIn("2 a 1", block)
+        self.assertIn("1 a 1", block)
+        # the lobby text is a Spanish key (static/js/i18n.js); its English must promise the same
+        with open(os.path.join(config.STATIC_DIR, "i18n", "en.json"), encoding="utf-8") as f:
+            info = json.load(f)[re.search(r"info: '([^']*)'", block).group(1)]
+        self.assertIn("pays 35 to 1", info)
+        self.assertIn("2 to 1", info)
+        self.assertIn("1 to 1", info)
 
 
 class PayoutsAreRightToTheCent(unittest.TestCase):
