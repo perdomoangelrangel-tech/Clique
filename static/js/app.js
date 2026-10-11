@@ -754,13 +754,23 @@ onLang(() => {
   route();
 });
 
+// Installable app (F2): the worker keeps the shell so the app opens without a connection (static/sw.js); nothing about money is kept.
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => { /* the app works the same without it */ });
+// Losing the connection is said out loud: what is on screen may be out of date, and nothing can be bet until it is back.
+window.addEventListener('offline', () => { if (S.user) toast(t('Sin conexión. Lo que ves puede no estar al día y no puedes apostar hasta que vuelva.'), 'err', { ms: 8000 }); });
+window.addEventListener('online', () => { if (S.user) { toast(t('Volvió la conexión.'), 'ok'); refreshMe().catch(() => {}); refreshTicker(); } else if (document.getElementById('retry')) location.reload(); });
+
 (async function boot() {
   await initLang();                                  // before the first paint, so nobody sees the other language flash by
   try {
     const u = await refreshMe();
     if (u) startApp(); else showAuth('login');
   } catch (e) {
-    $app.innerHTML = `<div class="auth"><form class="auth-card paper"><span class="lbl">No signal</span><h2>Can't reach the house.</h2><p class="lede">${esc(e.message)}</p><button type="button" class="btn btn-primary" id="retry">Try again</button></form></div>`;
+    const offline = navigator.onLine === false || /fetch|network|connection/i.test(e.message);
+    $app.innerHTML = `<div class="auth"><form class="auth-card paper" role="alert"><span class="lbl">${esc(offline ? t('Sin conexión') : t('Sin señal'))}</span>
+      <h2>${esc(offline ? t('Estás sin internet.') : t('No podemos llegar a la casa.'))}</h2>
+      <p class="lede">${esc(offline ? t('Clique necesita conexión para mostrarte tus fichas y tus apuestas. En cuanto vuelva la señal, seguimos.') : e.message)}</p>
+      <button type="button" class="btn btn-primary" id="retry">${esc(t('Intentar otra vez'))}</button></form></div>`;
     document.getElementById('retry').addEventListener('click', () => location.reload());
   }
 })();

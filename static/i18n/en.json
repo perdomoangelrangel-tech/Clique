@@ -26,5 +26,13 @@
   "Círculos": "Circles",
   "Semana": "Weekly",
   "Tú": "You",
-  "Navegación principal": "Main navigation"
+  "Navegación principal": "Main navigation",
+  "Sin conexión. Lo que ves puede no estar al día y no puedes apostar hasta que vuelva.": "You're offline. What you see may be out of date, and you can't bet until you're back.",
+  "Volvió la conexión.": "You're back online.",
+  "Sin conexión": "Offline",
+  "Sin señal": "No signal",
+  "Estás sin internet.": "You're offline.",
+  "No podemos llegar a la casa.": "Can't reach the house.",
+  "Clique necesita conexión para mostrarte tus fichas y tus apuestas. En cuanto vuelva la señal, seguimos.": "Clique needs a connection to show your chips and your bets. We'll pick up as soon as you're back.",
+  "Intentar otra vez": "Try again"
 }

@@ -1,0 +1,27 @@
+{
+  "name": "Clique",
+  "short_name": "Clique",
+  "description": "Apuestas con fichas entre amigos: mercados sobre la vida del grupo, casino y póker. Fichas de juego, nunca dinero real.",
+  "lang": "es-MX",
+  "dir": "ltr",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0E0C0A",
+  "theme_color": "#0E0C0A",
+  "categories": [
+    "games",
+    "social",
+    "entertainment"
+  ],
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='1.5' y='1.5' width='29' height='29' rx='3' fill='%23C6F432' stroke='%230E0C0A' stroke-width='2.5'/%3E%3Cpath d='M21.500 10.500A8 8 0 1 0 21.500 21.500' fill='none' stroke='%230E0C0A' stroke-width='4' stroke-linecap='round'/%3E%3Ccircle cx='22.500' cy='16' r='2.600' fill='%230E0C0A'/%3E%3C/svg%3E",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
