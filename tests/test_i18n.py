@@ -34,12 +34,12 @@ BASE = {
     "art.js": 6, "cosmetics.js": 2, "gamelist.js": 39, "games/betpanel.js": 10, "games/blackjack.js": 21, "games/chicken.js": 25,
     "games/coinflip.js": 30, "games/common.js": 9, "games/dice.js": 19, "games/hilo.js": 30, "games/limbo.js": 11, "games/mines.js": 21,
     "games/moles.js": 20, "games/roulette.js": 24, "games/rps.js": 28, "games/tower.js": 25, "games/war.js": 40, "games/wheel.js": 20,
-    "views/challenges.js": 37, "views/chat.js": 81, "views/circle.js": 54, "views/circles.js": 42, "views/components.js": 18,
-    "views/create.js": 41, "views/exchange.js": 112, "views/friends.js": 43, "views/game.js": 41, "views/games.js": 35,
-    "views/loans.js": 81, "views/market.js": 126, "views/markets.js": 47, "views/poker.js": 56, "views/pokerfmt.js": 2,
-    "views/pokertable.js": 185, "views/polledit.js": 70, "views/portfolio.js": 65, "views/profile.js": 138, "views/progress.js": 49,
-    "views/ranking.js": 16, "views/spread.js": 15, "views/statement.js": 58, "views/stockchart.js": 3, "views/store.js": 43,
-    "views/transfers.js": 127, "views/weekly.js": 128, "views/whosin.js": 8, "voice.js": 21, "voicecore.js": 11,
+    "views/challenges.js": 37, "views/chat.js": 81, "views/circle.js": 54, "views/circles.js": 42, "views/create.js": 41,
+    "views/exchange.js": 112, "views/friends.js": 43, "views/game.js": 41, "views/games.js": 35, "views/loans.js": 81,
+    "views/market.js": 126, "views/poker.js": 56, "views/pokerfmt.js": 2, "views/pokertable.js": 185, "views/polledit.js": 70,
+    "views/portfolio.js": 65, "views/profile.js": 138, "views/progress.js": 49, "views/ranking.js": 16, "views/spread.js": 15,
+    "views/statement.js": 58, "views/stockchart.js": 3, "views/store.js": 43, "views/transfers.js": 127, "views/weekly.js": 128,
+    "views/whosin.js": 8, "voice.js": 21, "voicecore.js": 11,
 }
 
 # Lo que se queda igual en cualquier idioma (nombres propios, unidades).
@@ -57,7 +57,7 @@ CODE_CALLS = {
     "removeAttribute", "hasAttribute", "toLocaleString", "toLocaleDateString", "toLocaleTimeString", "Intl", "NumberFormat",
     "DateTimeFormat", "PluralRules", "padStart", "padEnd", "go", "remember", "recall", "saveDraft", "loadDraft", "clearDraft",
     "keepDraft", "send", "EventSource", "WebSocket", "postMessage", "scrollIntoView", "animate", "requestAnimationFrame", "setLook",
-    "lookOf", "rankBadge", "logoMark", "gameById", "gameName", "emit", "on", "off", "once", "publish", "subscribe", "describe",
+    "lookOf", "rankBadge", "logoMark", "gameById", "gameName", "drawChart", "emit", "on", "off", "once", "publish", "subscribe", "describe",
 }
 VISIBLE_ATTRS = ("title", "aria-label", "placeholder", "alt", "label", "aria-description", "data-tip")
 WORD = re.compile(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ¿¡]{2,}")
@@ -334,7 +334,8 @@ def phrases(lit):
     if re.search(r"\b(dataset\.\w+|\.(className|id|type|name|value|href|src|rel|target|method|key|lang|dir|tagName|code)|"
                  r"\.style\.\w+|\.cssText)\s*=$", b):
         return []
-    return [plain(text)] if is_prose(text) else []
+    joined = text.replace("\x00", "") if lit.template else text          # a ${} inside a key like `a:${b}` is not a space between words
+    return [plain(text)] if is_prose(joined) else []
 
 
 def t_keys(lits):
