@@ -9,6 +9,9 @@ export const catName = (c) => (CATS[c] ? t(CATS[c]) : c);
 /** "Yes" / "No" of a yes/no market as words on screen; any other outcome is a name a person wrote and stays as it is. */
 /** A position's label as the server writes it ("Yes", "No", "Ana · Yes") with the yes/no part in the language on screen. */
 export const slipLabel = (label) => String(label ?? '').replace(/(^| · )(Yes|No)$/, (m, sep, s) => sep + (s === 'Yes' ? t('Sí') : t('No')));      // i18n: no (server words)
+/** A rank's name as the server writes it (backend/rules.py: "Bronze III", "Master") in the language on screen. */
+const TIER_NAMES = { Bronze: 'Bronce', Silver: 'Plata', Gold: 'Oro', Platinum: 'Platino', Diamond: 'Diamante', Master: 'Maestro' };      // i18n: claves
+export const rankLabel = (label) => String(label ?? '').replace(/\b(Bronze|Silver|Gold|Platinum|Diamond|Master)\b/, (w) => t(TIER_NAMES[w]));
 export const sideName = (name, binary = true) => (binary && name === 'Yes' ? t('Sí') : binary && name === 'No' ? t('No') : name);      // i18n: no (server names)
 
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
