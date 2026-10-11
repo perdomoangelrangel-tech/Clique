@@ -1,0 +1,10 @@
+# Solo para las pruebas: la app no necesita nada de esto (corre con la biblioteca estándar de Python).
+# pip install -r requirements-dev.txt
+# Quien necesite otra dependencia de pruebas la pide a E1 en la bitácora.
+
+# La base de zonas horarias: Windows no la trae, y sin ella se omite la prueba de horario de verano.
+tzdata>=2024.1
+
+# Las pruebas de Postgres de E2: el cliente y un Postgres de bolsillo que corre sin instalar nada.
+psycopg[binary]==3.3.6
+pgserver==0.1.4
