@@ -37,7 +37,7 @@ números que se puedan rastrear) y E7 (para verificar).
 | 13e. A vote on added funds | §2.3 |
 | 14. What was verified | la columna "Prueba" de cada tabla |
 | 15. Every setting | §15 |
-| (no está en `ECONOMY.md`) | §2.1 bienvenida, §2.2 cupón, §12 ventaja de cada juego, §13 LMSR, §14 póker, §4.4 premios y castigo, §16 ranking global |
+| (no está en `ECONOMY.md`) | §2.1 bienvenida, §2.2 cupón, §12 ventaja de cada juego, §13 LMSR, §14 póker, §4.3 premios y castigo, §16 ranking global |
 
 ---
 
@@ -134,7 +134,7 @@ números que se puedan rastrear) y E7 (para verificar).
 | Mientras corre la semana solo se muestra como progreso: no cambia el orden ni las recompensas estimadas. | `backend/weekly.py:129-131`, `backend/weekly.py:478-489` | `test_weekly_minimum.py::AtTheEndOfTheWeek.test_live_the_minimum_is_only_progress_it_changes_neither_order_nor_rewards` |
 | Aviso una vez por semana `WEEKLY_REMIND_H` = 24 h antes del cierre, solo a quien le falta. | `backend/economy.py:108`, `backend/weekly.py:700-725` | `test_weekly_minimum.py::Reminders.*` |
 
-### 4.4 Premios de la semana y castigo (no está en `ECONOMY.md`)
+### 4.3 Premios de la semana y castigo (no está en `ECONOMY.md`)
 
 | Regla | Dónde | Prueba |
 |---|---|---|
@@ -346,6 +346,81 @@ que viven en otros archivos:
 |---|---|---|
 | Todos los registrados (sin suspendidos ni borrados), por el efectivo de su **acumulada**; mismo monto, mismo lugar ("1, 2, 2, 4"); empate, la cuenta más antigua primero. | `backend/ranking.py:10-24` | `test_ranking.py::Board.*` |
 
+
+## Dónde se mueve el dinero
+
+Cada lugar del código que cambia un saldo. Es lo que E2 convierte en funciones SQL en la ronda 2. Hoy el libro guarda
+solo la pierna de la persona; la **contrapartida** es la cuenta del sistema que haría de otra pierna en un libro de doble
+partida. Se proponen estas, para que E2 decida sus nombres:
+
+| Contrapartida | Qué es |
+|---|---|
+| `emision` | Dinero que nace fuera del juego: bienvenida, asignación semanal, bonos, cupón, fondos del anfitrión, recompensas de semana, retos e hitos, devoluciones de una migración |
+| `caducidad` | Lo que el reinicio semanal quita de la semanal (`weekly.expired`) |
+| `casa` | El casino: recibe las apuestas y paga los premios de los 13 juegos |
+| `mercado:<id>` | El creador de mercado LMSR de cada mercado: recibe compras y paga ventas, liquidaciones y devoluciones |
+| `mesa:<id>` | Una mesa de póker con dinero real: tiene las pilas mientras la gente está sentada |
+| `prestamos` | El que presta: entrega el préstamo y recibe los pagos |
+| `tienda` | Recibe lo que se gasta en la tienda |
+| `bolsa` | La bolsa simulada: recibe compras de acciones y paga ventas |
+| la otra persona | En una transferencia, la misma cuenta de la otra persona |
+
+### Llamadas directas a `ledger.*`
+
+La columna **Función** es `módulo.función`; la prueba `tests/test_dinero_solo_en_libro.py` revisa que cada función del
+código que llama a `ledger.post` o `ledger.opening` esté en esta tabla.
+
+| Función | Línea | Razón | Cuenta de la persona | Contrapartida | `txid` | Externo |
+|---|---|---|---|---|---|---|
+| `users.register` | `backend/users.py:59` | `welcome` | + semanal | `emision` | — | sí |
+| `users.credit` | `backend/users.py:207`, `:210` | la de quien llama (abajo) | + semanal, o + acumulada si la cartera es la acumulada (`isAcc`) | la de quien llama | la de quien llama | la de quien llama |
+| `users.debit` | `backend/users.py:222`, `:225` | la de quien llama (abajo) | − semanal, o − acumulada (`isAcc`) | la de quien llama | la de quien llama | no |
+| `users.apply_deposit` | `backend/users.py:253` | `deposit` | + semanal o + acumulada (la elegida) | `emision` | `fundvote-<voto>` si viene de una votación | sí |
+| `weekly.pay_rewards` | `backend/weekly.py:257` | `weekly.reward` | + acumulada | `emision` | `reward:<semana>:<círculo>:<persona>` | no (es la acumulada) |
+| `weekly.refill_weekly` | `backend/weekly.py:614` | `weekly.allocation` | + semanal (lo que falta para la asignación, o la asignación entera en modo `topup`) | `emision` | — (lo protege la marca `user.wk.week`) | sí |
+| `weekly.refill_weekly` | `backend/weekly.py:616` | `weekly.expired` | − semanal (lo que sobra de la asignación) | `caducidad` | — (igual) | sí |
+| `weekly.pay_midweek` | `backend/weekly.py:649` | `weekly.midweek` | + semanal | `emision` | `midweek-<semana>` | sí |
+| `challenges._pay` | `backend/challenges.py:189` | `challenge.weekly` o `challenge.accumulated` | + la cuenta del reto | `emision` | `chal:<reto>:<persona>` | sí |
+| `milestones.claim` | `backend/milestones.py:88` | `milestone` | + acumulada | `emision` | `mile:<escalón>:<persona>` | sí |
+| `loans.borrow` | `backend/loans.py:153` | `loan.borrow` | + semanal | `prestamos` | `loan:<préstamo>:out` | no |
+| `loans._apply_payment` | `backend/loans.py:165` | `loan.repay` (pago de la persona) o `loan.collect` (al cierre y de la asignación) | − semanal | `prestamos` | `loan:<p>:pay:<requestId>`, `loan:<p>:close:<semana>`, `loan:<p>:alloc:<semana>` | no |
+| `transfers.send` | `backend/transfers.py:339` | `transfer.out` | − la cuenta elegida | la misma cuenta de la otra persona | `xfer:<transferencia>:out` | sí |
+| `transfers.send` | `backend/transfers.py:340` | `transfer.in` | + la misma cuenta, de quien recibe | la misma cuenta de quien envía | `xfer:<transferencia>:in` | sí |
+| `cosmetics.buy` | `backend/cosmetics.py:343` | `store.buy` | − acumulada | `tienda` | `buy:<producto>` | no |
+| `exchange.trade` | `backend/exchange.py:186` | `stocks.buy` | − acumulada | `bolsa` | `stk:<operación>` | no |
+| `exchange.trade` | `backend/exchange.py:191` | `stocks.sell` | + acumulada | `bolsa` | `stk:<operación>` | no |
+| `migrations.split_accounts` (E2) | `backend/migrations.py:38-39` | `opening` | ninguna: deja constancia del saldo que ya había | — | — | sí |
+| `migrations.retire_horses` (E2) | `backend/migrations.py:70` | `casino.horses` | + semanal (devuelve la apuesta) | `casa` | `horse:retired:<carrera>:<clave>` | no |
+
+### A través de `users.credit` y `users.debit`
+
+| Función | Línea | Razón | Cuenta de la persona | Contrapartida |
+|---|---|---|---|---|
+| `users.redeem_voucher` | `backend/users.py:298` | `voucher` (externo) | + semanal | `emision` |
+| `markets.trade` (compra) | `backend/markets.py:436` | `market.buy` | − semanal | `mercado:<id>` |
+| `markets.trade` (venta) | `backend/markets.py:448` | `market.sell` | + semanal | `mercado:<id>` |
+| `markets.resolve` | `backend/markets.py:505` | `market.payout` | + semanal | `mercado:<id>` |
+| `markets.cancel` | `backend/markets.py:527` | `market.refund` | + semanal | `mercado:<id>` |
+| `markets.withdraw` | `backend/markets.py:836` | `market.withdraw` | + semanal | `mercado:<id>` |
+| `poker._buy_in` | `backend/poker.py:397` | la de la ruta: `poker` (ver D4) | − semanal | `mesa:<id>` |
+| `poker._cash_out` | `backend/poker.py:411` | la de la ruta: `poker`, u `other` desde el reloj (D4) | + semanal | `mesa:<id>` |
+| Casino: apuesta | `backend/games.py:114` (`limbo`), `:176` (`roulette`), `:310` (`blackjack_deal`), `:349` y `:360` (`blackjack_action`: doblar y dividir), `:422` (`chicken_start`), `:490` (`coinflip`), `:530` (`dice`), `:572` y `:587` (`war`: apuesta y aumento), `:658` (`mines_start`), `:765` (`moles_start`), `:861` (`tower_start`), `:996` (`hilo_start`), `:1102` (`wheel`), `:1156` (`rps_start`) | `casino.<juego>`, de la ruta | − semanal, o − acumulada con `acct: "accumulated"` | `casa` |
+| Casino: premio | `backend/games.py:120` (`limbo`), `:186` (`roulette`), `:287` (`_bj_finish`), `:430` (`_chicken_cash`), `:500` (`coinflip`), `:535` (`dice`), `:597` (`war`), `:669` (`_mines_cash`), `:774` (`_moles_cash`), `:873` (`_tower_cash`), `:1008` (`_hilo_cash`), `:1108` (`wheel`), `:1165` (`_rps_cash`) | `casino.<juego>`, de la ruta | + la misma cuenta de la apuesta | `casa` |
+
+Con la cartera de práctica, las mismas funciones del casino cambian `user["demo"]["balance"]` y no tocan el libro: no es
+dinero (`backend/users.py:202-204`, `:215-219`).
+
+### Escrituras directas a un saldo que no pasan por el libro
+
+| Dónde | Qué es | ¿Mueve dinero? |
+|---|---|---|
+| `backend/users.py:203`, `:218` | La cartera de práctica (demo) | No: no es una cuenta |
+| `backend/users.py:208`, `:223` | Copia el saldo de la acumulada en la vista de la cartera del casino, después de `ledger.post` | No: es un espejo |
+| `backend/games.py:27`, `:58` (`demo_account`, `demo_reset`) | Pone la cartera de práctica en $1,000 | No |
+| `backend/migrations.py:35-36` (E2) | Reparte el saldo único entre las dos cuentas, con su renglón `opening` | Sí, una sola vez y documentado |
+| `backend/migrations.py:68` (E2) | Devuelve a la cartera de práctica una apuesta de Horses | No |
+| `backend/seed.py:24` | Reinicio de temporada | **Sí, fuera del libro (D3)** |
+
 ---
 
 ## Diferencias
@@ -363,7 +438,7 @@ todavía.** "Código" quiere decir que el error es del código y se corrige con 
 | D5 | `backend/seed.py:20-28` | — | El reinicio de temporada no toca la cuenta acumulada, los préstamos, los retos, el XP ni las posiciones en la bolsa, y reinicia la semanal a `START_BALANCE`, no a la asignación. ¿Es lo que se quiere de una temporada nueva? | Pregunta |
 | D6 | `ECONOMY.md` líneas 4-6 | "Every number lives in `economy.py` (plus `catalog.py`)… Nothing else in the code has these figures" | Hay números en `config.py` (`START_BALANCE`, cupón, `MIN_BET`, `b`, topes), `games.py` (retornos y tablas), `poker.py`, `rules.py`, `markets.py` (§15 de este contrato) | Documento |
 | D7 | `ECONOMY.md` §1, tabla y línea 22 | La acumulada solo recibe recompensas, transferencias y abonos del anfitrión; la semanal recibe ganancias, asignación, abonos, préstamos y retos | Falta: la semanal recibe la bienvenida, el cupón, el bono del miércoles y transferencias semanales; la acumulada recibe ventas en la bolsa y ganancias del casino jugado con ella (§13c) | Documento |
-| D8 | `ECONOMY.md` (todo) | — | No documenta: bienvenida (§2.1), cupón (§2.2), cartera de práctica, retorno y pago de cada juego (§12), mercados y LMSR (§13), póker (§14), premios y castigo (§4.4), ranking global (§16) | Documento |
+| D8 | `ECONOMY.md` (todo) | — | No documenta: bienvenida (§2.1), cupón (§2.2), cartera de práctica, retorno y pago de cada juego (§12), mercados y LMSR (§13), póker (§14), premios y castigo (§4.3), ranking global (§16) | Documento |
 | D9 | `ECONOMY.md` §8, tabla de XP | Cobrar un reto da "10 to 25" XP y un hito "10 to 120" | Retos: 15 a 25 (`rules.py:99-123`, `:174-182`). Hitos: 0 a 120 (los de rango dan 0, los de juego empiezan en 5: `rules.py:162-166`, `:247`) | Documento |
 | D10 | `ECONOMY.md` §10, metas de un juego | *Game* Regular: 25/100/500 solo para Blackjack y Ruleta | También War (sus rondas se llaman "hands") y Wheel ("spins") usan 25/100/500 (`rules.py:146-149`, `:162`) | Documento |
 | D11 | `ECONOMY.md` §10 | "The same daily caps as XP apply to the counters (30 casino rounds, 10 poll bets, 6 trades a day...)" | Los números son los de `COUNT_CAPS` (`rules.py:79`), que no son los topes de XP (10, 4, 2) | Documento |
