@@ -4,7 +4,9 @@ poster, and inside the budget of equipo/contratos/arte3d.md. Standard library on
 E6 · Arte 3D owns this file. The list of games is read from static/js/art.js, so a new game without its pictures fails here."""
 import os
 import re
+import shutil
 import struct
+import subprocess
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -22,6 +24,14 @@ APP_RENDERS = {                                                     # static/ren
 }
 MODEL_BUDGET = 300_000                                              # one model, bytes
 FALLBACK_2D = (512, 512)                                            # the 2D stand-in of each live model
+
+
+class LiveAnimations(unittest.TestCase):
+    @unittest.skipUnless(shutil.which("node"), "Node.js no está instalado: se omite la prueba de la animación de la ruleta")
+    def test_the_roulette_lands_on_the_number_the_server_sent(self):
+        # the maths is pure JavaScript (docs/arte/ruleta-animacion.mjs); its own test checks all 37 numbers
+        r = subprocess.run(["node", os.path.join("docs", "arte", "ruleta-animacion.test.mjs")], cwd=ROOT, capture_output=True, text=True, timeout=120)
+        self.assertEqual(r.returncode, 0, r.stdout[-3000:] + r.stderr[-2000:])
 
 
 def _art_js():

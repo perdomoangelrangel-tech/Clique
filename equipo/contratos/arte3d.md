@@ -95,7 +95,7 @@ En la web (three.js), la ficha llega como `MeshPhysicalMaterial` con capa (`KHR_
 | GLB por pantalla | ≤ 1.5 MB | 50,704 bytes (22,169 con gzip, 20,727 con brotli) |
 | Un modelo suelto | ≤ 300 KB y ≤ 8 mil triángulos | 6,508 triángulos, 4 primitivas (cuerpo, incrustaciones, centro, tinta) |
 | Texturas | ≤ 1024 px, KTX2 | Ninguna: el logotipo y las marcas son geometría. |
-| Triángulos en escena | ≤ 50 mil | 26,032 con cuatro fichas en la página de prueba |
+| Triángulos en escena | ≤ 50 mil | 26,032 con cuatro fichas en la página de prueba. La ruleta: 11,908 (§12) |
 | Cuadros por segundo | 60 en Android de gama media | PC del dueño (Chrome, pantalla de 144 Hz), 10-oct, con captura en la conversación con E0: de 138 a 145, que es el ritmo de su pantalla. La página dibuja un cuadro cada 6.9 ms; lo que tarda en dibujarlo no se midió, pero cabe en ese intervalo. **Falta medir en Android de gama media.** La página de prueba lleva la ficha sin comprimir (154,888 bytes), con los mismos triángulos |
 
 ## 7. Exportar para la web
@@ -164,3 +164,31 @@ Lo que la app muestra como imagen fija sale de Blender con la receta de los cuad
 - Se renderiza a 960 px y se reduce con `assets3d/herramientas/iconos_juego.py`: Lanczos y cuantización a 256 colores con libimagequant, que respeta la transparencia de la sombra.
 - Sin texto en las imágenes: la leyenda impresa de las cartas de los cuadros se quita en las de juego (`carta_as_*_sin_leyenda` en el .blend). Los números de la rueda y el índice "A" de las cartas son parte del objeto y se quedan **si el dueño lo aprueba** con la hoja de prueba; si no, se quitan igual.
 - **Lima y bermellón no se usan como color de un objeto de juego** (sección 3). Los dados son papel y oro.
+
+## 12. Animación de los juegos
+
+El servidor decide el resultado y la animación se calcula para caer en él (§9, D8). Cada juego tiene su objeto sobre la
+mesa del club y una animación coreografiada, no simulada. La tabla de estilos por juego está en el documento
+"Clique: un casino que no es casino", del dueño.
+
+**Reglas de la casa:**
+- Una cámara por juego, quieta o con un acercamiento lento.
+- De 1.2 a 3 segundos por jugada; la ruleta y la rueda, hasta 4.5.
+- Ganar: luz lima y destello de latón. Perder: el bermellón que se apaga.
+- Con `prefers-reduced-motion: reduce`, el resultado aparece sin animación.
+- Las cuentas de cada animación viven en un módulo puro, sin three.js ni DOM, con su prueba: E5 lo lleva a la app tal cual.
+
+**Ruleta, el primer juego animado:**
+
+| Pieza | Archivo | Lo medido |
+| --- | --- | --- |
+| Modelo | `static/3d/ruleta.glb` (nodos `RIG-ruleta`, `RIG-ruleta_rotor` y `GEO-ruleta_bola`) | 121,632 bytes (66 KB con gzip), 11,908 triángulos, anillo de números en WebP de 1024 × 90 |
+| Respaldo 2D | `static/3d/ruleta-madera-2d.webp` | 512 × 512, fondo transparente |
+| Exportación cruda | `assets3d/juegos/ruleta-exportada.glb`, con `assets3d/herramientas/exportar_ruleta.py` | Igual byte por byte en cada exportación |
+| Cuentas | `docs/arte/ruleta-animacion.mjs` (`planSpin`) | `docs/arte/ruleta-animacion.test.mjs`: los 37 números, con tres marcadores y tres giros de partida, sin saltos de la bola |
+| Prototipo | `docs/arte/prueba-ruleta.html` | Elige un número y lo comprueba en pantalla: "El servidor dijo 17 · cayó en 17" |
+
+- **La tirada:** el marcador φ es -π/2, hacia el jugador. El rotor frena con una curva cúbica hasta θ = φ + 2π(k + 0.5)/37 más al menos una vuelta.
+- **La bola:** corre en la pista contra el rotor y baja entre el 55 % y el 80 % del tiempo, con un rebote en los rombos y otro en la pared de la casilla. Desde el 80 % viaja con el rotor dentro de su casilla. Su ángulo de partida se calcula para que llegue sin saltos.
+- **Materiales en la web:** la madera va con el color de su rampa al 60 % y el latón con una rugosidad de 0.34, porque el glTF no lleva nodos procedurales. Hornear la veta de la madera queda pendiente.
+- **Presupuesto:** 11,908 triángulos pasan del tope de 8 mil para un modelo suelto (§6). En la escena caben de sobra (≤ 50 mil). Queda como pregunta para el dueño: aceptar la excepción para los modelos de mesa, o simplificar más (con `--simplificar 0.0008` quedan 10,232).
