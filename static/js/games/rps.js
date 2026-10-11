@@ -6,7 +6,7 @@ import { betPanel } from './betpanel.js';
 import { deduct, burst, resultPop, shake, fmtX } from './common.js';
 import { money, sleep, esc } from '../util.js';
 import { toast } from '../ui.js';
-import { t } from '../i18n.js';
+import { t, intlLocale } from '../i18n.js';
 
 const STROKE = 'stroke="#0E0C0A" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"';
 const ICONS = {
@@ -56,7 +56,7 @@ export default async function mount(host, ctx = {}) {
   const pickBox = (el, move, cls = '') => { el.className = `rp-pick ${cls}`; el.innerHTML = move ? ICONS[move] : '<span class="q">?</span>'; };
   const drawLadder = () => {
     const wins = game ? game.wins : 0;
-    $('#ladder').innerHTML = LADDER.map((m, i) => `<span class="rp-rung ${i < wins ? 'done' : i === wins && game ? 'next' : ''}"><small>${i + 1}</small><b class="num">${m.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}x</b></span>`).join('');
+    $('#ladder').innerHTML = LADDER.map((m, i) => `<span class="rp-rung ${i < wins ? 'done' : i === wins && game ? 'next' : ''}"><small>${i + 1}</small><b class="num">${m.toLocaleString(intlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}x</b></span>`).join('');
   };
   function setUi() {
     const active = !!game;

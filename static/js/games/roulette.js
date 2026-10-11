@@ -185,7 +185,7 @@ export default async function mount(host, ctx = {}) {
       hist.unshift(res.number); drawHist();
       table.querySelector(`[data-bet="straight:${res.number}"]`)?.classList.add('win');
       res.wins.forEach((w) => table.querySelector(`[data-bet="${w.type}${w.value !== null && w.value !== undefined && ['straight', 'dozen', 'column'].includes(w.type) ? ':' + w.value : ''}"]`)?.classList.add('win'));
-      $('#payout').value = res.payout.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      $('#payout').value = res.payout.toLocaleString(intlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       $('#payx').textContent = (res.total ? res.payout / res.total : 0).toFixed(2) + 'x';
       const net = Math.round((res.payout - res.total) * 100) / 100;
       resultPop({ net, label: `${res.number} ${COLOR[res.color] ? t(COLOR[res.color]) : res.color}`, detail: res.payout > 0 ? t('Pagó {cantidad}', { cantidad: money(res.payout) }) : '', bet: res.total });

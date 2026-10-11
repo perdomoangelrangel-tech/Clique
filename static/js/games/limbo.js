@@ -38,7 +38,7 @@ export default async function mount(host, ctx = {}) {
   const fmtChance = (c) => (c >= 10 ? c.toFixed(2) : c >= 1 ? c.toFixed(3) : c.toFixed(5)).replace(/\.?0+$/, '');
   const updatePayout = () => {
     const a = bp.value();
-    payout.value = Number.isFinite(a) ? (a * target).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+    payout.value = Number.isFinite(a) ? (a * target).toLocaleString(intlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
     $('#payx').textContent = fmtX(target);
     go.disabled = busy || !bp.valid();
   };
@@ -123,7 +123,7 @@ export default async function mount(host, ctx = {}) {
   requestAnimationFrame(frame);
 
   const hist = [];
-  const drawHist = () => { $('#hist').innerHTML = hist.slice(0, 9).map((h) => `<span class="${h.win ? 'w' : 'l'}">${h.r.toLocaleString(undefined, { minimumFractionDigits: 2 })}x</span>`).join(''); };
+  const drawHist = () => { $('#hist').innerHTML = hist.slice(0, 9).map((h) => `<span class="${h.win ? 'w' : 'l'}">${h.r.toLocaleString(intlLocale(), { minimumFractionDigits: 2 })}x</span>`).join(''); };
 
   function animate(res) {
     return new Promise((resolve) => {

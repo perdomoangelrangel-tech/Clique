@@ -4,7 +4,7 @@ import { betPanel } from './betpanel.js';
 import { deduct, burst, resultPop, shake } from './common.js';
 import { money, sleep, ICON, esc } from '../util.js';
 import { tween, toast } from '../ui.js';
-import { t, CHIP_SIGN } from '../i18n.js';
+import { t, CHIP_SIGN, intlLocale } from '../i18n.js';
 
 const WIN_COLORS = ['#C6F432', '#EFE6D2', '#FF4B2B'];
 const MAX_COUNT = 9800;                       // 98.00% is the most likely bet allowed
@@ -100,7 +100,7 @@ export default async function mount(host, ctx = {}) {
     $('#f-dir').textContent = dir === 'over' ? t('Arriba de') : t('Abajo de');
     $('#payx').textContent = fmtMult(m) + 'x';
     const a = bp.value();
-    $('#payout').value = Number.isFinite(a) ? (a * m).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+    $('#payout').value = Number.isFinite(a) ? (a * m).toLocaleString(intlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
     go.textContent = dir === 'over' ? t('Tirar arriba de {n}', { n: p.toFixed(2) }) : t('Tirar abajo de {n}', { n: p.toFixed(2) });
     go.disabled = busy || !bp.valid();
   }

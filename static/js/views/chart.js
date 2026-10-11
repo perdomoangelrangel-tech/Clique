@@ -1,13 +1,14 @@
 import { esc, pct } from '../util.js';
+import { intlLocale } from '../i18n.js';
 
 export const RANGES = { '1H': 3600e3, '6H': 6 * 3600e3, '1D': 86400e3, '1W': 7 * 86400e3, '1M': 30 * 86400e3, ALL: Infinity };
 export const COLORS = ['#C6F432', '#FF4B2B', '#EFE6D2', '#CFC3A8', '#2F6B47', '#A09482', '#F2EADB', '#8A2210'];
 
 const fmtTick = (t, span) => {
   const d = new Date(t);
-  if (span <= 15 * 60e3) return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' });
-  if (span <= 86400e3 * 1.5) return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  if (span <= 15 * 60e3) return d.toLocaleTimeString(intlLocale(), { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+  if (span <= 86400e3 * 1.5) return d.toLocaleTimeString(intlLocale(), { hour: 'numeric', minute: '2-digit' });
+  return d.toLocaleDateString(intlLocale(), { month: 'short', day: 'numeric' });
 };
 
 /** Step-line price chart with hover tooltip. series = [{idx, name, color}] */
@@ -61,7 +62,7 @@ export function drawChart(host, history, series, range, endTime, opts = {}) {
       c.setAttribute('x', px - 5.5); c.setAttribute('y', y(v) - 5.5); c.style.display = '';
       rows += `<div style="display:flex;gap:8px;align-items:center"><i style="width:9px;height:9px;background:${l.color};border:1.5px solid #0E0C0A;display:inline-block"></i>${esc(l.name)} <b>${pct(v)}</b></div>`;
     });
-    tip.innerHTML = `<div class="muted" style="margin-bottom:3px">${new Date(t).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>${rows}`;
+    tip.innerHTML = `<div class="muted" style="margin-bottom:3px">${new Date(t).toLocaleString(intlLocale(), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>${rows}`;
     tip.classList.remove('hidden');
     tip.style.left = Math.max(60, Math.min(W - PR - 60, px)) + 'px';
     tip.style.top = (y(valueAt(lines[0], t)) - 4) + 'px';
