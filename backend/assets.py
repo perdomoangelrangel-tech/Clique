@@ -10,6 +10,7 @@ import gzip
 import hashlib
 import mimetypes
 import os
+import posixpath
 import re
 import threading
 
@@ -63,8 +64,8 @@ def _local_imports(url_path):
     out = []
     for a, b in _IMPORT.findall(src):
         spec = a or b
-        if spec.startswith("."):
-            out.append(os.path.normpath(os.path.join(os.path.dirname(url_path), spec)))
+        if spec.startswith("."):           # URL paths always use "/", whatever the computer (os.path gives "\" on Windows)
+            out.append(posixpath.normpath(posixpath.join(posixpath.dirname(url_path), spec)))
     return out
 
 

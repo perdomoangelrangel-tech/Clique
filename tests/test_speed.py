@@ -3,6 +3,7 @@ import gzip
 import http.client
 import json
 import os
+import posixpath
 import re
 import sys
 import tempfile
@@ -119,7 +120,7 @@ class FilesAreServedFast(unittest.TestCase):
         for p in links:
             src = slurp(os.path.join(config.STATIC_DIR, p.lstrip("/")), "r")
             for spec in re.findall(r"(?:import|export)\s[^'\";]*?from\s*['\"](\.[^'\"]+)['\"]", src):
-                self.assertIn(os.path.normpath(os.path.join(os.path.dirname(p), spec)), seen, f"{p} imports {spec}")
+                self.assertIn(posixpath.normpath(posixpath.join(posixpath.dirname(p), spec)), seen, f"{p} imports {spec}")
 
     def test_unknown_paths_still_get_the_page_and_cannot_escape_the_folder(self):
         r, raw = fetch(self.port, "/circles/abc")

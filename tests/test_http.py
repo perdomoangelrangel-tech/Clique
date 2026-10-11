@@ -104,6 +104,29 @@ class HttpFlow(unittest.TestCase):
         conn.request("POST", "/api/circles", "name=x", {"Content-Type": "application/x-www-form-urlencoded", "Cookie": a.cookie})
         self.assertEqual(conn.getresponse().status, 415)
 
+    def test_a_refused_body_is_read_so_the_connection_keeps_working(self):
+        # Rejecting without reading the body made Windows reset the connection before the answer arrived.
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
+        conn.request("POST", "/api/circles", "x" * 50_000, {"Content-Type": "text/plain"})
+        r = conn.getresponse()
+        self.assertEqual((r.status, r.getheader("Connection")), (415, None))
+        r.read()
+        conn.request("GET", "/api/me")                                  # the same connection, still usable
+        self.assertEqual(conn.getresponse().status, 200)
+        conn.close()
+
+    def test_a_refused_body_too_big_to_read_ends_the_connection(self):
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
+        old = server.DRAIN_LIMIT
+        server.DRAIN_LIMIT = 10
+        try:
+            conn.request("POST", "/api/circles", "x" * 5_000, {"Content-Type": "text/plain"})
+            r = conn.getresponse()
+            self.assertEqual((r.status, r.getheader("Connection")), (415, "close"))
+        finally:
+            server.DRAIN_LIMIT = old
+            conn.close()
+
     def test_live_updates_only_reach_members(self):
         owner, member, stranger = Client(self.port), Client(self.port), Client(self.port)
         for c, n in ((owner, "dora"), (member, "eddy"), (stranger, "fred")):

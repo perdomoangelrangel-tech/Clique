@@ -120,6 +120,7 @@ def demo_json(acct):
 
 
 RAW_UPLOADS = {("POST", "/api/profile/avatar")}
+DRAIN_LIMIT = 32_000_000          # a refused body bigger than this is not read: the connection is closed instead
 
 _REASONS = ((re.compile(r"^/api/games/(\w+)"), "casino."), (re.compile(r"^/api/poker"), "poker"),
             (re.compile(r"^/api/markets"), "market"), (re.compile(r"^/api/wallet/voucher"), "voucher"),
@@ -1224,6 +1225,24 @@ class Handler(BaseHTTPRequestHandler):
             h["Vary"] = "Accept-Encoding"
         self._send(status, body, headers=h)
 
+    def _drain(self, length):
+        """Read and throw away the body of a refused request. True if all of it arrived."""
+        if length > DRAIN_LIMIT:
+            return False
+        before = self.connection.gettimeout()
+        self.connection.settimeout(5)
+        try:
+            while length > 0:
+                chunk = self.rfile.read(min(length, 65536))
+                if not chunk:
+                    return False
+                length -= len(chunk)
+            return True
+        except OSError:
+            return False
+        finally:
+            self.connection.settimeout(before)
+
     def _accepts_gzip(self):
         return "gzip" in (self.headers.get("Accept-Encoding") or "").lower()
 
@@ -1260,6 +1279,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(404, {"error": "Not found"})
         fn, groups, needs_auth, mutates = match
         unread = False
+        length = 0
         ticket = None
         try:
             body = {}
@@ -1324,8 +1344,10 @@ class Handler(BaseHTTPRequestHandler):
                     store.commit(ticket)
                 except Exception:
                     traceback.print_exc()
-            if unread:                                          # refused before the body was read: the leftover bytes would
-                self.close_connection = True                    # be mistaken for the next request, so end this connection
+            if unread and self._drain(length):                  # refused before the body was read: read it now, or Windows resets
+                unread = False                                  # the connection and the answer is lost before the client reads it
+            if unread:                                          # too big to read (or the client stopped sending): the leftover bytes
+                self.close_connection = True                    # would be mistaken for the next request, so end this connection
             self._json(e.status, {"error": e.message, **(e.data or {})}, {"Connection": "close"} if unread else None)
         except (BrokenPipeError, ConnectionResetError):
             pass
