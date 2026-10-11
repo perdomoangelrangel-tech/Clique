@@ -8,7 +8,8 @@
 Both write a copy of the old database to <data folder>/backups first (Store.load does that)."""
 import os
 
-from . import config
+from . import config, ledger
+from .store import store
 from .util import now_ms, round2
 
 _SHARED = ("markets", "snapshots", "games", "poker")      # poker tables go too: balances are reset anyway
@@ -20,8 +21,15 @@ def new_season(data):
     for key in _SHARED:
         data[key] = {}
     data["feed"] = []
+    saved, store.data = store.data, data                    # the ledger writes into the database being reset, whichever it is
+    try:
+        for user in data["users"].values():                 # through the ledger, as money from outside the game (D2)
+            change = balance - ledger.balance(user, "weekly")
+            if change:
+                ledger.post(user, "weekly", change, "season.reset", external=True, note="New season")
+    finally:
+        store.data = saved
     for user in data["users"].values():
-        user["balance"] = balance
         user["stats"], user["history"] = {}, []
         user["activity"] = [{"t": now_ms(), "kind": "start", "amount": balance, "text": "New season"}]
         for perk in ("voucher", "passGo", "demo"):        # a new season starts with a fresh voucher and practice wallet

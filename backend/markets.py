@@ -497,7 +497,7 @@ def resolve(user, m, winner):
         for token, pos in toks.items():
             i, side = int(token[1:]), token[0]
             wins = (i == w) if side == "y" else (i != w)
-            payout = round2(pos["shares"]) if wins else 0.0
+            payout = lmsr.floor_cents(pos["shares"]) if wins else 0.0          # paid out: rounded down, like every sale
             pos["settled"], pos["payout"] = True, payout
             pnl = payout - pos["invested"]
             users.stat_add(u, "marketPnl", pnl)

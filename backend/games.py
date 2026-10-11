@@ -1,6 +1,7 @@
 """Casino games. The server does all the dealing and rolling (with a secure random source)
 and all the money movement, so nobody can cheat from their browser."""
 import math
+from decimal import Decimal
 
 from . import activity, config, ledger, users
 from .store import db
@@ -59,6 +60,12 @@ def demo_reset(user):
     return d
 
 
+def pay(amount, mult):
+    """What a stake of `amount` returns at multiplier `mult`, rounded DOWN to the cent, worked out exactly (no float noise).
+    A payout never rounds in the player's favour: rounding half up made some small stakes return more than 100%."""
+    return math.floor(Decimal(repr(amount)) * Decimal(repr(mult)) * 100) / 100
+
+
 def _bet(user, value, field="Bet"):
     amount = round2(parse_money(value, field))
     if amount < config.MIN_BET - 1e-9:
@@ -115,7 +122,7 @@ def limbo(user, body):
     result_c = limbo_roll_c()
     win = result_c >= target_c
     target = target_c / 100
-    payout = round2(amount * target) if win else 0.0
+    payout = pay(amount, target) if win else 0.0
     if win:
         users.credit(user, payout)
         users.stat_max(user, "limboBest", target)
@@ -268,13 +275,13 @@ def _bj_finish(user, st):
     for h in st["hands"]:
         total = hand_value(h["cards"])[0]
         if h.get("blackjack"):
-            h["result"], h["payout"] = ("push", h["bet"]) if dealer_bj else ("blackjack", round2(h["bet"] * 2.5))
+            h["result"], h["payout"] = ("push", h["bet"]) if dealer_bj else ("blackjack", pay(h["bet"], 2.5))
         elif h["status"] == "bust":
             h["result"], h["payout"] = "bust", 0.0
         elif dealer_bj:
             h["result"], h["payout"] = "lose", 0.0
         elif d_total > 21 or total > d_total:
-            h["result"], h["payout"] = "win", round2(h["bet"] * 2)
+            h["result"], h["payout"] = "win", pay(h["bet"], 2)
         elif total == d_total:
             h["result"], h["payout"] = "push", h["bet"]
         else:
@@ -399,7 +406,7 @@ def _chicken_json(st, user, extra=None):
     d = st["difficulty"]
     out = {"id": st["id"], "bet": st["bet"], "difficulty": d, "step": st["step"],
            "lanes": CHICKEN[d]["lanes"], "mults": chicken_table(d), "status": st["status"],
-           "mult": chicken_mult(d, st["step"]), "payoutNow": round2(st["bet"] * chicken_mult(d, st["step"])),
+           "mult": chicken_mult(d, st["step"]), "payoutNow": pay(st["bet"], chicken_mult(d, st["step"])),
            "balance": user["balance"], "chance": CHICKEN[d]["p"]}
     if extra:
         out.update(extra)
@@ -426,7 +433,7 @@ def chicken_start(user, body):
 
 
 def _chicken_cash(user, st, auto=False):
-    payout = round2(st["bet"] * chicken_mult(st["difficulty"], st["step"]))
+    payout = pay(st["bet"], chicken_mult(st["difficulty"], st["step"]))
     users.credit(user, payout)
     mult = chicken_mult(st["difficulty"], st["step"])
     users.stat_max(user, "chickenBest", mult)
@@ -495,7 +502,7 @@ def coinflip(user, body):
             break
     win = len(results) == flips and all(r == side for r in results)
     mult = coin_mult(flips)
-    payout = round2(amount * mult) if win else 0.0
+    payout = pay(amount, mult) if win else 0.0
     if win:
         users.credit(user, payout)
     _record(user, "coinflip", amount, payout, mult if win else None,
@@ -530,7 +537,7 @@ def dice(user, body):
     users.debit(user, amount)
     roll_c = rand_below(10000)
     win = roll_c >= target_c if direction == "over" else roll_c < target_c
-    payout = round2(amount * mult) if win else 0.0
+    payout = pay(amount, mult) if win else 0.0
     if win:
         users.credit(user, payout)
     _record(user, "dice", amount, payout, mult if win else None,
@@ -578,20 +585,20 @@ def war(user, body):
 
     wagered, payout, war_round = total, 0.0, None
     if WAR_RANK[player["r"]] > WAR_RANK[dealer["r"]]:
-        outcome, payout = "win", round2(main * 2)
+        outcome, payout = "win", pay(main, 2)
     elif not tie:
         outcome = "lose"
     elif user["balance"] + 1e-9 < main:
-        outcome, payout = "surrender", round2(main / 2)
+        outcome, payout = "surrender", pay(main, 0.5)
     else:
         users.debit(user, main)
         wagered = round2(wagered + main)
         p2, d2 = shoe.pop(), shoe.pop()
         won = WAR_RANK[p2["r"]] >= WAR_RANK[d2["r"]]
         war_round = {"player": p2, "dealer": d2, "raise": main, "win": won}
-        outcome, payout = ("warwin", round2(main * 3)) if won else ("warlose", 0.0)
-    tie_payout = round2(tie_bet * (WAR_TIE_PAYS + 1)) if tie and tie_bet else 0.0
-    colour_payout = round2(colour_bet * (WAR_COLOUR_TIE_PAYS + 1)) if colour_tie and colour_bet else 0.0
+        outcome, payout = ("warwin", pay(main, 3)) if won else ("warlose", 0.0)
+    tie_payout = pay(tie_bet, WAR_TIE_PAYS + 1) if tie and tie_bet else 0.0
+    colour_payout = pay(colour_bet, WAR_COLOUR_TIE_PAYS + 1) if colour_tie and colour_bet else 0.0
     total_payout = round2(payout + tie_payout + colour_payout)
     if total_payout:
         users.credit(user, total_payout)
@@ -635,7 +642,7 @@ def _mines_json(st, user, extra=None):
     out = {"game": "mines", "id": st["id"], "bet": st["bet"], "size": st["size"], "mines": st["mines"],
            "picked": st["picked"], "status": st["status"], "mult": mines_mult(st["size"], st["mines"], k),
            "nextMult": mines_mult(st["size"], st["mines"], k + 1) if k < safe else None,
-           "payoutNow": round2(st["bet"] * mines_mult(st["size"], st["mines"], k)), "balance": user["balance"]}
+           "payoutNow": pay(st["bet"], mines_mult(st["size"], st["mines"], k)), "balance": user["balance"]}
     if st["status"] != "active":
         out["mineIndices"] = sorted(st["board"])
     if extra:
@@ -665,7 +672,7 @@ def mines_start(user, body):
 def _mines_cash(user, st):
     k = len(st["picked"])
     mult = mines_mult(st["size"], st["mines"], k)
-    payout = round2(st["bet"] * mult)
+    payout = pay(st["bet"], mult)
     users.credit(user, payout)
     _record(user, "mines", st["bet"], payout, mult, f"{st['mines']} mines in {st['size']}, {k} safe")
     _games(user).pop("mines", None)
@@ -743,7 +750,7 @@ def _moles_json(st, user, extra=None):
     out = {"game": "moles", "id": st["id"], "bet": st["bet"], "moles": st["moles"], "hits": st["hits"],
            "status": st["status"], "mult": moles_mult(st["moles"], st["hits"]),
            "nextMult": moles_mult(st["moles"], st["hits"] + 1) if st["hits"] < cap else None,
-           "payoutNow": round2(st["bet"] * moles_mult(st["moles"], st["hits"])), "holes": MOLES_HOLES,
+           "payoutNow": pay(st["bet"], moles_mult(st["moles"], st["hits"])), "holes": MOLES_HOLES,
            "chance": st["moles"] / MOLES_HOLES * 100, "balance": user["balance"]}
     if extra:
         out.update(extra)
@@ -770,7 +777,7 @@ def moles_start(user, body):
 
 def _moles_cash(user, st):
     mult = moles_mult(st["moles"], st["hits"])
-    payout = round2(st["bet"] * mult)
+    payout = pay(st["bet"], mult)
     users.credit(user, payout)
     _record(user, "moles", st["bet"], payout, mult, f"{st['moles']} moles, {st['hits']} hits")
     _games(user).pop("moles", None)
@@ -836,7 +843,7 @@ def _tower_json(st, user, extra=None):
            "traps": st["traps"], "rows": TOWER_ROWS, "picks": st["picks"], "step": len(st["picks"]),
            "status": st["status"], "mult": tower_mult(st["risk"], len(st["picks"])),
            "nextMult": tower_mult(st["risk"], len(st["picks"]) + 1) if len(st["picks"]) < TOWER_ROWS else None,
-           "payoutNow": round2(st["bet"] * tower_mult(st["risk"], len(st["picks"]))), "balance": user["balance"]}
+           "payoutNow": pay(st["bet"], tower_mult(st["risk"], len(st["picks"]))), "balance": user["balance"]}
     if st["status"] != "active":
         out["layout"] = st["layout"]
     if extra:
@@ -869,7 +876,7 @@ def tower_start(user, body):
 def _tower_cash(user, st):
     k = len(st["picks"])
     mult = tower_mult(st["risk"], k)
-    payout = round2(st["bet"] * mult)
+    payout = pay(st["bet"], mult)
     users.credit(user, payout)
     _record(user, "tower", st["bet"], payout, mult, f"{st['risk']}, {k} rows")
     _games(user).pop("tower", None)

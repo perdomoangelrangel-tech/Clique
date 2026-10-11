@@ -48,10 +48,7 @@ EXCEPCIONES = {
 }
 
 # Escrituras que SÍ mueven dinero fuera del libro y todavía no se corrigen. Esta lista solo puede encogerse.
-PENDIENTES = {
-    ("backend/seed.py", "new_season", "user['balance'] = balance"):
-        "D3 del contrato: el reinicio de temporada; se corrige en el entregable 5",
-}
+PENDIENTES = {}
 
 
 def app_files():

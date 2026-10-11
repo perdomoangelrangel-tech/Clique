@@ -551,7 +551,7 @@ class Settlement(Base):
         left = self.m["positions"][self.bob["id"]]["y0"]["shares"]
         before = self.bob["balance"]
         markets.resolve(self.ann, self.m, 0)
-        self.assertEqual(round(self.bob["balance"] - before, 2), round(left, 2))
+        self.assertEqual(round(self.bob["balance"] - before, 2), lmsr.floor_cents(left))      # paid out rounded down (D2 of reglas-economia.md)
 
     def test_calling_it_off_refunds_what_is_still_invested(self):
         r = buy(self.bob, self.m, 0, 100)

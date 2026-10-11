@@ -394,7 +394,7 @@ def _buy_in(table, user, seat, amount):
     cash = amount / 100
     if cash > user["balance"] + 1e-9:
         raise bad(f"You need ${cash:,.2f} in cash to buy in", code="insufficient_funds")
-    users.debit(user, cash)
+    users.debit(user, cash, "poker")
     users.log(user, "poker", -cash, f"Poker buy-in: {table['name']}")
     seat["stack"] += amount
     seat["bought"] += amount
@@ -408,7 +408,7 @@ def _cash_out(table, seat):
     cash = seat["stack"] / 100
     bought = seat["bought"] / 100
     if cash:
-        users.credit(user, cash)
+        users.credit(user, cash, "poker")
     users.log(user, "poker", cash, f"Poker cash-out: {table['name']}")
     profit = round2(cash - bought)
     users.stat_add(user, "gameWagered", bought)

@@ -56,7 +56,7 @@ números que se puedan rastrear) y E7 (para verificar).
 | **`external`**: dinero que llega de fuera del juego. En la semanal se suma a `wk.ext_c`, que se resta del rendimiento de la semana. | `backend/ledger.py:114-118` | `test_ledger.py::TwoAccounts.test_external_money_is_marked_and_kept_out_of_this_weeks_performance` |
 | Se guardan completos los últimos `LEDGER_KEEP` = 400 renglones por persona (se compacta al pasar de 450); los viejos se suman por semana, cuenta y razón. | `backend/economy.py:111`, `backend/ledger.py:75-84` | `test_ledger.py::TwoAccounts.test_old_rows_are_folded_into_weekly_totals_and_the_books_still_balance` |
 | **Auditoría:** renglones + resúmenes = saldo, en las dos cuentas (diferencia 0). | `backend/ledger.py:131-139` | `test_ledger.py::TwoAccounts.test_random_activity_always_adds_up` y casi todas las pruebas de dinero |
-| La **cartera de práctica** (demo, $1,000) no es una cuenta: no tiene libro, no cuenta para nada. | `backend/games.py:21-31`, `backend/users.py:202-204`, `backend/users.py:215-219` | `test_ledger.py::TwoAccounts.test_the_practice_wallet_never_touches_the_ledger`, `test_perks.py::Demo.*` |
+| La **cartera de práctica** (demo, $1,000) no es una cuenta: no tiene libro, no cuenta para nada. | `backend/games.py:22-32`, `backend/users.py:202-204`, `backend/users.py:215-219` | `test_ledger.py::TwoAccounts.test_the_practice_wallet_never_touches_the_ledger`, `test_perks.py::Demo.*` |
 
 ### 1.5 La migración a dos cuentas (archivo de E2)
 
@@ -104,7 +104,7 @@ números que se puedan rastrear) y E7 (para verificar).
 | Regla | Dónde | Prueba |
 |---|---|---|
 | Una semana va del **lunes 00:00 al lunes siguiente 00:00**, hora de `WEEK_TIMEZONE` (por omisión `America/Mexico_City`; sin base de zonas, UTC−6 fijo). Las fronteras se cuentan por calendario, no sumando horas. Una zona desconocida detiene el arranque. | `backend/config.py:64-71`, `backend/util.py:12-35`, `backend/util.py:107-162` | `test_timezone.py::WeekBoundaries.*`, `ChoosingTheZone.*` |
-| **Lo que tienes** = efectivo semanal + valor de venta de las apuestas abiertas + apuestas en rondas de casino sin terminar + dinero real en una mesa de póker − **lo que debes de un préstamo**. | `backend/markets.py:542-562`, `backend/games.py:222-230`, `backend/poker.py:216-231` | `test_weekly_rewards.py::Leaderboard.test_open_bets_and_unfinished_rounds_count_as_money_you_hold`, `test_loans.py::Disbursement.test_borrowing_does_not_change_what_you_hold_or_how_the_week_went` |
+| **Lo que tienes** = efectivo semanal + valor de venta de las apuestas abiertas + apuestas en rondas de casino sin terminar + dinero real en una mesa de póker − **lo que debes de un préstamo**. | `backend/markets.py:542-562`, `backend/games.py:229-237`, `backend/poker.py:216-231` | `test_weekly_rewards.py::Leaderboard.test_open_bets_and_unfinished_rounds_count_as_money_you_hold`, `test_loans.py::Disbursement.test_borrowing_does_not_change_what_you_hold_or_how_the_week_went` |
 | **Rendimiento** = lo que tienes ahora − lo que tenías al empezar la semana − lo que te dieron de fuera (`external`). La acumulada, la tienda y la bolsa no cuentan. | `backend/weekly.py:73-78`, `backend/weekly.py:139` | `test_weekly_rewards.py::Leaderboard.test_performance_is_what_you_hold_minus_where_you_started_minus_handouts`, `test_the_accumulated_account_and_what_you_spend_there_do_not_count` |
 | Orden de la tabla del círculo: (0) quien no cumplió el mínimo al cierre va al final; 1. mayor rendimiento; 2. más tenencia; 3. cuenta más antigua; 4. id. | `backend/weekly.py:142` | `test_weekly_rewards.py::Leaderboard.test_order_and_tie_breakers_are_fixed`, `test_a_tie_on_performance_goes_to_whoever_holds_more_then_the_older_account` |
 | **Activo** en la semana: al menos `REWARD_MIN_MOVES` = 1 apuesta en mercado o ronda de casino con la cuenta semanal (las rondas con la acumulada no cuentan). | `backend/economy.py:75`, `backend/weekly.py:81-83`, `backend/weekly.py:140` | `test_weekly_rewards.py::Rewards.test_a_week_of_doing_nothing_earns_no_place_and_no_reward` |
@@ -127,7 +127,7 @@ números que se puedan rastrear) y E7 (para verificar).
 | Regla | Dónde | Prueba |
 |---|---|---|
 | Para seguir en la competencia: **≥ 1 apuesta en un mercado** (`WEEKLY_MIN_POLL_BETS`) y **≥ 25 rondas de casino** (`WEEKLY_MIN_CASINO_BETS`) en la semana, con dinero real de la cuenta semanal. Una sesión de póker con dinero real cuenta como una ronda. Ambos en 0 apagan la regla. | `backend/economy.py:106-107`, `backend/weekly.py:101-114`, `backend/poker.py:414-416` | `test_weekly_minimum.py::Counting.test_the_defaults_are_one_poll_and_twenty_five_casino_bets`, `test_both_have_to_be_met_and_the_edge_is_exactly_the_minimum` |
-| Vender no suma otra apuesta; la práctica no cuenta; la ronda cuenta cuando termina. | `backend/markets.py:441` (solo al comprar), `backend/games.py:78-83` | `test_weekly_minimum.py::Counting.test_a_real_poll_purchase_counts_and_selling_it_does_not_add_another`, `test_practice_rounds_do_not_count` |
+| Vender no suma otra apuesta; la práctica no cuenta; la ronda cuenta cuando termina. | `backend/markets.py:441` (solo al comprar), `backend/games.py:85-90` | `test_weekly_minimum.py::Counting.test_a_real_poll_purchase_counts_and_selling_it_does_not_add_another`, `test_practice_rounds_do_not_count` |
 | Cuenta creada durante la semana: exenta esa primera semana. | `backend/weekly.py:109` | `test_weekly_minimum.py::Counting.test_an_account_made_this_week_is_exempt_for_its_first_week` |
 | Empieza con la semana siguiente a la primera en que corrió este código (`meta.requirements_from`). | `backend/weekly.py:97-110`, `backend/weekly.py:664-666` | `test_weekly_minimum.py::Counting.test_the_first_tick_starts_it_with_next_week_so_there_is_a_weeks_notice` |
 | Al cierre, quien no cumplió **pierde la semana**: va al final, no cobra, recibe el castigo (todos los que no cumplieron) y el premio "Hot Seat" con el texto "Missed the weekly minimum". Si todos cumplieron, decide la peor semana. | `backend/weekly.py:129-160`, `backend/weekly.py:374-377`, `backend/weekly.py:580-584` | `test_weekly_minimum.py::AtTheEndOfTheWeek.*` |
@@ -252,15 +252,15 @@ Reglas comunes:
 | Regla | Dónde | Prueba |
 |---|---|---|
 | El servidor reparte y tira con una fuente segura (`secrets`). El navegador nunca decide (D8). | `backend/util.py:63-76` | `test_casino_three.py::HiLoRounds.test_the_random_source_is_the_secure_one`, `test_roulette_odds.py::TheRealRandomSourceIsFair.*` |
-| Apuesta mínima `MIN_BET` = $0.10, redondeada a centavos; no más de lo que tiene la cuenta elegida. | `backend/config.py:55`, `backend/games.py:62-68` | `test_new_games.py::War.test_funds_and_minimums` |
-| La apuesta se cobra **antes** de jugar (`users.debit`) y el pago se abona al terminar (`users.credit`). Una ronda de varios pasos guarda su apuesta como "en juego" (`escrow`), que cuenta como dinero de quien juega. | `backend/games.py:222-230` | `test_casino_three.py::HiLoRounds.test_the_stake_in_play_counts_as_the_players_money` |
-| Una ronda de cada juego a la vez por cuenta. | p. ej. `backend/games.py:415-417` | `test_casino_three.py::HiLoRounds.test_one_round_at_a_time_and_the_stake_is_taken_once` |
+| Apuesta mínima `MIN_BET` = $0.10, redondeada a centavos; no más de lo que tiene la cuenta elegida. | `backend/config.py:55`, `backend/games.py:69-75` | `test_new_games.py::War.test_funds_and_minimums` |
+| La apuesta se cobra **antes** de jugar (`users.debit`) y el pago se abona al terminar (`users.credit`). Una ronda de varios pasos guarda su apuesta como "en juego" (`escrow`), que cuenta como dinero de quien juega. | `backend/games.py:229-237` | `test_casino_three.py::HiLoRounds.test_the_stake_in_play_counts_as_the_players_money` |
+| Una ronda de cada juego a la vez por cuenta. | p. ej. `backend/games.py:422-424` | `test_casino_three.py::HiLoRounds.test_one_round_at_a_time_and_the_stake_is_taken_once` |
 
 ### 12.1 Con la cuenta acumulada
 
 | Regla | Dónde | Prueba |
 |---|---|---|
-| `acct: "accumulated"` juega con la acumulada (una vista sobre la cuenta real: todo pasa por el libro). Sus rondas, historial y estadísticas van aparte (`accGame`): no cuentan para la semana ni para el mínimo, sí para XP, retos e hitos. | `backend/games.py:34-52`, `backend/users.py:205-209`, `backend/users.py:220-224` | `test_casino_accounts.py::*` |
+| `acct: "accumulated"` juega con la acumulada (una vista sobre la cuenta real: todo pasa por el libro). Sus rondas, historial y estadísticas van aparte (`accGame`): no cuentan para la semana ni para el mínimo, sí para XP, retos e hitos. | `backend/games.py:35-53`, `backend/users.py:205-209`, `backend/users.py:220-224` | `test_casino_accounts.py::*` |
 
 ### 12.2 Cada juego
 
@@ -268,22 +268,24 @@ Reglas comunes:
 
 | Juego | Cómo paga | Retorno | Dónde | Prueba |
 |---|---|---|---|---|
-| **Limbo** | Resultado `max(1.00, ⌊0.99/u⌋)` hasta 1,000,000×. Gana si el resultado ≥ objetivo (1.01× a 1,000,000×); paga apuesta × objetivo. | 99 % | `backend/games.py:9`, `backend/games.py:11`, `backend/games.py:102-124` | `test_backend.py::Games.test_limbo_accounting` |
-| **Ruleta** | Europea, 37 casillas. Pleno 36×; rojo, negro, par, impar, bajo y alto 2×; docena y columna 3×; el 0 pierde todo lo de fuera. Hasta 120 fichas por tirada. | 36/37 = 97.30 % | `backend/games.py:13`, `backend/games.py:129-192` | `test_roulette_odds.py::TheMathIsExact.test_every_bet_returns_exactly_36_over_37` |
-| **Blackjack** | 6 barajas; el crupier se planta en 17 (también 17 suave); blackjack paga 3:2 (2.5× en total); doblar con las dos primeras cartas (también después de dividir); dividir una vez; ases divididos reciben una carta; el crupier revisa blackjack si muestra 10 o As; sin seguro ni rendición. | No lo calcula el código ni lo mide una prueba | `backend/games.py:197-376` | `test_backend.py::Games.test_blackjack_balance_is_conserved`, `test_blackjack_hand_values` |
-| **Chicken** | Fácil 92 %/24 carriles, medio 85 %/20, difícil 75 %/18, extremo 60 %/15; tras *k* carriles paga ⌊0.97/p^k⌋ (a centésimas de multiplicador). | 97 % | `backend/games.py:10`, `backend/games.py:381-395` | `test_backend.py::Games.test_chicken_multipliers_fair` |
-| **Coinflip** | Atinarle a 1 a 10 volados seguidos paga ⌊0.99 × 2^n⌋ (1.98×, 3.96×…). | 99 % | `backend/games.py:468-504` | `test_new_games.py::Coinflip.test_return_to_player_is_99_percent_for_every_streak_length` |
-| **Dice** | Tirada de 0.00 a 99.99; arriba o abajo de un objetivo, probabilidad de 0.01 % a 98 %; paga ⌊0.99/probabilidad⌋ a diezmilésimas. | 99 % | `backend/games.py:509-539` | `test_new_games.py::Dice.test_return_to_player_is_99_percent_at_every_chance` |
-| **War** | Una carta cada quien de 6 barajas, gana la más alta 1:1. Empate: guerra con una apuesta igual; gana si su carta es ≥ y cobra la apuesta original (la del aumento se devuelve); si no le alcanza para el aumento, se rinde y recupera la mitad. Apuesta lateral de empate 12:1 y de empate del mismo color 26:1. | Principal ≈ 97.12 %; empate ≈ 96.14 %; empate de color ≈ 95.50 % (cálculo exacto de E3, no lo mide una prueba) | `backend/games.py:544-603` | `test_new_games.py::War.*`, `Fairness.test_war_main_bet` |
-| **Mines** | Tablero de 25, 36, 49 o 64 con 1 a tamaño−1 minas; tras *k* casillas seguras paga ⌊0.99 / P(k seguras)⌋; se cobra solo al pasar de 1,000,000×. | 99 % | `backend/games.py:608-705` | `test_new_games.py::Mines.test_return_to_player_is_99_percent_everywhere` |
-| **Moles** | 7 hoyos, 1 a 6 topos; tras *k* aciertos paga ⌊0.96 × (7/topos)^k⌋, máximo 20 aciertos o 1,000,000×. | 96 % | `backend/games.py:710-809` | `test_new_games.py::Moles.test_return_to_player_is_96_percent` |
-| **Tower** | 8 filas; riesgo fácil 4 casillas/1 trampa, medio 3/1, difícil 2/1, experto 3/2, maestro 4/3; tras *k* filas paga ⌊0.96 / (seguras/casillas)^k⌋. | 96 % | `backend/games.py:814-908` | `test_new_games.py::Tower.test_return_to_player_is_96_percent` |
-| **Hi-Lo** | Adivinar si la siguiente carta (13 valores, independiente) es mayor o igual, o menor o igual; paga ⌊0.96 × 13/ganadoras⌋ y la racha se multiplica; no se ofrece la apuesta que no puede perder; hasta 52 saltos gratis; se cobra sola al llegar a 1,000,000×. Pago en centavos hacia abajo. | ≤ 96 % | `backend/games.py:934-1065` | `test_casino_three.py::HiLoMaths.test_every_guess_that_is_offered_returns_at_most_96_percent_and_the_clean_ones_exactly_96` |
-| **Wheel** | 50 segmentos iguales; tablas bajo, medio, alto y arriesgado (24× máximo). Pago en centavos hacia abajo. | 96 % exacto | `backend/games.py:1073-1113` | `test_casino_three.py::WheelMaths.test_every_risk_level_returns_exactly_96_percent` |
-| **Piedra, papel o tijera** | El empate se repite gratis; la escalera paga 0.98 × 2^n (1.96×, 3.92×…) hasta 10 victorias. Pago en centavos hacia abajo. | 98 % | `backend/games.py:1122-1203` | `test_casino_three.py::RpsMaths.test_every_rung_returns_98_percent_when_each_round_is_a_fair_coin` |
+| **Limbo** | Resultado `max(1.00, ⌊0.99/u⌋)` hasta 1,000,000×. Gana si el resultado ≥ objetivo (1.01× a 1,000,000×); paga apuesta × objetivo. | 99 % | `backend/games.py:10`, `backend/games.py:12`, `backend/games.py:109-131` | `test_backend.py::Games.test_limbo_accounting` |
+| **Ruleta** | Europea, 37 casillas. Pleno 36×; rojo, negro, par, impar, bajo y alto 2×; docena y columna 3×; el 0 pierde todo lo de fuera. Hasta 120 fichas por tirada. | 36/37 = 97.30 % | `backend/games.py:14`, `backend/games.py:136-199` | `test_roulette_odds.py::TheMathIsExact.test_every_bet_returns_exactly_36_over_37` |
+| **Blackjack** | 6 barajas; el crupier se planta en 17 (también 17 suave); blackjack paga 3:2 (2.5× en total); doblar con las dos primeras cartas (también después de dividir); dividir una vez; ases divididos reciben una carta; el crupier revisa blackjack si muestra 10 o As; sin seguro ni rendición. | No lo calcula el código ni lo mide una prueba | `backend/games.py:204-383` | `test_backend.py::Games.test_blackjack_balance_is_conserved`, `test_blackjack_hand_values` |
+| **Chicken** | Fácil 92 %/24 carriles, medio 85 %/20, difícil 75 %/18, extremo 60 %/15; tras *k* carriles paga ⌊0.97/p^k⌋ (a centésimas de multiplicador). | 97 % | `backend/games.py:11`, `backend/games.py:388-402` | `test_backend.py::Games.test_chicken_multipliers_fair` |
+| **Coinflip** | Atinarle a 1 a 10 volados seguidos paga ⌊0.99 × 2^n⌋ (1.98×, 3.96×…). | 99 % | `backend/games.py:475-511` | `test_new_games.py::Coinflip.test_return_to_player_is_99_percent_for_every_streak_length` |
+| **Dice** | Tirada de 0.00 a 99.99; arriba o abajo de un objetivo, probabilidad de 0.01 % a 98 %; paga ⌊0.99/probabilidad⌋ a diezmilésimas. | 99 % | `backend/games.py:516-546` | `test_new_games.py::Dice.test_return_to_player_is_99_percent_at_every_chance` |
+| **War** | Una carta cada quien de 6 barajas, gana la más alta 1:1. Empate: guerra con una apuesta igual; gana si su carta es ≥ y cobra la apuesta original (la del aumento se devuelve); si no le alcanza para el aumento, se rinde y recupera la mitad. Apuesta lateral de empate 12:1 y de empate del mismo color 26:1. | Principal ≈ 97.12 %; empate ≈ 96.14 %; empate de color ≈ 95.50 % (cálculo exacto de E3, no lo mide una prueba) | `backend/games.py:551-610` | `test_new_games.py::War.*`, `Fairness.test_war_main_bet` |
+| **Mines** | Tablero de 25, 36, 49 o 64 con 1 a tamaño−1 minas; tras *k* casillas seguras paga ⌊0.99 / P(k seguras)⌋; se cobra solo al pasar de 1,000,000×. | 99 % | `backend/games.py:615-712` | `test_new_games.py::Mines.test_return_to_player_is_99_percent_everywhere` |
+| **Moles** | 7 hoyos, 1 a 6 topos; tras *k* aciertos paga ⌊0.96 × (7/topos)^k⌋, máximo 20 aciertos o 1,000,000×. | 96 % | `backend/games.py:717-816` | `test_new_games.py::Moles.test_return_to_player_is_96_percent` |
+| **Tower** | 8 filas; riesgo fácil 4 casillas/1 trampa, medio 3/1, difícil 2/1, experto 3/2, maestro 4/3; tras *k* filas paga ⌊0.96 / (seguras/casillas)^k⌋. | 96 % | `backend/games.py:821-915` | `test_new_games.py::Tower.test_return_to_player_is_96_percent` |
+| **Hi-Lo** | Adivinar si la siguiente carta (13 valores, independiente) es mayor o igual, o menor o igual; paga ⌊0.96 × 13/ganadoras⌋ y la racha se multiplica; no se ofrece la apuesta que no puede perder; hasta 52 saltos gratis; se cobra sola al llegar a 1,000,000×. Pago en centavos hacia abajo. | ≤ 96 % | `backend/games.py:941-1072` | `test_casino_three.py::HiLoMaths.test_every_guess_that_is_offered_returns_at_most_96_percent_and_the_clean_ones_exactly_96` |
+| **Wheel** | 50 segmentos iguales; tablas bajo, medio, alto y arriesgado (24× máximo). Pago en centavos hacia abajo. | 96 % exacto | `backend/games.py:1080-1120` | `test_casino_three.py::WheelMaths.test_every_risk_level_returns_exactly_96_percent` |
+| **Piedra, papel o tijera** | El empate se repite gratis; la escalera paga 0.98 × 2^n (1.96×, 3.92×…) hasta 10 victorias. Pago en centavos hacia abajo. | 98 % | `backend/games.py:1129-1210` | `test_casino_three.py::RpsMaths.test_every_rung_returns_98_percent_when_each_round_is_a_fair_coin` |
 
-**Redondeo del pago.** Hi-Lo, Wheel y Piedra, papel o tijera pagan en centavos hacia abajo. Los demás juegos
-redondean el pago con `round2` (a la mitad hacia arriba). Ver la diferencia **D1**.
+**Redondeo del pago.** Todos los juegos pagan **en centavos hacia abajo**: apuesta × multiplicador con `games.pay`, que
+calcula exacto (sin ruido de punto flotante) y nunca redondea a favor del jugador (`backend/games.py:63-66`). Hi-Lo, Wheel y
+Piedra, papel o tijera ya lo hacían con centavos enteros. Así ninguna apuesta, por chica que sea, devuelve más que el
+retorno del juego (D1, corregida). Prueba: `test_correcciones_economia.py::CasinoPaysDownToTheCent.*`
 
 ## 13. Mercados (LMSR)
 
@@ -296,7 +298,7 @@ redondean el pago con `round2` (a la mitad hacia arriba). Ver la diferencia **D1
 | Comprar y vender de inmediato nunca deja ganancia. | `backend/lmsr.py:6-8` | `test_amm.py::NoFreeMoney.*` |
 | Un `requestId` repetido no opera dos veces; `minShares`/`minAmount` rechazan con 409 si el precio empeoró. | `backend/markets.py:383-412`, `backend/markets.py:420-473` | `test_amm.py::Safeguards.*` |
 | Se opera hasta la fecha de cierre; después, solo se espera el resultado. | `backend/markets.py:50-55`, `backend/markets.py:286-292` | `test_amm.py::Lifecycle.*` |
-| Liquida el creador (o el dueño del círculo, si es de un círculo): cada acción ganadora paga $1, las perdedoras nada. El pago se redondea con `round2`. | `backend/markets.py:478-517`, `backend/markets.py:500` | `test_amm.py::Settlement.test_winning_shares_pay_one_dollar_each_and_losers_nothing` |
+| Liquida el creador (o el dueño del círculo, si es de un círculo): cada acción ganadora paga $1, las perdedoras nada. El pago se redondea **hacia abajo** al centavo (`lmsr.floor_cents`), como toda salida del creador de mercado (D2, corregida). | `backend/markets.py:478-517`, `backend/markets.py:500` | `test_amm.py::Settlement.test_winning_shares_pay_one_dollar_each_and_losers_nothing`, `test_correcciones_economia.py::MarketPayoutRoundsDown.*` |
 | Cancelar devuelve lo invertido que sigue en la posición. | `backend/markets.py:520-529` | `test_amm.py::Settlement.test_calling_it_off_refunds_what_is_still_invested` |
 | Una persona puede tener a lo más 20 mercados públicos abiertos. | `backend/markets.py:14`, `backend/markets.py:83-88` | `test_market_features.py::SiteWideBets.test_cap_on_open_public_bets` |
 | El pago o la devolución va a la **semanal** de la semana en que se liquida. | `backend/markets.py:505`, `backend/markets.py:527` | `test_weekly_rewards.py::PendingAtTheEndOfAWeek.test_a_bet_that_settles_next_week_pays_into_that_weeks_weekly_account_and_counts_there` |
@@ -334,7 +336,7 @@ que viven en otros archivos:
 | `MIN_BET` | $0.10 | `backend/config.py:55` | No |
 | `MARKET_LIQUIDITY` (`b`) | 250 | `backend/config.py:60` | No |
 | `MAX_DEPOSIT`, `MAX_BALANCE` | 1e15, 1e18 | `backend/config.py:61-62` | No |
-| `DEMO_START` | $1,000 | `backend/games.py:21` | No |
+| `DEMO_START` | $1,000 | `backend/games.py:22` | No |
 | Retorno y tablas de cada juego | §12 | `backend/games.py` | No |
 | Límites de póker | §14 | `backend/poker.py:22-37` | No |
 | XP, retos e hitos | §8, §9 | `backend/rules.py` | Solo `XP_SCALE`, `RANK_XP_SCALE`, `REWARD_SCALE` |
@@ -389,6 +391,7 @@ código que llama a `ledger.post` o `ledger.opening` esté en esta tabla.
 | `cosmetics.buy` | `backend/cosmetics.py:343` | `store.buy` | − acumulada | `tienda` | `buy:<producto>` | no |
 | `exchange.trade` | `backend/exchange.py:184` | `stocks.buy` | − acumulada | `bolsa` | `stk:<operación>` | no |
 | `exchange.trade` | `backend/exchange.py:189` | `stocks.sell` | + acumulada | `bolsa` | `stk:<operación>` | no |
+| `seed.new_season` | `backend/seed.py:29` | `season.reset` | semanal a `START_BALANCE` (+ o −) | `emision` o `caducidad` | — (lo protege la marca `season-marker`) | sí |
 | `migrations.split_accounts` (E2) | `backend/migrations.py:38-39` | `opening` | ninguna: deja constancia del saldo que ya había | — | — | sí |
 | `migrations.retire_horses` (E2) | `backend/migrations.py:70` | `casino.horses` | + semanal (devuelve la apuesta) | `casa` | `horse:retired:<carrera>:<clave>` | no |
 
@@ -402,10 +405,10 @@ código que llama a `ledger.post` o `ledger.opening` esté en esta tabla.
 | `markets.resolve` | `backend/markets.py:505` | `market.payout` | + semanal | `mercado:<id>` |
 | `markets.cancel` | `backend/markets.py:527` | `market.refund` | + semanal | `mercado:<id>` |
 | `markets.withdraw` | `backend/markets.py:836` | `market.withdraw` | + semanal | `mercado:<id>` |
-| `poker._buy_in` | `backend/poker.py:397` | la de la ruta: `poker` (ver D4) | − semanal | `mesa:<id>` |
-| `poker._cash_out` | `backend/poker.py:411` | la de la ruta: `poker`, u `other` desde el reloj (D4) | + semanal | `mesa:<id>` |
-| Casino: apuesta | `backend/games.py:114` (`limbo`), `:176` (`roulette`), `:310` (`blackjack_deal`), `:349` y `:360` (`blackjack_action`: doblar y dividir), `:422` (`chicken_start`), `:490` (`coinflip`), `:530` (`dice`), `:572` y `:587` (`war`: apuesta y aumento), `:658` (`mines_start`), `:765` (`moles_start`), `:861` (`tower_start`), `:996` (`hilo_start`), `:1102` (`wheel`), `:1156` (`rps_start`) | `casino.<juego>`, de la ruta | − semanal, o − acumulada con `acct: "accumulated"` | `casa` |
-| Casino: premio | `backend/games.py:120` (`limbo`), `:186` (`roulette`), `:287` (`_bj_finish`), `:430` (`_chicken_cash`), `:500` (`coinflip`), `:535` (`dice`), `:597` (`war`), `:669` (`_mines_cash`), `:774` (`_moles_cash`), `:873` (`_tower_cash`), `:1008` (`_hilo_cash`), `:1108` (`wheel`), `:1165` (`_rps_cash`) | `casino.<juego>`, de la ruta | + la misma cuenta de la apuesta | `casa` |
+| `poker._buy_in` | `backend/poker.py:397` | `poker` | − semanal | `mesa:<id>` |
+| `poker._cash_out` | `backend/poker.py:411` | `poker`, también desde el reloj | + semanal | `mesa:<id>` |
+| Casino: apuesta | `backend/games.py:121` (`limbo`), `:183` (`roulette`), `:317` (`blackjack_deal`), `:356` y `:367` (`blackjack_action`: doblar y dividir), `:429` (`chicken_start`), `:497` (`coinflip`), `:537` (`dice`), `:579` y `:594` (`war`: apuesta y aumento), `:665` (`mines_start`), `:772` (`moles_start`), `:868` (`tower_start`), `:1003` (`hilo_start`), `:1109` (`wheel`), `:1163` (`rps_start`) | `casino.<juego>`, de la ruta | − semanal, o − acumulada con `acct: "accumulated"` | `casa` |
+| Casino: premio | `backend/games.py:127` (`limbo`), `:193` (`roulette`), `:294` (`_bj_finish`), `:437` (`_chicken_cash`), `:507` (`coinflip`), `:542` (`dice`), `:604` (`war`), `:676` (`_mines_cash`), `:781` (`_moles_cash`), `:880` (`_tower_cash`), `:1015` (`_hilo_cash`), `:1115` (`wheel`), `:1172` (`_rps_cash`) | `casino.<juego>`, de la ruta | + la misma cuenta de la apuesta | `casa` |
 
 Con la cartera de práctica, las mismas funciones del casino cambian `user["demo"]["balance"]` y no tocan el libro: no es
 dinero (`backend/users.py:202-204`, `:215-219`).
@@ -416,26 +419,25 @@ dinero (`backend/users.py:202-204`, `:215-219`).
 |---|---|---|
 | `backend/users.py:203`, `:218` | La cartera de práctica (demo) | No: no es una cuenta |
 | `backend/users.py:208`, `:223` | Copia el saldo de la acumulada en la vista de la cartera del casino, después de `ledger.post` | No: es un espejo |
-| `backend/games.py:27`, `:58` (`demo_account`, `demo_reset`) | Pone la cartera de práctica en $1,000 | No |
+| `backend/games.py:28`, `:59` (`demo_account`, `demo_reset`) | Pone la cartera de práctica en $1,000 | No |
 | `backend/migrations.py:35-36` (E2) | Reparte el saldo único entre las dos cuentas, con su renglón `opening` | Sí, una sola vez y documentado |
 | `backend/migrations.py:68` (E2) | Devuelve a la cartera de práctica una apuesta de Horses | No |
-| `backend/seed.py:24` | Reinicio de temporada | **Sí, fuera del libro (D3)** |
 
 ---
 
 ## Diferencias
 
-Lo que `ECONOMY.md` (o el propio código, en sus comentarios) dice y el código no hace, o al revés. **Ninguna está corregida
-todavía.** "Código" quiere decir que el error es del código y se corrige con una prueba vista en rojo (entregable 5);
-"Documento", que el código está bien y se corrige el texto; "Pregunta", que necesita la firma del dueño.
+Lo que `ECONOMY.md` (o el propio código, en sus comentarios) dice y el código no hace, o al revés. "Código" quiere decir que el error era del código y se corrigió con una prueba vista en rojo (entregable 5,
+`tests/test_correcciones_economia.py`); "Documento", que el código está bien y lo que vale es este contrato (`ECONOMY.md`
+se corrige cuando se traduzca al español); "Pregunta", que necesita la firma del dueño.
 
 | # | Dónde | Qué dice | Qué hace el código | Tipo |
 |---|---|---|---|---|
-| D1 | `backend/games.py:118`, `:498`, `:533`, `:429`, `:668` (y `:271`, `:277`, `:581`, `:585`, `:592-594`, `:773`, `:872`) | Cada juego declara su retorno (Dice 99 %, Limbo 99 %, Chicken 97 %, Mines 99 %…) y `lmsr.py:7-8` dice que todo redondeo va contra el jugador | Limbo, Dice, Chicken y Mines redondean el pago a la mitad hacia arriba (`round2`). Con apuestas chicas, varias combinaciones devuelven **más del 100 %**: Dice con 94.28 % de probabilidad y apuesta de $0.10 devuelve 103.7 %; Limbo a 1.05× con $0.10, 103.7 %; Mines 49 casillas/1 mina/3 aciertos con $0.10, 103.3 %; Chicken fácil un carril con $0.10, 101.2 %. Es una ganancia segura para quien la repite. Blackjack (2.5×), War (mitad al rendirse) y los demás también redondean hacia arriba, aunque sin pasar del 100 % | Código |
-| D2 | `backend/markets.py:500` | `markets.py:304-305` y `lmsr.py:7-8`: "every dollar amount paid OUT is rounded down to a whole cent" | Al liquidar, cada posición ganadora cobra `round2(acciones)`, a la mitad hacia arriba: 10.005 acciones cobran $10.01 | Código |
-| D3 | `backend/seed.py:24-26` | D2 de `DECISIONES.md`: el dinero solo se mueve por el libro | El reinicio de temporada (`new_season`, que corre con `SEASON_RESET` o `scripts/seed.py`) asigna `user["balance"]` directamente: no deja renglón y la auditoría del libro deja de cuadrar | Código |
-| D4 | `backend/poker.py:397`, `:411` | La razón de un renglón de póker es `poker` (`server.py:124`) | La entrada y el cobro no dan razón: la toman de la ruta. Cuando un asiento se libera desde el reloj (turnos vencidos, mesa inactiva, sin recompra), el renglón queda con la razón `other` | Código |
-| D5 | `backend/seed.py:20-28` | — | El reinicio de temporada no toca la cuenta acumulada, los préstamos, los retos, el XP ni las posiciones en la bolsa, y reinicia la semanal a `START_BALANCE`, no a la asignación. ¿Es lo que se quiere de una temporada nueva? | Pregunta |
+| D1 | `backend/games.py:125`, `:505`, `:540`, `:436`, `:675` (y `:278`, `:284`, `:588`, `:592`, `:599-601`, `:780`, `:879`) | Cada juego declara su retorno (Dice 99 %, Limbo 99 %, Chicken 97 %, Mines 99 %…) y `lmsr.py:7-8` dice que todo redondeo va contra el jugador | Limbo, Dice, Chicken y Mines redondean el pago a la mitad hacia arriba (`round2`). Con apuestas chicas, varias combinaciones devuelven **más del 100 %**: Dice con 94.28 % de probabilidad y apuesta de $0.10 devuelve 103.7 %; Limbo a 1.05× con $0.10, 103.7 %; Mines 49 casillas/1 mina/3 aciertos con $0.10, 103.3 %; Chicken fácil un carril con $0.10, 101.2 %. Es una ganancia segura para quien la repite. Blackjack (2.5×), War (mitad al rendirse) y los demás también redondean hacia arriba, aunque sin pasar del 100 % | Código · **corregida**: todos pagan con `games.pay`, hacia abajo |
+| D2 | `backend/markets.py:500` | `markets.py:304-305` y `lmsr.py:7-8`: "every dollar amount paid OUT is rounded down to a whole cent" | Al liquidar, cada posición ganadora cobra `round2(acciones)`, a la mitad hacia arriba: 10.005 acciones cobran $10.01 | Código · **corregida**: `lmsr.floor_cents` |
+| D3 | `backend/seed.py:24-36` | D2 de `DECISIONES.md`: el dinero solo se mueve por el libro | El reinicio de temporada (`new_season`, que corre con `SEASON_RESET` o `scripts/seed.py`) asigna `user["balance"]` directamente: no deja renglón y la auditoría del libro deja de cuadrar | Código · **corregida**: renglón `season.reset`, externo |
+| D4 | `backend/poker.py:397`, `:411` | La razón de un renglón de póker es `poker` (`server.py:124`) | La entrada y el cobro no dan razón: la toman de la ruta. Cuando un asiento se libera desde el reloj (turnos vencidos, mesa inactiva, sin recompra), el renglón queda con la razón `other` | Código · **corregida**: razón `poker` explícita |
+| D5 | `backend/seed.py:18-39` | — | El reinicio de temporada no toca la cuenta acumulada, los préstamos, los retos, el XP ni las posiciones en la bolsa, y reinicia la semanal a `START_BALANCE`, no a la asignación. ¿Es lo que se quiere de una temporada nueva? | Pregunta para el dueño |
 | D6 | `ECONOMY.md` líneas 4-6 | "Every number lives in `economy.py` (plus `catalog.py`)… Nothing else in the code has these figures" | Hay números en `config.py` (`START_BALANCE`, cupón, `MIN_BET`, `b`, topes), `games.py` (retornos y tablas), `poker.py`, `rules.py`, `markets.py` (§15 de este contrato) | Documento |
 | D7 | `ECONOMY.md` §1, tabla y línea 22 | La acumulada solo recibe recompensas, transferencias y abonos del anfitrión; la semanal recibe ganancias, asignación, abonos, préstamos y retos | Falta: la semanal recibe la bienvenida, el cupón, el bono del miércoles y transferencias semanales; la acumulada recibe ventas en la bolsa y ganancias del casino jugado con ella (§13c) | Documento |
 | D8 | `ECONOMY.md` (todo) | — | No documenta: bienvenida (§2.1), cupón (§2.2), cartera de práctica, retorno y pago de cada juego (§12), mercados y LMSR (§13), póker (§14), premios y castigo (§4.3), ranking global (§16) | Documento |
