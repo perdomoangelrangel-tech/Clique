@@ -8,6 +8,7 @@ import { productArt, plainAvatar } from '../cosmetics.js';
 import { toast, modal } from '../ui.js';
 import { guardForm, recall, remember } from '../viewstate.js';
 import { emptyState } from './components.js';
+import { t, LANGS, getLang, setLang } from '../i18n.js';
 import { mountSpread } from './spread.js';
 
 const KIND = { buy: ['Bought', '−'], sell: ['Sold', '+'], win: ['Won', '+'], loss: ['Lost', ''], refund: ['Refund', '+'], deposit: ['Funds added', '+'], game: ['Game', ''], start: ['Welcome bonus', '+'], go: ['Passed Go', '+'], voucher: ['Voucher', '+'], poker: ['Poker', ''], reward: ['Weekly reward', '+'], warn: ['Reminder', ''] };
@@ -18,7 +19,7 @@ export default {
     const mine = prof.user.username.toLowerCase() === S.user.username.toLowerCase();
     const P = mine ? await get('/api/portfolio') : null;
     const defs = Object.fromEntries(prof.awardDefs.map((a) => [a.key, a]));
-    const t = prof.totals;
+    const tot = prof.totals;
     const trophyTotal = Object.values(prof.trophies).reduce((a, b) => a + b, 0);
     const MEM = 'profile:' + prof.user.username.toLowerCase();
     let tab = ['positions', 'closed', 'activity', 'games'].includes(recall(MEM).tab) ? recall(MEM).tab : 'positions';
@@ -51,12 +52,14 @@ export default {
       ${pfHead(PF, prof.user.username, editBtn)}
       ${mine ? `<div class="acct-cards" style="margin-top:22px"><div class="card-box pad-lg acct"><span class="lbl">Weekly account</span><b class="num" title="${moneyFull(P.balance)}">${money(P.balance)}</b><p class="muted">This week's chips. Set up again every Monday. <a href="#/portfolio">Where is it?</a></p></div>
         <div class="card-box pad-lg acct"><span class="lbl">Accumulated account</span><b class="num" title="${moneyFull(prof.accounts.accumulated)}">${money(prof.accounts.accumulated)}</b><p class="muted">What you keep. <a href="#/portfolio">Portfolio</a> · <a href="#/store">Store</a> · <a href="#/exchange">Exchange</a> · <a href="#/statement">Statement</a></p></div></div>` : ''}
+      ${mine ? `<div class="card-box pad lang-pick" style="margin-top:16px"><div class="field" style="margin:0"><label for="pf-lang">${t('Idioma de la app')}</label>
+        <select class="input" id="pf-lang">${Object.entries(LANGS).map(([code, name]) => `<option value="${code}" ${code === getLang() ? 'selected' : ''}>${esc(name)}</option>`).join('')}</select></div></div>` : ''}
       <div class="stats">
         <div class="stat"><small>Held in the weekly game</small><b title="${moneyFull(prof.netWorth)}">${money(prof.netWorth)}</b></div>
         <div class="stat"><small>Awards won</small><b>${trophyTotal}</b></div>
-        <div class="stat"><small>Bets proposed</small><b>${num(t.marketsCreated || 0, 0)}</b></div>
-        <div class="stat"><small>Won / lost</small><b>${num(t.betsWon || 0, 0)} / ${num(t.betsLost || 0, 0)}</b></div>
-        <div class="stat"><small>Casino P/L</small><b class="${(t.gamePnl || 0) >= 0 ? 'up' : 'down'}" title="${moneyFull(t.gamePnl || 0)}">${money(t.gamePnl || 0, { plus: true })}</b></div>
+        <div class="stat"><small>Bets proposed</small><b>${num(tot.marketsCreated || 0, 0)}</b></div>
+        <div class="stat"><small>Won / lost</small><b>${num(tot.betsWon || 0, 0)} / ${num(tot.betsLost || 0, 0)}</b></div>
+        <div class="stat"><small>Casino P/L</small><b class="${(tot.gamePnl || 0) >= 0 ? 'up' : 'down'}" title="${moneyFull(tot.gamePnl || 0)}">${money(tot.gamePnl || 0, { plus: true })}</b></div>
       </div>
       ${mine ? '<div id="spread" style="margin-top:28px"></div>' : ''}
       ${mine && prof.rewards && prof.rewards.length ? `<div class="section-head" style="margin-top:44px"><div><span class="kicker">Paid into your accumulated account</span><h2 class="page-title" style="font-size:clamp(28px,3.4vw,44px)">Weekly rewards</h2></div></div>
@@ -69,6 +72,7 @@ export default {
       <div id="own"></div></div>`;
 
     if (!mine) return {};
+    root.querySelector('#pf-lang').addEventListener('change', (e) => setLang(e.target.value));      // the whole app repaints in place (app.js)
     mountSpread(root.querySelector('#spread'), P.distribution, { go });
     const own = root.querySelector('#own');
     const draw = () => {

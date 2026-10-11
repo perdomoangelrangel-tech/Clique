@@ -10,6 +10,7 @@ import { startPresence, stopPresence, refreshBadges, paintBadges, onSocialEvent 
 import { voice } from './voice.js';
 import * as nav from './viewstate.js';
 import { startLayout } from './layout.js';
+import { initLang, onLang } from './i18n.js';
 
 let emailAsking = false, emailModalClose = null;       // the window that asks for an email (see openEmailModal), declared up here so every function can see it
 
@@ -55,7 +56,9 @@ const TAGLINES = {
 };
 
 // ---------------------------------------------------------------- auth screen
+let authMode = 'login';
 function showAuth(mode = 'login') {
+  authMode = mode;
   if (emailModalClose) emailModalClose();              // a log-out or an expired session must not leave the email window sitting over the log-in form
   closeStream(); stopPresence();
   current?.unmount?.(); current = null; shellReady = false;
@@ -723,7 +726,15 @@ window.addEventListener('hashchange', (e) => {
 window.addEventListener('beforeunload', closeStream);
 setInterval(() => { if (S.user) refreshTicker(); }, 60000);
 
+// A new language paints everything again, in place: no reload, and the screen keeps its scroll (viewstate.js sees the same entry).
+onLang(() => {
+  if (!S.user) { if (document.getElementById('auth-form')) showAuth(authMode); return; }
+  shellReady = false;
+  route();
+});
+
 (async function boot() {
+  await initLang();                                  // before the first paint, so nobody sees the other language flash by
   try {
     const u = await refreshMe();
     if (u) startApp(); else showAuth('login');

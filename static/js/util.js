@@ -1,39 +1,25 @@
 import { icon } from './icons.js';
 import { sticker, CATEGORY_ART } from './art.js';
 import { lookOf, avatarLook } from './looks.js';
+import { chips, chipsFull, number, ago as agoI18n, until as untilI18n, dateShort as dateShortI18n, dateTime, getLang, CHIP_SIGN } from './i18n.js';
 
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 /* history rows: the server writes "1 lanes"; say it properly */
 export const detailText = (d) => esc(String(d ?? '').replace(/\b1 lanes\b/, '1 lane'));
 
-const SUFFIX = [[1e15, null], [1e12, 'T'], [1e9, 'B'], [1e6, 'M']];
+/** $1,234.56 — big numbers shrink to "$1.23 M" so they always fit. Written by i18n.js, in the language on screen. */
+export const money = (x, opts = {}) => chips(x, opts);
+export const moneyFull = (x) => chipsFull(x);
 
-/** $1,234.56 — big numbers shrink to $1.23M / $4.5B / $1.2e18 so they always fit. */
-export function money(x, opts = {}) {
-  x = Number(x) || 0;
-  const sign = x < 0 ? '-' : (opts.plus && x > 0 ? '+' : '');
-  const a = Math.abs(x);
-  for (const [lim, suf] of SUFFIX) {
-    if (a >= lim) return sign + '$' + (suf ? (a / lim).toLocaleString('en-US', { maximumFractionDigits: 2 }) + suf : a.toExponential(2).replace('e+', 'e'));
-  }
-  return sign + '$' + a.toLocaleString('en-US', { minimumFractionDigits: opts.noCents && Number.isInteger(a) ? 0 : 2, maximumFractionDigits: 2 });
-}
-export const moneyFull = (x) => '$' + (Number(x) || 0).toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
-
+/** A market's volume, short: "$950", "$12 mil", "$3.4 M". */
 export function vol(x) {
   x = Number(x) || 0;
-  if (x < 1000) return '$' + Math.round(x).toLocaleString('en-US');
-  if (x < 1e6) return '$' + (x / 1e3).toFixed(x < 1e4 ? 1 : 0).replace(/\.0$/, '') + 'K';
-  if (x < 1e9) return '$' + (x / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
-  if (x < 1e12) return '$' + (x / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
-  return money(x, { noCents: true });
+  if (x < 1000) return CHIP_SIGN + number(Math.round(x), 0);
+  if (x < 1e6) return CHIP_SIGN + number(x / 1e3, x < 1e4 ? 1 : 0) + (getLang() === 'en' ? 'K' : ' mil');
+  return chips(x, { noCents: true });
 }
 
-export function num(x, d = 2) {
-  x = Number(x) || 0;
-  if (Math.abs(x) >= 1e9) return x.toExponential(2).replace('e+', 'e');
-  return x.toLocaleString('en-US', { maximumFractionDigits: d });
-}
+export const num = (x, d = 2) => number(x, d);
 
 export function cents(p) {
   const c = p * 100;
@@ -51,24 +37,10 @@ export function pct(p) {
   return Math.round(c) + '%';
 }
 
-export function ago(t) {
-  const s = Math.max(0, (Date.now() - t) / 1000);
-  if (s < 45) return 'just now';
-  if (s < 3600) return Math.round(s / 60) + 'm ago';
-  if (s < 86400) return Math.round(s / 3600) + 'h ago';
-  if (s < 86400 * 30) return Math.round(s / 86400) + 'd ago';
-  return new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-}
-export function until(t) {
-  const s = (t - Date.now()) / 1000;
-  if (s <= 0) return 'ended';
-  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
-  if (d > 0) return `${d}d ${h}h`;
-  if (h > 0) return `${h}h ${m}m`;
-  return `${Math.max(1, m)}m`;
-}
-export const dateShort = (t) => new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-export const dateLong = (t) => new Date(t).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+export const ago = (t) => agoI18n(t);
+export const until = (t) => untilI18n(t);
+export const dateShort = (t) => dateShortI18n(t);
+export const dateLong = (t) => dateTime(t);
 
 function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 export const hues = (seed) => { const h = hash(String(seed)); return [h % 360, (h >> 8) % 360]; };
