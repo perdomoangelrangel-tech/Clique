@@ -10,7 +10,7 @@ import { startPresence, stopPresence, refreshBadges, paintBadges, onSocialEvent 
 import { voice } from './voice.js';
 import * as nav from './viewstate.js';
 import { startLayout } from './layout.js';
-import { initLang, onLang } from './i18n.js';
+import { initLang, onLang, t } from './i18n.js';
 
 let emailAsking = false, emailModalClose = null;       // the window that asks for an email (see openEmailModal), declared up here so every function can see it
 
@@ -142,13 +142,27 @@ function shellHtml() {
     <div class="search-mobile"><input id="gsearch-m" placeholder="SEARCH MARKETS" autocomplete="off" aria-label="Search markets"></div>
     <div class="ticker" id="ticker" aria-label="Live wins and odds"><div class="ticker-track" id="ticker-track"></div></div>
   </header>
-  <main id="view"></main>`;
+  <main id="view"></main>
+  ${tabbarHtml()}`;
 }
+
+/* The bar along the bottom on phones (F2): five places at most. Its look is E4's (.tabbar in the stylesheets); until that style exists
+   (it announces itself with the --tabbar-h token) the bar stays hidden, so the page never shows it unstyled. */
+const TABS = [                                     // i18n: claves ↓
+  ['markets', '#/', 'trend-up', 'Mercados'], ['casino', '#/games', 'dice-five', 'Casino'], ['circles', '#/circles', 'users-three', 'Círculos'],
+  ['weekly', '#/weekly', 'calendar-blank', 'Semana'], ['ledger', null, 'user', 'Tú']];      // i18n: fin
+function tabbarHtml() {
+  const me = S.user ? encodeURIComponent(S.user.username) : '';
+  return `<nav class="tabbar hidden" id="tabbar" aria-label="${esc(t('Navegación principal'))}">${TABS.map(([sec, href, ic, label]) =>
+    `<a class="tab" data-sec="${sec}" href="${href || '#/u/' + me}">${icon(ic, 22)}<span>${esc(t(label))}</span></a>`).join('')}</nav>`;
+}
+const tabbarStyled = () => !!getComputedStyle(document.documentElement).getPropertyValue('--tabbar-h').trim();
 
 function ensureShell() {
   if (shellReady && document.getElementById('view')) return;
   shellReady = true;
   $app.innerHTML = shellHtml();
+  if (tabbarStyled()) document.getElementById('tabbar').classList.remove('hidden');
   renderWallet(true); renderMenu(); renderVoucher(); announcePassGo(); paintBadges();
   document.getElementById('btn-deposit').addEventListener('click', openDeposit);
   document.getElementById('voucher-bar').addEventListener('click', redeemVoucher);
@@ -267,7 +281,7 @@ const refreshProfitSoon = debounce(refreshProfit, 900);
 // ---------------------------------------------------------------- ticker
 const trunc = (t, n) => (t.length > n ? t.slice(0, n - 1) + '…' : t);
 async function refreshTicker() {
-  const track = document.getElementById('ticker-track'); if (!track) return;
+  const track = document.getElementById('ticker-track'); if (!track || document.getElementById('ticker').classList.contains('hidden')) return;
   let wins = [], mk = [];
   try { wins = (await get('/api/games/feed')).feed.slice(0, 8); } catch { /* ignore */ }
   try { mk = (await get('/api/markets?status=open&sort=trending')).markets.slice(0, 7); } catch { /* ignore */ }
@@ -630,6 +644,12 @@ function setActive(path, query) {
     if (a.left < b.left || a.right > b.right) strip.scrollLeft += a.left - b.left - 16;
   }
   document.getElementById('subnav').innerHTML = subnavHtml(sec, path, query);
+  document.querySelectorAll('#tabbar .tab').forEach((a) => { const on = a.dataset.sec === sec; a.classList.toggle('on', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  // R3: in the casino the market search and the price ticker go away, so the bet button has the room (at 1366x768 they covered it)
+  const casino = sec === 'casino', ticker = document.getElementById('ticker'), wasHidden = ticker.classList.contains('hidden');
+  ticker.classList.toggle('hidden', casino);
+  document.querySelectorAll('.top-right .search, .search-mobile').forEach((el) => el.classList.toggle('hidden', casino));
+  if (wasHidden && !casino) refreshTicker();
   document.getElementById('btn-friends')?.classList.toggle('on', /^\/friends/.test(path));
   document.getElementById('btn-chat')?.classList.toggle('on', /^\/chat/.test(path));
   if (sec === 'casino') refreshProfit();

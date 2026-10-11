@@ -65,3 +65,13 @@ scripts exit with code 1 when anything is found.
 
 Browser zoom cannot be set from outside Chrome, so it is reproduced the way Chrome does it: the page gets a viewport that is `1/zoom` as wide
 and tall and a pixel ratio of `zoom`. Layout, media queries and canvas sizes behave the same; Chrome's own text-size settings do not apply.
+
+## The bet button (F2, R3)
+
+`bet.mjs` opens every casino game (and the poker lobby) at each size and checks that the bet button is on screen without scrolling:
+inside the window, above the phone bar (`--nav-h`) and the call bar (`--dock-h`), and not covered. It also checks that the market
+search and the price ticker are gone in the casino, and that the phone bar has five places at most.
+
+```bash
+node tests/layout/bet.mjs --out /tmp/layout-out --base http://127.0.0.1:3005 --vp 1366x768,390x844
+```

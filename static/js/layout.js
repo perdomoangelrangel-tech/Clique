@@ -1,7 +1,7 @@
 /* Layout measurements the stylesheet cannot make for itself. CSS cannot know how tall the sticky header is (it wraps onto a different
    number of rows at every width, and a banner can join it), how tall the voice-call bar is, whether a pinned side panel is shorter than
    the screen, or whether a row of tabs is wider than the room it has. This file measures those and writes the answers where the CSS
-   can use them: custom properties on <html> (--head-h, --bar-h, --dock-h), a class on pinned panels (.is-pinned) and an attribute on
+   can use them: custom properties on <html> (--head-h, --bar-h, --dock-h, --nav-h), a class on pinned panels (.is-pinned) and an attribute on
    scrolling rows (data-more). It never changes what the page says or does, and the pages still work if it fails to run. */
 
 const root = document.documentElement;
@@ -20,6 +20,8 @@ function bars() {
   }
   const dock = document.getElementById('voice-dock');
   root.style.setProperty('--dock-h', dock && !dock.hidden ? px(dock.getBoundingClientRect().height) : '0px');
+  const nav = document.getElementById('tabbar');                    // the phone bar along the bottom (0 when it is not showing)
+  root.style.setProperty('--nav-h', nav ? px(nav.getBoundingClientRect().height) : '0px');
 }
 
 /* A panel is pinned (sticky) only while all of it fits in the space under the header. */
@@ -67,7 +69,7 @@ export function startLayout() {
     if (window.ResizeObserver) {
       const ro = new ResizeObserver(layoutChanged);
       ro.observe(document.getElementById('voice-dock'));
-      const watch = () => document.querySelectorAll('.top-bar, .top-rest').forEach((h) => { if (!seen.has(h)) { seen.add(h); ro.observe(h); } });
+      const watch = () => document.querySelectorAll('.top-bar, .top-rest, #tabbar').forEach((h) => { if (!seen.has(h)) { seen.add(h); ro.observe(h); } });
       watch(); new MutationObserver(watch).observe(document.getElementById('app'), { childList: true });
     }
     new MutationObserver(layoutChanged).observe(document.getElementById('app'), { childList: true, subtree: true });

@@ -342,7 +342,7 @@ def t_keys(lits):
     """The keys passed straight to t(), th() and tp() as literals."""
     keys = []
     for L in lits:
-        if L.key and not L.template and not L.skip and WORD.search(L.text) and not re.fullmatch(r"[a-z][\w-]*", L.text):
+        if L.key and not L.template and not L.skip and is_prose(L.text):
             keys.append(L.text)                      # a sentence in a map that goes to t() (i18n: claves); identifiers in the map are not keys
             continue
         if L.template or L.callee not in I18N_CALLS:

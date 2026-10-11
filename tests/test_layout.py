@@ -129,6 +129,15 @@ class LayoutRules(unittest.TestCase):
             if name.endswith(".js"):
                 self.assertNotRegex(read("static", "js", name), r"href=[\"'`]#?/diseno", f"{name} links to /diseno: it stays out of the menus")
 
+    def test_the_phone_bar_has_five_places_at_most_and_the_casino_drops_search_and_ticker(self):
+        app = read("static", "js", "app.js")
+        tabs = re.search(r"const TABS = \[(.*?)\];", app, re.S).group(1)
+        self.assertLessEqual(len(re.findall(r"\['\w+', ", tabs)), 5, "F2: five places at most in the bar along the bottom")
+        self.assertIn("const casino = sec === 'casino'", app)
+        self.assertIn("ticker.classList.toggle('hidden', casino)", app)
+        self.assertIn(".top-right .search, .search-mobile').forEach((el) => el.classList.toggle('hidden', casino))", app)
+        self.assertIn("--nav-h", read("static", "js", "layout.js"))
+
     def test_breakpoints_written_in_scripts_match_the_stylesheets(self):
         self.assertIn("(max-width: 720px)", read("static", "js", "views", "pokertable.js"))
         self.assertIn("(min-width: 821px)", read("static", "js", "views", "chat.js"))
@@ -221,6 +230,12 @@ class LayoutInBrowser(unittest.TestCase):
 
     def test_the_keyboard_reaches_everything_and_dialogs_keep_focus_inside(self):
         self.assert_clean(self.run_script("keys.mjs", "--vp", "1366x768,390x844")[0])
+
+    # BLOQUEADO POR E4 (petición del 10-oct en equipo/BITACORA.md): on phones the bet panel sits under the stage, and at 1366x768
+    # chicken, blackjack and coinflip are a few pixels short. Remove expectedFailure when bet.mjs comes back clean.
+    @unittest.expectedFailure
+    def test_every_bet_button_shows_without_scrolling_at_laptop_and_phone_sizes(self):
+        self.assert_clean(self.run_script("bet.mjs", "--vp", "1366x768,390x844")[0])
 
     def test_casino_rounds_survive_the_window_changing_shape(self):
         r, _ = self.run_script("states.mjs", "--vp", "1366x768,390x844", "--only", "round-mines,round-chicken,after-roll-limbo")
