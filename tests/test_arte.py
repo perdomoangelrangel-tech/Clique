@@ -23,7 +23,10 @@ APP_RENDERS = {                                                     # static/ren
     "apple-touch-icon-180.png": (180, 180, 100_000),
 }
 MODEL_BUDGET = 300_000                                              # one model, bytes
+MODEL_TRIANGLES = 8_000                                             # one model (section 6)
+TEXTURE_SIDE = 1024                                                 # longest side of a texture inside a model (section 6)
 FALLBACK_2D = (512, 512)                                            # the 2D stand-in of each live model
+TOON_MODELS = ("ruleta.glb",)                                       # live models in the style of the drawings (section 13)
 
 
 class LiveAnimations(unittest.TestCase):
@@ -175,6 +178,240 @@ class LiveModels(unittest.TestCase):
                 for s in stand_ins:
                     self.assertEqual(webp_size(os.path.join(folder, s)), FALLBACK_2D, f"static/3d/{s} no mide 512×512")
                     self.assertTrue(webp_has_alpha(os.path.join(folder, s)), f"static/3d/{s} no tiene fondo transparente (contrato §5)")
+
+
+def read_glb(path):
+    """(json dict, binary chunk) of a GLB, from the standard library: the JSON says how many triangles and which
+    pictures there are even when the geometry is compressed with meshopt."""
+    import json
+    with open(path, "rb") as f:
+        data = f.read()
+    if data[:4] != b"glTF":
+        raise AssertionError(f"{path} no es un GLB")
+    length, kind = struct.unpack("<I4s", data[12:20])
+    doc = json.loads(data[20:20 + length])
+    pos = 20 + length
+    binary = b""
+    if pos < len(data):
+        blength, bkind = struct.unpack("<I4s", data[pos:pos + 8])
+        binary = data[pos + 8:pos + 8 + blength]
+    return doc, binary
+
+
+def glb_triangles(doc):
+    """Triangles of every mesh, the way assets3d/herramientas/optimizar-glb.mjs counts them."""
+    n = 0
+    for mesh in doc.get("meshes", []):
+        for prim in mesh["primitives"]:
+            acc = prim.get("indices", prim["attributes"]["POSITION"])
+            n += doc["accessors"][acc]["count"] // 3
+    return n
+
+
+def glb_images(doc, binary):
+    """{name: (width, height)} of every picture packed in the GLB."""
+    out = {}
+    for i, image in enumerate(doc.get("images", [])):
+        view = doc["bufferViews"][image["bufferView"]]
+        start = view.get("byteOffset", 0)
+        blob = binary[start:start + view["byteLength"]]
+        name = image.get("name", f"imagen {i}")
+        if blob[:8] == b"\x89PNG\r\n\x1a\n":
+            out[name] = struct.unpack(">II", blob[16:24])
+        else:
+            import tempfile
+            with tempfile.NamedTemporaryFile(suffix=".webp", delete=False) as t:
+                t.write(blob[:64])
+            try:
+                out[name] = webp_size(t.name)
+            finally:
+                os.unlink(t.name)
+    return out
+
+
+def glb_accessor(doc, binary, index):
+    """The values of an accessor as tuples of floats (FLOAT) or ints (indices), from an uncompressed GLB."""
+    acc = doc["accessors"][index]
+    view = doc["bufferViews"][acc["bufferView"]]
+    fmt = {5126: "f", 5125: "I", 5123: "H", 5121: "B"}[acc["componentType"]]
+    width = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4}[acc["type"]]
+    size = struct.calcsize("<" + fmt) * width
+    stride = view.get("byteStride", size)
+    start = view.get("byteOffset", 0) + acc.get("byteOffset", 0)
+    return [struct.unpack_from("<" + fmt * width, binary, start + i * stride) for i in range(acc["count"])]
+
+
+class LiveModelBudgets(unittest.TestCase):
+    def test_every_model_fits_the_triangle_and_texture_budget(self):
+        folder = os.path.join(STATIC, "3d")
+        for name in sorted(n for n in os.listdir(folder) if n.endswith(".glb")):
+            doc, binary = read_glb(os.path.join(folder, name))
+            with self.subTest(model=name):
+                self.assertLessEqual(glb_triangles(doc), MODEL_TRIANGLES, f"static/3d/{name} pasa de {MODEL_TRIANGLES:,} triángulos")
+                for image, (w, h) in glb_images(doc, binary).items():
+                    self.assertLessEqual(max(w, h), TEXTURE_SIDE, f"static/3d/{name}: la textura {image} mide {w} × {h}; el tope es {TEXTURE_SIDE} px")
+
+
+def _palette(path, pattern):
+    with open(os.path.join(ROOT, path), encoding="utf-8") as f:
+        return {k: (lit.upper(), shade.upper()) for k, lit, shade in re.findall(pattern, f.read())}
+
+
+class ToonStyle(unittest.TestCase):
+    """The style of the drawings (equipo/contratos/arte3d.md, section 13): the same colours in Blender and on the web."""
+
+    def test_the_palette_is_the_same_in_blender_and_on_the_web(self):
+        blender = _palette("assets3d/herramientas/e6_toon.py", r'"(\w+)": \("(#[0-9A-Fa-f]{6})", "(#[0-9A-Fa-f]{6})"\)')
+        web = _palette("docs/arte/estilo-toon.mjs", r"(\w+): \['(#[0-9A-Fa-f]{6})', '(#[0-9A-Fa-f]{6})'\]")
+        self.assertTrue(blender, "no encuentro PALETTE en assets3d/herramientas/e6_toon.py")
+        self.assertEqual(blender, web, "la paleta de e6_toon.py y la de docs/arte/estilo-toon.mjs no son iguales")
+
+    def test_every_material_of_a_toon_model_is_a_palette_colour_or_a_picture(self):
+        keys = _palette("docs/arte/estilo-toon.mjs", r"(\w+): \['(#[0-9A-Fa-f]{6})', '(#[0-9A-Fa-f]{6})'\]")
+        for name in TOON_MODELS:
+            doc, _ = read_glb(os.path.join(STATIC, "3d", name))
+            for mat in doc.get("materials", []):
+                with self.subTest(model=name, material=mat.get("name")):
+                    picture = "baseColorTexture" in mat.get("pbrMetallicRoughness", {})
+                    colour = any(mat.get("name", "").endswith("_" + k) for k in keys)
+                    self.assertTrue(picture or colour, f"static/3d/{name}: el material {mat.get('name')!r} no termina en _<color de la paleta> ni lleva textura: la web lo pintaría de otro color")
+
+
+def _js_list(path, name):
+    with open(os.path.join(ROOT, path), encoding="utf-8") as f:
+        return [int(x) for x in re.search(rf"{name} = \[([^\]]*)\]", f.read()).group(1).replace("\n", " ").split(",") if x.strip()]
+
+
+class RouletteModel(unittest.TestCase):
+    """The live roulette agrees with the animation (docs/arte/ruleta-animacion.mjs) and with the bets of the server
+    (backend/games.py): every pocket has its colour, every number is over its pocket and the ball is the animation's.
+    Read from the raw export, whose geometry is not compressed."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.doc, cls.bin = read_glb(os.path.join(ROOT, "assets3d", "juegos", "ruleta-exportada.glb"))
+        cls.order = _js_list("docs/arte/ruleta-animacion.mjs", "WHEEL_ORDER")
+        with open(os.path.join(ROOT, "backend", "games.py"), encoding="utf-8") as f:
+            cls.reds = {int(x) for x in re.search(r"REDS = \{([^}]*)\}", f.read()).group(1).split(",")}
+        with open(os.path.join(ROOT, "docs", "arte", "ruleta-animacion.mjs"), encoding="utf-8") as f:
+            cls.ball_radius = float(re.search(r"BALL_RADIUS = ([\d.]+)", f.read()).group(1))
+        with open(os.path.join(ROOT, "assets3d", "herramientas", "ruleta_numeros.py"), encoding="utf-8") as f:
+            cls.cells = int(re.search(r"^CELLS = (\d+)", f.read(), re.M).group(1))
+
+    def mesh(self, node_name):
+        node = next(n for n in self.doc["nodes"] if n.get("name") == node_name)
+        return self.doc["meshes"][node["mesh"]]
+
+    def triangles(self, prim):
+        pos = glb_accessor(self.doc, self.bin, prim["attributes"]["POSITION"])
+        idx = [i[0] for i in glb_accessor(self.doc, self.bin, prim["indices"])]
+        return pos, [idx[k:k + 3] for k in range(0, len(idx), 3)]
+
+    def slot(self, points):
+        """The wheel's slot j under the centre of some points (glTF Y up, so Blender's angle is atan2(-z, x))."""
+        import math
+        x = sum(p[0] for p in points) / len(points)
+        z = sum(p[2] for p in points) / len(points)
+        a = math.atan2(-z, x) % (2 * math.pi)
+        width = 2 * math.pi / len(self.order)
+        return int(a // width), (a % width) / width
+
+    def colour(self, n):
+        return "lime" if n == 0 else "verm" if n in self.reds else "ink"
+
+    def test_the_web_model_comes_from_this_export(self):
+        # static/3d/ruleta.glb is assets3d/juegos/ruleta-exportada.glb optimized: same meshes, same triangles
+        web, _ = read_glb(os.path.join(STATIC, "3d", "ruleta.glb"))
+        per_mesh = lambda doc: sorted((m.get("name", ""), glb_triangles({"meshes": [m], "accessors": doc["accessors"]})) for m in doc["meshes"])
+        self.assertEqual(per_mesh(web), per_mesh(self.doc), "static/3d/ruleta.glb no sale de la exportación cruda: vuelve a correr optimizar-glb.mjs")
+
+    def test_the_ball_is_the_size_of_the_animation(self):
+        prim = self.mesh("GEO-ruleta_bola")["primitives"][0]
+        pos = glb_accessor(self.doc, self.bin, prim["attributes"]["POSITION"])
+        radius = max((x * x + y * y + z * z) ** 0.5 for x, y, z in pos)
+        self.assertAlmostEqual(radius, self.ball_radius, delta=1e-4, msg="la bola del modelo no mide lo que la animación (BALL_RADIUS)")
+
+    def test_every_pocket_has_the_colour_of_its_number(self):
+        wrong = []
+        for prim in self.mesh("GEO-ruleta_casillas")["primitives"]:
+            mat = self.doc["materials"][prim["material"]]["name"].rsplit("_", 1)[-1]
+            pos, tris = self.triangles(prim)
+            for t in tris:
+                j, _ = self.slot([pos[i] for i in t])
+                n = self.order[len(self.order) - 1 - j]
+                if self.colour(n) != mat:
+                    wrong.append((n, mat))
+        self.assertEqual(wrong, [], "casillas con el color equivocado (número, color del modelo)")
+
+    def test_every_number_sits_over_its_pocket(self):
+        prim = self.mesh("GEO-ruleta_numeros")["primitives"][0]
+        pos, tris = self.triangles(prim)
+        uv = glb_accessor(self.doc, self.bin, prim["attributes"]["TEXCOORD_0"])
+        worst = 0.0
+        for t in tris:
+            j, frac = self.slot([pos[i] for i in t])
+            row, col = divmod(j, self.cells)
+            u = sum(uv[i][0] for i in t) / 3
+            v = sum(uv[i][1] for i in t) / 3                     # glTF: v grows down the picture
+            worst = max(worst, abs(u - (col + frac) / self.cells))
+            self.assertEqual(int(v >= 0.5), row, f"el tramo {j} lee la fila equivocada de la tira de números")
+        self.assertLess(worst, 0.02 / self.cells, "el anillo de números no cae sobre sus casillas")
+
+    def test_the_strip_paints_each_cell_with_the_colour_of_its_number(self):
+        path = os.path.join(ROOT, "assets3d", "texturas", "ruleta-numeros.png")
+        rows, width, height, bpp = png_rows(path)
+        cell = width / self.cells
+        row_h = (height - 4) // 2                                     # two rows with 4 px of paper between them
+        hexes = {"lime": (0xC6, 0xF4, 0x32), "verm": (0xFF, 0x4B, 0x2B), "ink": (0x1A, 0x16, 0x12)}
+        wrong = []
+        for j in range(len(self.order)):
+            row, col = divmod(j, self.cells)
+            x, y = int(col * cell + 5), int(row * (row_h + 4) + 4)    # inside the cell, clear of the line and the digits
+            px = tuple(rows[y][x * bpp:x * bpp + 3])
+            n = self.order[len(self.order) - 1 - j]
+            if max(abs(a - b) for a, b in zip(px, hexes[self.colour(n)])) > 6:
+                wrong.append((j, n, px))
+        self.assertEqual(wrong, [], "celdas de la tira con otro color que el de su número (tramo, número, color)")
+
+
+def png_rows(path):
+    """Rows of an 8-bit PNG, decoded with zlib from the standard library: (rows, width, height, bytes per pixel)."""
+    import zlib
+    with open(path, "rb") as f:
+        data = f.read()
+    width, height = struct.unpack(">II", data[16:24])
+    bit_depth, color_type = data[24], data[25]
+    if bit_depth != 8:
+        raise AssertionError(f"{os.path.relpath(path, ROOT)}: profundidad de {bit_depth} bits; las imágenes de la app son de 8")
+    bpp = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}[color_type]
+    pos, idat = 8, b""
+    while pos < len(data):
+        length, kind = struct.unpack(">I4s", data[pos:pos + 8])
+        if kind == b"IDAT":
+            idat += data[pos + 8:pos + 8 + length]
+        pos += 12 + length
+    raw = zlib.decompress(idat)
+    stride = width * bpp + 1
+    rows, prev = [], bytearray(width * bpp)
+    for y in range(height):                                         # undo the PNG row filters
+        f, line = raw[y * stride], bytearray(raw[y * stride + 1:(y + 1) * stride])
+        for x in range(len(line)):
+            a = line[x - bpp] if x >= bpp else 0
+            b = prev[x]
+            c = prev[x - bpp] if x >= bpp else 0
+            if f == 1:
+                line[x] = (line[x] + a) & 255
+            elif f == 2:
+                line[x] = (line[x] + b) & 255
+            elif f == 3:
+                line[x] = (line[x] + (a + b) // 2) & 255
+            elif f == 4:
+                p = a + b - c
+                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+                line[x] = (line[x] + (a if pa <= pb and pa <= pc else b if pb <= pc else c)) & 255
+        rows.append(line)
+        prev = line
+    return rows, width, height, bpp
 
 
 def corner_alphas(path):

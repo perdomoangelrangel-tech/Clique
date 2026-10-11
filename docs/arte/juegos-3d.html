@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Juegos: dibujo y 3D</title>
+<!--
+  Hoja de revisión de E6 · Arte 3D. No es parte de la app.
+  Cómo abrirla: desde la raíz del repositorio, `python -m http.server 8000`
+  y luego http://localhost:8000/docs/arte/juegos-3d.html
+  Pone cada dibujo original (docs/arte/referencia-2d/, la referencia que eligió el dueño el 11-oct) junto a su
+  versión en 3D (static/casino-icons/), sobre el color de su póster de static/js/art.js, a 480 px y a 128 px.
+  Receta: equipo/contratos/arte3d.md §13.
+-->
+<link rel="stylesheet" href="../../static/css/tokens.css">
+<style>
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 0.9375rem/1.45 var(--f-body); }
+  main { max-width: 70rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+  h1 { font: 800 1.375rem/1.2 var(--f-display); margin: 0 0 0.25rem; }
+  p { color: var(--text-2); margin: 0 0 1.5rem; }
+  .juegos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr)); gap: 1.5rem 1rem; }
+  .juego h2 { font: 700 1rem/1.3 var(--f-display); margin: 0 0 0.5rem; }
+  .par { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  figure { margin: 0; }
+  figcaption { color: var(--text-3); font-size: 0.8125rem; margin-top: 0.25rem; }
+  .poster { aspect-ratio: 1; display: grid; place-items: center; position: relative; }
+  .poster img.big { width: 92%; height: auto; }
+  .poster .small { position: absolute; right: 0.25rem; bottom: 0.25rem; width: 2.5rem; height: 2.5rem; padding: 0.125rem;
+    background: inherit; outline: 1px solid var(--line-soft); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Los 14 juegos: el dibujo y su versión en 3D</h1>
+  <p>Cada imagen va sobre el color de su póster. La chica es la de 128 px, la de los mosaicos y la barra del casino.</p>
+  <div class="juegos" id="juegos"></div>
+</main>
+<script>
+  // Colores de póster copiados de POSTER en static/js/art.js (esta hoja no es parte de la app)
+  const GAMES = [
+    ['chicken', 'Gallina', '#C6F432'], ['blackjack', 'Blackjack', '#1E3B2C'], ['roulette', 'Ruleta', '#FF4B2B'],
+    ['limbo', 'Limbo', '#EFE6D2'], ['coinflip', 'Volado', '#2A2420'], ['war', 'Guerra', '#EFE6D2'],
+    ['dice', 'Dados', '#1E3B2C'], ['mines', 'Minas', '#FF4B2B'], ['moles', 'Topos', '#C6F432'],
+    ['tower', 'Torre', '#EFE6D2'], ['poker', 'Póker', '#2A2420'], ['hilo', 'Mayor o menor', '#2A2420'],
+    ['wheel', 'Rueda', '#1E3B2C'], ['rps', 'Piedra, papel o tijera', '#C6F432'],
+  ];
+  const grid = document.getElementById('juegos');
+  for (const [id, name, poster] of GAMES) {
+    const s = document.createElement('section');
+    s.className = 'juego';
+    const figure = (big, small, caption, alt) => {
+      const f = document.createElement('figure');
+      const d = document.createElement('div');
+      d.className = 'poster';
+      d.style.background = poster;
+      const g = new Image(); g.className = 'big'; g.src = big; g.alt = alt;
+      d.append(g);
+      if (small) { const c = new Image(); c.className = 'small'; c.src = small; c.alt = ''; d.append(c); }
+      const cap = document.createElement('figcaption'); cap.textContent = caption;
+      f.append(d, cap);
+      return f;
+    };
+    const h = document.createElement('h2'); h.textContent = name;
+    const par = document.createElement('div'); par.className = 'par';
+    par.append(
+      figure(`referencia-2d/${id}.png`, null, 'Dibujo', `${name}, dibujo original`),
+      figure(`../../static/casino-icons/${id}.png`, `../../static/casino-icons/small/${id}.png`, 'En 3D', `${name} en 3D`),
+    );
+    s.append(h, par);
+    grid.append(s);
+  }
+</script>
+</body>
+</html>

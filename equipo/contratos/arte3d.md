@@ -16,7 +16,7 @@ Cómo se hace, se nombra, se exporta y se usa todo el 3D de Clique. Lo siguen E6
 | --- | --- | --- |
 | Ficha | Ø 0.039 m × 0.0033 m de canto; 0.00362 m con el relieve del centro | El nodo `ficha` del GLB la deja apoyada: base en y = 0. Paso de pila: 0.00332 m (el relieve del centro queda oculto dentro de la ficha de arriba). |
 | Carta | 0.063 × 0.088 m, 0.0003 m de grueso, esquinas de 0.003 m | Tamaño póker. |
-| Rueda de ruleta | Ø 0.83 m (tazón), rotor Ø 0.61 m | Europea, 37 casillas. |
+| Rueda de ruleta | Ø 0.94 m (aro), pista a 0.379 m del centro, rotor Ø 0.62 m, bola Ø 0.032 m | Europea, 37 casillas. Rueda del dibujo (§13); la de madera de la primera prueba medía Ø 0.83 m. |
 | Mesa de ruleta | 2.70 × 1.30 m, esquinas de 0.26 m | Riel de 0.10 m. |
 | Boleto de papel | 0.080 × 0.130 m | En el cuadro 1 se ve a 1.15× para que se lea. |
 | Póster del lobby | 0.50 × 0.70 m, paspartú de 0.045 m | Marco de latón de 0.035 m. |
@@ -38,7 +38,8 @@ Cómo se hace, se nombra, se exporta y se usa todo el 3D de Clique. Lo siguen E6
   - Modelos: `assets3d/<modelo>/<modelo>.blend` y su exportación cruda `<modelo>-exportada.glb`.
   - Renders: `docs/arte/<nn-nombre>-<ancho>x<alto>.webp` para la dirección de arte y `static/renders/` para lo que use la app.
   - Web: `static/3d/<modelo>.glb` y un respaldo 2D por variante: `static/3d/<modelo>-<variante>-2d.webp`.
-  - Imágenes de juego y de la app: una sola escena de Blender por imagen, todas en `assets3d/juegos/juegos.blend` (`J_<juego>`, `F_fondo`, `I_icono`), con sus herramientas en el bloque de texto `e6_util.py` del mismo archivo, copiado en `assets3d/herramientas/e6_util.py` (si cambias uno, cambia el otro). Sección 11.
+  - Imágenes de juego y de la app: una sola escena de Blender por imagen, todas en `assets3d/juegos/juegos.blend` (`T_<juego>` en el estilo del dibujo, `F_fondo`, `I_icono`; las `J_<juego>` son la primera prueba, con luz de mesa), con sus herramientas en bloques de texto del mismo archivo copiados en `assets3d/herramientas/` (si cambias uno, cambia el otro): `e6_util.py`, `e6_toon.py`, `juegos_toon.py` y `ruleta_toon.py`. Secciones 11 y 13.
+  - Materiales del estilo del dibujo: `T_<color>` en las imágenes y `roulette_<color>` en la ruleta en vivo. El color va en el nombre, con las claves de la paleta de §13 (`cream`, `ink`, `lime`, `verm`, `verm_soft`, `felt`, `gold`): la web los cambia por el sombreado de dos tonos por nombre. `roulette_numbers` es la tira de números (una imagen). No se renombran.
 
 ## 3. Paleta v2 → materiales
 
@@ -60,7 +61,7 @@ Cada material sale de un valor de la paleta v2 (la de `static/css/tokens.css`, q
 | Madera lacada | rampa `#1E120B` → `#5A321C`; rotor `#0E0805` → `#3A2012` | neutro cálido de sala y mesa |
 | Luces de bokeh, focos y luces de la web | `#FBB635`, `#FFCF84`, `#FFE0B1`, `#FEECD1`, `#DF9C03` | escala oro |
 
-**Lima y bermellón** son las luces de ganar y perder y nunca decoración (ADR-005). En las fichas son el color de la ficha, que identifica su valor. No se usan para iluminar una escena ni para adornarla.
+**Lima y bermellón** son las luces de ganar y perder y nunca decoración (ADR-005). En las fichas son el color de la ficha, que identifica su valor. No se usan para iluminar una escena ni para adornarla. **Excepción del 11-oct:** en el estilo del dibujo (§13) son colores de los objetos de juego, como en los dibujos que eligió el dueño; ahí no hay luces, así que no se confunden con las de ganar y perder.
 
 ## 4. Recetas PBR (Principled BSDF de Blender 5.2)
 
@@ -93,10 +94,10 @@ En la web (three.js), la ficha llega como `MeshPhysicalMaterial` con capa (`KHR_
 | Concepto | Presupuesto | `ficha.glb` |
 | --- | --- | --- |
 | GLB por pantalla | ≤ 1.5 MB | 50,704 bytes (22,169 con gzip, 20,727 con brotli) |
-| Un modelo suelto | ≤ 300 KB y ≤ 8 mil triángulos | 6,508 triángulos, 4 primitivas (cuerpo, incrustaciones, centro, tinta) |
-| Texturas | ≤ 1024 px, KTX2 | Ninguna: el logotipo y las marcas son geometría. |
-| Triángulos en escena | ≤ 50 mil | 26,032 con cuatro fichas en la página de prueba. La ruleta: 11,908 (§12) |
-| Cuadros por segundo | 60 en Android de gama media | PC del dueño (Chrome, pantalla de 144 Hz), 10-oct, con captura en la conversación con E0: de 138 a 145, que es el ritmo de su pantalla. La página dibuja un cuadro cada 6.9 ms; lo que tarda en dibujarlo no se midió, pero cabe en ese intervalo. **Falta medir en Android de gama media.** La página de prueba lleva la ficha sin comprimir (154,888 bytes), con los mismos triángulos |
+| Un modelo suelto | ≤ 300 KB y ≤ 8 mil triángulos | 6,508 triángulos, 4 primitivas (cuerpo, incrustaciones, centro, tinta). La ruleta: 7,206. `tests/test_arte.py` comprueba el tope en cada GLB de `static/3d` |
+| Texturas | ≤ 1024 px, KTX2 | Ficha: ninguna, el logotipo y las marcas son geometría. Ruleta: la tira de números, 1024 × 92 en dos filas, en WebP y no en KTX2: para una sola tira no vale cargar el transcodificador de Basis. Se revisa cuando haya más texturas. `tests/test_arte.py` comprueba el tope |
+| Triángulos en escena | ≤ 50 mil | 26,032 con cuatro fichas en la página de prueba. La ruleta: 7,206 del modelo más 4,684 de su contorno (§12) |
+| Cuadros por segundo | 60 en iPhone y en Android de gama media; la app es para escritorio y para celular | **iPhone (el del dueño):** Safari dibuja a 60 como máximo, aunque la pantalla dé 120; la meta es no bajar de 60. **Falta medir la ruleta en el iPhone del dueño.**  PC del dueño (Chrome, pantalla de 144 Hz), 10-oct, con captura en la conversación con E0: de 138 a 145, que es el ritmo de su pantalla. La página dibuja un cuadro cada 6.9 ms; lo que tarda en dibujarlo no se midió, pero cabe en ese intervalo. **Falta medir en Android de gama media.** La página de prueba lleva la ficha sin comprimir (154,888 bytes), con los mismos triángulos |
 
 ## 7. Exportar para la web
 
@@ -133,7 +134,7 @@ const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   - **Orden de la rueda:** 0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26.
   - **Cómo aterrizar:** para dejar el número de la posición `k` bajo un marcador fijo en el ángulo `φ` (en el mundo y alrededor del centro de la rueda), el giro final del rotor es `θ = φ + 2π(k + 0.5)/37`, más vueltas completas.
   - **En three.js** (Y arriba), el mismo `θ` va en `rotation.y` con el mismo signo: el paso de Z arriba a Y arriba es un giro de -90° en X, que lleva un giro en Z a un giro en Y igual.
-  - **Comprobado** en Blender para las 37 posiciones, leyendo la UV del anillo bajo cada ángulo: 0 errores. La bola del cuadro 1 está en `k = 3` (el 19).
+  - **Comprobado** en Blender para las 37 posiciones de la rueda de madera, leyendo la UV del anillo bajo cada ángulo: 0 errores. La bola del cuadro 1 está en `k = 3` (el 19). La rueda del dibujo lo comprueba `tests/test_arte.py` (`RouletteModel`): el color de cada casilla, el número sobre cada una y la bola de la animación.
 
 ## 10. Versión 2D y menos movimiento (ADR-005)
 
@@ -144,8 +145,8 @@ const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 
 ## 11. Imágenes 2D de la app
 
-Lo que la app muestra como imagen fija sale de Blender con la receta de los cuadros (sección 5), y la prueba
-`tests/test_arte.py` comprueba nombres, medidas, transparencia y peso.
+Lo que la app muestra como imagen fija sale de Blender: los juegos con la receta del dibujo (§13) y los fondos y los
+íconos de la app con la de los cuadros (§5). La prueba `tests/test_arte.py` comprueba nombres, medidas, transparencia y peso.
 
 | Imagen | Archivo | Medida | Presupuesto | Fondo |
 | --- | --- | --- | --- | --- |
@@ -156,14 +157,17 @@ Lo que la app muestra como imagen fija sale de Blender con la receta de los cuad
 | Ícono enmascarable | `static/renders/icono-maskable-512.png` | 512 × 512 | ≤ 100 KB | La ficha dentro del 70 % del lado: cabe en el círculo seguro del 80 % |
 | Ícono de iOS | `static/renders/apple-touch-icon-180.png` | 180 × 180 | ≤ 100 KB | Como el 512; iOS redondea las esquinas |
 
-**Receta de las imágenes de juego:**
+**Receta de las imágenes de juego (desde el 11-oct):** la del estilo del dibujo, en la sección 13. La receta de abajo es
+la de la primera prueba (luz de mesa, `J_<juego>`) y sigue siendo la de los fondos y los íconos de la app.
+
+**Receta de la luz de mesa:**
 - Cycles con fondo transparente y un plano `is_shadow_catcher` debajo: la sombra suave queda en la imagen y oscurece el color del póster. En EEVEE no hay atrapasombras.
 - La misma gestión de color que los cuadros: AgX "Punchy", exposición -0.5.
 - Luces escaladas al tamaño del objeto (`luces()` en `e6_util.py`): llave cálida arriba a la izquierda, cenital suave para el brillo de la laca, contraluz y relleno sin sombra.
 - Cámara de 70 mm, de 34° a 58° de elevación según el objeto. El objeto ocupa del 82 % al 86 % del cuadro.
 - Se renderiza a 960 px y se reduce con `assets3d/herramientas/iconos_juego.py`: Lanczos y cuantización a 256 colores con libimagequant, que respeta la transparencia de la sombra.
 - Sin texto en las imágenes: la leyenda impresa de las cartas de los cuadros se quita en las de juego (`carta_as_*_sin_leyenda` en el .blend). Los números de la rueda y el índice "A" de las cartas son parte del objeto y se quedan **si el dueño lo aprueba** con la hoja de prueba; si no, se quitan igual.
-- **Lima y bermellón no se usan como color de un objeto de juego** (sección 3). Los dados son papel y oro.
+- Con la luz de mesa, lima y bermellón no se usan como color de un objeto (sección 3). En el estilo del dibujo sí: es la paleta de los dibujos que eligió el dueño (§13).
 
 ## 12. Animación de los juegos
 
@@ -174,7 +178,7 @@ mesa del club y una animación coreografiada, no simulada. La tabla de estilos p
 **Reglas de la casa:**
 - Una cámara por juego, quieta o con un acercamiento lento.
 - De 1.2 a 3 segundos por jugada; la ruleta y la rueda, hasta 4.5.
-- Ganar: luz lima y destello de latón. Perder: el bermellón que se apaga.
+- Ganar: un destello lima (en el estilo del dibujo, sin luces: la casilla o el trazo se encienden en lima). Perder: el bermellón que se apaga.
 - Con `prefers-reduced-motion: reduce`, el resultado aparece sin animación.
 - Las cuentas de cada animación viven en un módulo puro, sin three.js ni DOM, con su prueba: E5 lo lleva a la app tal cual.
 
@@ -182,13 +186,62 @@ mesa del club y una animación coreografiada, no simulada. La tabla de estilos p
 
 | Pieza | Archivo | Lo medido |
 | --- | --- | --- |
-| Modelo | `static/3d/ruleta.glb` (nodos `RIG-ruleta`, `RIG-ruleta_rotor` y `GEO-ruleta_bola`) | 121,632 bytes (66 KB con gzip), 11,908 triángulos, anillo de números en WebP de 1024 × 90 |
-| Respaldo 2D | `static/3d/ruleta-madera-2d.webp` | 512 × 512, fondo transparente |
-| Exportación cruda | `assets3d/juegos/ruleta-exportada.glb`, con `assets3d/herramientas/exportar_ruleta.py` | Igual byte por byte en cada exportación |
+| Modelo | `static/3d/ruleta.glb` (nodos `RIG-ruleta`, `RIG-ruleta_rotor` y `GEO-ruleta_bola`) | 79,676 bytes (41,989 con gzip -9), 7,206 triángulos, 13 piezas; tira de números en WebP de 1024 × 92 |
+| Respaldo 2D | `static/3d/ruleta-dibujo-2d.webp` | 512 × 512, fondo transparente; sale del mismo prototipo con `?respaldo=1` |
+| Escena y exportación | Escena `T_ruleta_vivo` de `juegos.blend`, armada y exportada con `assets3d/herramientas/ruleta_toon.py`, en Blender o sin abrirlo (`pip install bpy==5.2.2`; el comando está en su encabezado); cruda en `assets3d/juegos/ruleta-exportada.glb` | Las superficies salen del perfil de la animación menos un radio de bola |
+| Anillo de números | `assets3d/texturas/ruleta-numeros.png`, de `assets3d/herramientas/ruleta_numeros.py` | Rojo → bermellón, negro → tinta, 0 → lima. Dos filas de 19 celdas: el tramo j (la casilla k = 36 − j) va en la celda j % 19 de la fila j // 19 |
+| Estilo en la web | `docs/arte/estilo-toon.mjs` (`applyToon`, `addOutlines`) | Dos tonos exactos de la paleta y contorno de tinta del mismo grueso en pantalla, sin luces ni sombras |
 | Cuentas | `docs/arte/ruleta-animacion.mjs` (`planSpin`) | `docs/arte/ruleta-animacion.test.mjs`: los 37 números, con tres marcadores y tres giros de partida, sin saltos de la bola |
-| Prototipo | `docs/arte/prueba-ruleta.html` | Elige un número y lo comprueba en pantalla: "El servidor dijo 17 · cayó en 17" |
+| Prototipo | `docs/arte/prueba-ruleta.html` | Elige un número de prueba y lo comprueba en pantalla: "Número de prueba 23 · cayó en 23 ✓". Solo dibuja durante la tirada |
 
 - **La tirada:** el marcador φ es -π/2, hacia el jugador. El rotor frena con una curva cúbica hasta θ = φ + 2π(k + 0.5)/37 más al menos una vuelta.
 - **La bola:** corre en la pista contra el rotor y baja entre el 55 % y el 80 % del tiempo, con un rebote en los rombos y otro en la pared de la casilla. Desde el 80 % viaja con el rotor dentro de su casilla. Su ángulo de partida se calcula para que llegue sin saltos.
-- **Materiales en la web:** la madera va con el color de su rampa al 60 % y el latón con una rugosidad de 0.34, porque el glTF no lleva nodos procedurales. Hornear la veta de la madera queda pendiente.
-- **Presupuesto:** 11,908 triángulos pasan del tope de 8 mil para un modelo suelto (§6). En la escena caben de sobra (≤ 50 mil). Queda como pregunta para el dueño: aceptar la excepción para los modelos de mesa, o simplificar más (con `--simplificar 0.0008` quedan 10,232).
+- **La rueda, simplificada para que funcione en celular** (el dueño, 11-oct: "hazla funcional y si es necesario simplifícala"): sin luces, sin sombras y sin texturas de material; solo el anillo de números es imagen. 7,206 triángulos, dentro del tope de 8 mil (§6). Lleva sus números porque es funcional: la regla de §11 de no poner texto es para las imágenes fijas.
+- **La bola roza los trastes:** al entrar a su casilla se mete en ellos a lo más 1 mm durante menos de un cuadro (simulado con los 37 números). Los trastes son bajos (0.0505 m) para que casi no se note.
+- **Fondo:** el fieltro plano (`--felt`), como el póster de una mesa. La rueda no lleva sombra: el dibujo tampoco.
+- **La rueda de madera de la primera prueba** queda en la escena `J_roulette` de `juegos.blend`, con sus nombres terminados en `_madera`. Ya no se exporta.
+
+## 13. El estilo del dibujo (decisión del dueño, 11-oct)
+
+El dueño eligió la estética de los dibujos 2D de `static/casino-icons` "pero en 3D, que se ve muy superior". Los 14
+juegos y la ruleta en vivo siguen esta receta. La referencia son los dibujos originales, guardados en
+`docs/arte/referencia-2d/`; la hoja `docs/arte/juegos-3d.webp` (y la página `juegos-3d.html`) los pone junto a los nuevos.
+
+**Forma:** gorda y redondeada, de primitivas con bevel y subdivisión (`e6_toon.py`: `obj`, `cylinder`, `sphere`,
+`box`, `wedge`). Los símbolos planos (palos de cartas, flechas, corona, estrella) son contornos extruidos.
+
+**Color:** de la paleta, exacto, en dos tonos. Cada material es luz y sombra; la sombra es el tono que usa el dibujo
+para dar volumen.
+
+| Color | Luz | Sombra |
+| --- | --- | --- |
+| Papel (`cream`) | `#EFE6D2` | `#CFC3A8` |
+| Tinta (`ink`) | `#1A1612` | `#0E0C0A` |
+| Lima (`lime`) | `#C6F432` | `#9CC320` |
+| Bermellón (`verm`) | `#FF4B2B` | `#D2361B` |
+| Bermellón suave (`verm_soft`), los gajos claros sobre el póster bermellón | `#F2664A` | `#D24E36` |
+| Fieltro (`felt`) | `#2F6B47` | `#1E3B2C` |
+| Oro (`gold`) | `#FBB635` | `#D9952A` |
+
+**En Blender** (`e6_toon.py`):
+- EEVEE con fondo transparente y gestión de color **Standard**, sin AgX, para que el color salga tal cual.
+- Material: Diffuse → Shader to RGB → rampa constante (corte en 0.38) → Emission.
+- Un sol por escena, sin sombras, desde `(-0.40, -0.62, 0.68)`: casi todo queda en luz, como el dibujo.
+- **Contorno:** casco invertido por pieza (Solidify hacia afuera, normales invertidas, material de tinta con caras
+  traseras ocultas). Grueso: 2.1 % del cuadro, que a 480 px da el trazo de 10 px del dibujo.
+- Las piezas de tinta y las planas y delgadas llevan `no_outline`: el casco de un disco delgado asoma por detrás como
+  rayas.
+- Imagen: 960 px con `juegos_toon.py` (`render_game`), y de ahí `iconos_juego.py`, igual que antes.
+
+**En la web** (`docs/arte/estilo-toon.mjs`): el mismo sombreado con un `ShaderMaterial` (el sol de Blender pasado a
+three.js y el mismo corte) y el mismo casco invertido, empujado en pantalla para que el trazo mida lo mismo cerca y
+lejos. Las piezas con `no_outline` en los extras del glTF no lo llevan. Sin luces, sin sombras y sin tone mapping, y
+la página solo dibuja mientras algo se mueve. La meta es 60 cuadros en un celular, que falta medir en el iPhone del
+dueño (§6). Los colores de sombra aún no son tokens: `applyToon` recibe la paleta, y E5 la arma con los tokens en
+cuanto E4 los agregue (petición en la bitácora).
+- Las piezas escaladas en Blender llevan la escala en la malla, no en el objeto (`ball()` en `juegos_toon.py`): el
+  casco se mide en el espacio del objeto y una pieza aplastada aplastaría su trazo.
+- Gajos (ruleta, rueda): sin casco y separados con `wedge(..., inset=)`, para que la tinta de la base asome entre ellos
+  con el mismo grueso de trazo.
+
+**Animación:** la misma de §12. El estilo no cambia las cuentas.

@@ -21,8 +21,9 @@ export function pocketAngle(number) {
   return -TAU * (k + 0.5) / POCKETS;
 }
 
-// Medidas de la rueda (assets3d/juegos/juegos.blend, escena J_roulette), altura del centro de la bola.
-export const BALL_RADIUS = 0.0105;
+// Medidas de la rueda, altura del centro de la bola. La rueda del dibujo (assets3d/herramientas/ruleta_toon.py, escena
+// T_ruleta_vivo de juegos.blend) pone cada superficie a un radio de bola debajo de este perfil.
+export const BALL_RADIUS = 0.016;
 export const TRACK = { r: 0.379, z: 0.1035 };          // la pista de arriba del tazón
 export const POCKET = { r: 0.244, z: 0.0565 };         // el fondo de una casilla
 const PROFILE = [                                       // [radio, altura del centro de la bola] de la casilla a la pista

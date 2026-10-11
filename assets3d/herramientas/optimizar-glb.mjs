@@ -4,7 +4,8 @@
 //   npm i @gltf-transform/core@4.5.1 @gltf-transform/extensions@4.5.1 @gltf-transform/functions@4.5.1 meshoptimizer@1.3.0
 //   node optimizar-glb.mjs entrada.glb salida.glb [--simplificar <error>] [--textura <px>]
 //   Ficha:  node optimizar-glb.mjs assets3d/ficha/ficha-exportada.glb static/3d/ficha.glb
-//   Ruleta: node optimizar-glb.mjs assets3d/juegos/ruleta-exportada.glb static/3d/ruleta.glb --simplificar 0.0004 --textura 1024
+//   Ruleta: node optimizar-glb.mjs assets3d/juegos/ruleta-exportada.glb static/3d/ruleta.glb
+//   (la del dibujo ya nace con 7,206 triángulos y su textura de 1024: no necesita --simplificar ni --textura)
 //   (con esas versiones el resultado es idéntico byte por byte)
 //
 // --simplificar <error>: quita triángulos con el simplificador de meshoptimizer sin pasar de ese error

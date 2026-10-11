@@ -43,7 +43,7 @@ def bounds(objs, maxv=6000):
     dg = bpy.context.evaluated_depsgraph_get()
     pts = []
     for o in objs:
-        if o.type != 'MESH' or o.hide_render: continue
+        if o.type not in ('MESH', 'CURVE') or o.hide_render: continue
         oe = o.evaluated_get(dg); me = oe.to_mesh()
         n = len(me.vertices); paso = max(1, n // maxv)
         mw = o.matrix_world

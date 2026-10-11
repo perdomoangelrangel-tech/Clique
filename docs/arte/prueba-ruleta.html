@@ -3,39 +3,46 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ruleta 3D en vivo</title>
+<title>Ruleta en vivo</title>
 <!--
-  Prototipo de E6 · Arte 3D: la ruleta gira y la bola cae en el número que decide el servidor. No es parte de la app.
+  Prototipo de E6 · Arte 3D: la ruleta del dibujo, en 3D, gira y la bola cae en el número que decide el servidor.
+  No es parte de la app; E5 la lleva a la pantalla de la ruleta (equipo/contratos/arte3d.md §12 y §13).
   Cómo abrirla: desde la raíz del repositorio, `python -m http.server 8000`
-  y luego http://localhost:8000/docs/arte/prueba-ruleta.html
-  Las cuentas están en docs/arte/ruleta-animacion.mjs (con su prueba); aquí solo se dibujan.
-  Aquí el "servidor" es un número al azar del navegador, para probar; en la app llega del servidor (D8).
-  Arranca en 2D y pasa a 3D solo cuando el modelo cargó (ADR-005). Con "menos movimiento", el resultado
-  aparece sin animación.
-  Para capturas: ?n=17&t=3.1 deja la rueda quieta en ese instante de la tirada del 17.
+  y luego http://localhost:8000/docs/arte/prueba-ruleta.html (las fuentes de tokens.css se piden en /fonts/, que
+  solo existe con `python server.py`: aquí se ven las de respaldo).
+  - Las cuentas están en docs/arte/ruleta-animacion.mjs (con su prueba) y el estilo en docs/arte/estilo-toon.mjs.
+  - Aquí el número lo elige el navegador, solo para probar; en la app lo manda el servidor (D8).
+  - Arranca en 2D y pasa a 3D solo cuando el modelo cargó (ADR-005). Con "menos movimiento", el resultado
+    aparece sin animación.
+  - Solo dibuja durante una tirada o al cambiar de tamaño: quieta no gasta batería.
+  - Para capturas: ?n=17&t=3.1 deja la rueda quieta en ese instante de la tirada del 17.
+    ?respaldo=1 dibuja la rueda sola, con fondo transparente, para la versión 2D (static/3d/ruleta-dibujo-2d.webp).
 -->
 <link rel="stylesheet" href="../../static/css/tokens.css">
 <style>
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 0.875rem/1.4 var(--f-body); }
-  #escena { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  html, body { margin: 0; height: 100%; background: var(--felt); color: var(--text); font: 0.875rem/1.4 var(--f-body); }
+  body.stand-in { background: transparent; }
+  #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
   .hud { position: fixed; left: 1rem; top: 1rem; padding: 0.75rem 0.875rem; background: var(--card);
     border: 1px solid var(--line-soft); min-width: 14rem; z-index: 1; }
-  .hud h1 { margin: 0 0 0.5rem; font: 700 0.95rem/1.2 var(--f-display); }
+  .hud h1 { margin: 0 0 0.5rem; font: 800 0.95rem/1.2 var(--f-display); }
   .hud dl { display: grid; grid-template-columns: auto auto; gap: 0.125rem 1rem; margin: 0; font-variant-numeric: tabular-nums; }
   .hud dt { color: var(--text-3); }
   .hud dd { margin: 0; text-align: right; }
-  .acciones { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
-  .acciones button { flex: 1; padding: 0.5rem; font: 600 0.875rem var(--f-body); cursor: pointer; border: 1px solid var(--line); background: transparent; color: var(--text); }
-  #girar { background: var(--lime); color: var(--lime-ink); border-color: var(--lime); }
-  .acciones button:disabled { opacity: 0.45; cursor: not-allowed; }
-  .acciones button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
-  #resultado { margin-top: 0.75rem; min-height: 1.4em; font-weight: 600; }
-  .eleccion { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 0.75rem; color: var(--text-3); }
-  .eleccion select { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); padding: 0.25rem 0.375rem; }
-  #respaldo { display: none; position: fixed; inset: 0; place-content: center; padding: 1rem; }
-  #respaldo img { width: min(70vw, 32rem); height: auto; }
-  body.sin-3d #escena { display: none; }
-  body.sin-3d #respaldo { display: grid; }
+  .actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+  .actions button { flex: 1; padding: 0.5rem; font: 600 0.875rem var(--f-body); cursor: pointer; border: 1px solid var(--line); background: transparent; color: var(--text); }
+  #spin { background: var(--lime); color: var(--lime-ink); border-color: var(--lime); }
+  .actions button:disabled, .actions button[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+  .actions button:focus-visible, .pick select:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+  #result { margin-top: 0.75rem; min-height: 1.4em; font-weight: 600; }
+  .pick { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 0.75rem; color: var(--text-3); }
+  .pick small { display: block; font-size: 0.75rem; }
+  .pick select { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); padding: 0.25rem 0.375rem; }
+  #fallback { display: none; position: fixed; inset: 0; place-content: center; padding: 1rem; }
+  #fallback img { width: min(80vw, 32rem); height: auto; }
+  body.no-3d #scene { display: none; }
+  body.no-3d #fallback { display: grid; }
+  body.stand-in .hud { display: none; }
   @media (max-width: 37.5rem) { .hud { left: 0.5rem; right: 0.5rem; top: auto; bottom: 0.5rem; min-width: 0; } }
 </style>
 <script type="importmap">
@@ -45,206 +52,212 @@
 } }
 </script>
 </head>
-<body class="sin-3d">
-<canvas id="escena" role="img" aria-label="Ruleta de madera y latón que gira; la bola cae en el número del resultado"></canvas>
-<div id="respaldo" role="img" aria-label="Ruleta de madera y latón"><img src="../../static/3d/ruleta-madera-2d.webp" alt=""></div>
-<section class="hud">
-  <h1>Ruleta 3D · prueba</h1>
+<body class="no-3d">
+<canvas id="scene" role="img" aria-label="Ruleta de papel y tinta que gira; la bola cae en el número del resultado"></canvas>
+<div id="fallback" role="img" aria-label="Ruleta de papel y tinta"><img src="../../static/3d/ruleta-dibujo-2d.webp" alt=""></div>
+<section class="hud" aria-label="Controles de la prueba">
+  <h1>Ruleta en vivo · prueba</h1>
   <dl>
     <dt>Cuadros por segundo</dt><dd id="fps">—</dd>
-    <dt>Triángulos en escena</dt><dd id="tris">—</dd>
-    <dt>Peso del GLB</dt><dd id="peso">—</dd>
-    <dt>Estado</dt><dd id="estado" aria-live="polite">Cargando el 3D…</dd>
+    <dt>Triángulos del modelo</dt><dd id="tris">—</dd>
+    <dt>Peso del GLB</dt><dd id="weight">—</dd>
+    <dt>Estado</dt><dd id="status" aria-live="polite">Cargando el 3D…</dd>
   </dl>
-  <label class="eleccion" for="numero">Número que manda el servidor
-    <select id="numero"><option value="azar">Al azar</option></select>
+  <label class="pick" for="number"><span>Número de prueba<small>En la app lo manda el servidor</small></span>
+    <select id="number"><option value="random">Al azar</option></select>
   </label>
-  <div class="acciones">
-    <button id="girar" type="button" disabled>Girar</button>
-    <button id="alternar" type="button" disabled>Ver en 3D</button>
+  <div class="actions">
+    <button id="spin" type="button" aria-disabled="true">Girar</button>
+    <button id="toggle" type="button" disabled>Ver en 3D</button>
   </div>
-  <div id="resultado" aria-live="polite"></div>
+  <div id="result" aria-live="polite"></div>
 </section>
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { planSpin, ballPositionThree, pocketAngle, WHEEL_ORDER, POCKETS } from './ruleta-animacion.mjs';
+import { applyToon, addOutlines, modelTriangles } from './estilo-toon.mjs';
 
-// Colores: escala oro y fieltro de la paleta v2 (equipo/contratos/arte3d.md §3); en la app salen de tokens.css
-const LUZ_LAMPARA = 0xFFE0B1;   // oro-200
-const LUZ_CONTRA = 0xFEECD1;    // oro-100
-const FIELTRO = 0x0F2A1E;       // fieltro de render
-const SALA = 0x0E0C0A;
+const WHEEL_RADIUS = 0.47;       // the rim, in metres
 const $ = (id) => document.getElementById(id);
-const menosMovimiento = matchMedia('(prefers-reduced-motion: reduce)');
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const params = new URLSearchParams(location.search);
+const standIn = params.has('respaldo');
 
-let renderer = null, escena, camara, rotor, bola, listo = false, corriendo = false, idCuadro = 0;
-let tirada = null, tInicio = 0, rotorAhora = 0;
+let renderer = null, scene, camera, rotor, ball, outline = null, ready = false, running = false, frameId = 0;
+let spin = null, spinStart = 0, rotorNow = 0, margin = 1.06;
 
-const estado = (t) => { $('estado').textContent = t; };
-const en3D = () => !document.body.classList.contains('sin-3d');
+const setStatus = (t) => { $('status').textContent = t; };
+const showing3D = () => !document.body.classList.contains('no-3d');
+const spinning = () => !!spin && !spin.finished;
+const setSpinEnabled = (on) => $('spin').setAttribute('aria-disabled', on ? 'false' : 'true');
 
-/** El "servidor" de la prueba: un número de 0 a 36 al azar. En la app llega del servidor y aquí no se decide nada. */
-function numeroDelServidor() {
+/** The test's "server": a fair number from 0 to 36 picked by the browser. In the app it comes from the server. */
+function testNumber() {
   const u = new Uint32Array(1);
   do crypto.getRandomValues(u); while (u[0] >= 4294967296 - (4294967296 % 37));
   return u[0] % 37;
 }
-/** Qué casilla quedó bajo la bola, leído de la escena: la comprobación que se ve en pantalla. */
-function numeroBajoLaBola() {
-  const rel = Math.atan2(-bola.position.z, bola.position.x) - rotor.rotation.y;
-  let mejor = null, dist = Infinity;
+/** Which pocket ended under the ball, read from the scene: the check shown on screen. */
+function numberUnderBall() {
+  const rel = Math.atan2(-ball.position.z, ball.position.x) - rotor.rotation.y;
+  let best = null, dist = Infinity;
   for (const n of WHEEL_ORDER) {
     const d = Math.abs(Math.atan2(Math.sin(rel - pocketAngle(n)), Math.cos(rel - pocketAngle(n))));
-    if (d < dist) { dist = d; mejor = n; }
+    if (d < dist) { dist = d; best = n; }
   }
-  return mejor;
+  return best;
 }
 
-function aplicar(s) {
+function pose(s) {
   rotor.rotation.y = s.rotor;
   const p = ballPositionThree(s.ball);
-  bola.position.set(p.x, p.y, p.z);
+  ball.position.set(p.x, p.y, p.z);
+}
+function draw() { if (renderer && ready && showing3D()) renderer.render(scene, camera); }
+
+function startSpin() {
+  if (!ready || spinning()) return;           // aria-disabled keeps the focus on the button; the guard is here
+  const picked = $('number').value;
+  const number = picked === 'random' ? testNumber() : Number(picked);
+  spin = planSpin({ number, rotorStart: rotorNow });
+  spin.finished = false;
+  $('result').textContent = 'Girando…';
+  setSpinEnabled(false);
+  if (reducedMotion.matches || !showing3D()) { finishSpin(); return; }
+  spinStart = performance.now();
+  startLoop();
+}
+function finishSpin() {
+  pose(spin.at(spin.duration));
+  rotorNow = spin.rotorEnd % (2 * Math.PI);
+  rotor.rotation.y = rotorNow;
+  spin.finished = true;
+  const landed = numberUnderBall();
+  $('result').textContent = `Número de prueba ${spin.number} · cayó en ${landed}` + (landed === spin.number ? ' ✓' : ' ✗');
+  setSpinEnabled(true);
+  stopLoop();
+  draw();
 }
 
-function girar() {
-  if (!listo || tirada && !tirada.terminada) return;
-  const elegido = $('numero').value;
-  const numero = elegido === 'azar' ? numeroDelServidor() : Number(elegido);
-  tirada = planSpin({ number: numero, rotorStart: rotorAhora });
-  tirada.terminada = false;
-  $('resultado').textContent = 'Girando…';
-  $('girar').disabled = true;
-  if (menosMovimiento.matches || !en3D()) { terminar(); return; }
-  tInicio = performance.now();
-  arrancar();
-}
-function terminar() {
-  aplicar(tirada.at(tirada.duration));
-  rotorAhora = tirada.rotorEnd % (2 * Math.PI);
-  rotor.rotation.y = rotorAhora;
-  tirada.terminada = true;
-  const cayo = numeroBajoLaBola();
-  $('resultado').textContent = `El servidor dijo ${tirada.number} · cayó en ${cayo}` + (cayo === tirada.number ? ' ✓' : ' ✗');
-  $('girar').disabled = false;
-  if (renderer) renderer.render(escena, camara);
-}
-
-for (let n = 0; n < POCKETS; n++) $('numero').add(new Option(String(n), String(n)));
-$('girar').addEventListener('click', girar);
-$('alternar').addEventListener('click', () => {
-  if (en3D()) { document.body.classList.add('sin-3d'); detener(); $('alternar').textContent = 'Ver en 3D'; }
-  else if (listo) { document.body.classList.remove('sin-3d'); $('alternar').textContent = 'Ver versión 2D'; arrancar(); }
+for (let n = 0; n < POCKETS; n++) $('number').add(new Option(String(n), String(n)));
+$('spin').addEventListener('click', startSpin);
+$('toggle').addEventListener('click', () => {
+  if (showing3D()) {
+    if (spinning()) finishSpin();
+    document.body.classList.add('no-3d'); $('toggle').textContent = 'Ver en 3D';
+    setStatus('Versión 2D');
+  } else if (ready) {
+    document.body.classList.remove('no-3d'); $('toggle').textContent = 'Ver versión 2D';
+    if (reducedMotion.matches) setStatus('3D quieto: pediste menos movimiento');
+    fit(); draw();
+  }
 });
 
-try { renderer = new THREE.WebGLRenderer({ canvas: $('escena'), antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: params.has('t') }); }
-catch { renderer = null; }
+try {
+  renderer = new THREE.WebGLRenderer({ canvas: $('scene'), antialias: true, alpha: standIn,
+    powerPreference: 'high-performance', preserveDrawingBuffer: params.has('t') || standIn });
+} catch { renderer = null; }
 
 if (!renderer) {
-  estado('Sin WebGL: versión 2D');
+  setStatus('Sin WebGL: versión 2D');
 } else {
+  // No lights, no shadows, no environment map: the two tones come from the angle (estilo-toon.mjs)
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.toneMapping = THREE.AgXToneMapping;
-  renderer.toneMappingExposure = 0.95;
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  escena = new THREE.Scene();
-  escena.background = new THREE.Color(SALA);
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  escena.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  escena.environmentIntensity = 0.22;
-  escena.fog = new THREE.Fog(SALA, 3, 9);     // el paño se pierde en la sala oscura, sin borde
+  scene = new THREE.Scene();
+  if (standIn) { document.body.classList.add('stand-in'); renderer.setClearColor(0x000000, 0); }
+  else scene.background = new THREE.Color(getComputedStyle(document.body).getPropertyValue('--felt').trim() || 'black');
+  camera = new THREE.PerspectiveCamera(32, 1, 0.05, 20);
 
-  // el paño, con la luz de la lámpara que cae en círculo
-  const pano = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshStandardMaterial({ color: FIELTRO, roughness: 1 }));
-  pano.rotation.x = -Math.PI / 2; pano.receiveShadow = true; escena.add(pano);
-  const lampara = new THREE.SpotLight(LUZ_LAMPARA, 6, 4, 0.62, 0.9, 1.6);
-  lampara.position.set(-0.25, 1.6, 0.35); lampara.castShadow = true;
-  lampara.shadow.mapSize.set(1024, 1024); lampara.shadow.bias = -0.0004; lampara.shadow.radius = 4;
-  escena.add(lampara, lampara.target);
-  const contra = new THREE.DirectionalLight(LUZ_CONTRA, 0.9); contra.position.set(0.6, 0.5, -0.9); escena.add(contra);
-
-  camara = new THREE.PerspectiveCamera(32, 1, 0.05, 60);
-
-  const cargador = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-  // Fuera del repositorio (el prototipo publicado) el GLB viene incrustado en base64
-  const traer = window.RULETA_GLB_B64
+  const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+  // Outside the repository (the published prototype) the GLB comes inline in base64
+  const fetchModel = window.RULETA_GLB_B64
     ? Promise.resolve(Uint8Array.from(atob(window.RULETA_GLB_B64), (c) => c.charCodeAt(0)).buffer)
     : fetch(new URL('../../static/3d/ruleta.glb', location.href)).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.arrayBuffer(); });
 
-  traer
-    .then((buf) => { $('peso').textContent = (buf.byteLength / 1000).toFixed(1) + ' KB'; return new Promise((ok, mal) => cargador.parse(buf, '', ok, mal)); })
+  fetchModel
+    .then((buf) => { $('weight').textContent = (buf.byteLength / 1000).toFixed(1) + ' KB'; return new Promise((ok, fail) => loader.parse(buf, '', ok, fail)); })
     .then((gltf) => {
-      escena.add(gltf.scene);
+      scene.add(gltf.scene);
       rotor = gltf.scene.getObjectByName('RIG-ruleta_rotor');
-      bola = gltf.scene.getObjectByName('GEO-ruleta_bola');
-      if (!rotor || !bola) throw new Error('faltan RIG-ruleta_rotor o GEO-ruleta_bola');
-      gltf.scene.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-      // la bola, en la casilla ganadora de la tirada anterior: aquí, el 0 bajo el marcador
-      aplicar(planSpin({ number: 0 }).at(99));
-      listo = true;
-      $('girar').disabled = false; $('alternar').disabled = false;
-      if (params.has('n') && params.has('t')) {           // modo captura
-        const s = planSpin({ number: Number(params.get('n')) });
-        aplicar(s.at(Number(params.get('t'))));
-        document.body.classList.remove('sin-3d');
-        estado('Captura'); ajustar(); renderer.render(escena, camara);
-        window.__pose = (t) => { aplicar(s.at(t)); renderer.render(escena, camara); };   // para grabar cuadro por cuadro
+      ball = gltf.scene.getObjectByName('GEO-ruleta_bola');
+      if (!rotor || !ball) throw new Error('faltan RIG-ruleta_rotor o GEO-ruleta_bola');
+      applyToon(gltf.scene);
+      $('tris').textContent = modelTriangles(gltf.scene).toLocaleString('es-MX');
+      outline = addOutlines(gltf.scene);
+      fit();
+      // the ball, in the winning pocket of the last spin: here, the 0 under the marker
+      pose(planSpin({ number: 0 }).at(99));
+      ready = true;
+      setSpinEnabled(true); $('toggle').disabled = false;
+      if (standIn || params.has('n') || params.has('t')) {            // capture mode
+        const n = standIn && !params.has('n') ? 0 : Number(params.get('n'));
+        if (!Number.isInteger(n) || n < 0 || n >= POCKETS) { setStatus('Captura: el número va de 0 a 36'); return; }
+        const s = planSpin({ number: n });
+        pose(s.at(Number(params.get('t') || 99)));
+        document.body.classList.remove('no-3d');
+        setStatus('Captura'); fit(); draw();
+        window.__pose = (t) => { pose(s.at(t)); renderer.render(scene, camera); };   // to record frame by frame
         window.__listo = true;
         return;
       }
-      if (menosMovimiento.matches) { estado('Versión 2D: pediste menos movimiento'); return; }
-      estado('3D en vivo');
-      document.body.classList.remove('sin-3d'); $('alternar').textContent = 'Ver versión 2D';
-      arrancar();
+      if (reducedMotion.matches) { setStatus('Versión 2D: pediste menos movimiento'); return; }
+      setStatus('3D en vivo');
+      document.body.classList.remove('no-3d'); $('toggle').textContent = 'Ver versión 2D';
+      fit(); draw();
     })
-    .catch((e) => { estado('No cargó el modelo: versión 2D'); console.error(e); });
+    .catch((e) => { setStatus('No cargó el modelo: versión 2D'); console.error(e); window.__err = String(e); });
 
-  function ajustar() {
-    const w = innerWidth, h = innerHeight;
-    renderer.setSize(w, h, false);
-    camara.aspect = w / h;
-    // de frente y desde arriba, como el cuadro 1, a la distancia en que cabe la rueda entera con su borde
-    const R = 0.47;
-    const vfov = THREE.MathUtils.degToRad(camara.fov);
-    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camara.aspect);
-    const d = (R / Math.sin(Math.min(vfov, hfov) / 2)) * 1.06;
-    const elev = THREE.MathUtils.degToRad(52);
-    camara.position.set(0, d * Math.sin(elev), d * Math.cos(elev));
-    camara.lookAt(0, 0.03, w < h ? 0.16 : 0);     // en celular la rueda sube, arriba de los botones
-    camara.updateProjectionMatrix();
-  }
-  addEventListener('resize', ajustar); ajustar();
-  window.ajustar = ajustar;
+  addEventListener('resize', () => { fit(); if (!running) draw(); });
+  fit();
 }
 
-// el ciclo de dibujo: solo corre con el 3D a la vista
-let cuadros = 0, t0 = 0;
-function arrancar() { if (corriendo || !renderer) return; corriendo = true; cuadros = 0; t0 = performance.now(); idCuadro = requestAnimationFrame(cuadro); }
-function detener() { corriendo = false; cancelAnimationFrame(idCuadro); }
-function cuadro(t) {
-  if (!corriendo) return;
-  idCuadro = requestAnimationFrame(cuadro);
-  if (tirada && !tirada.terminada) {
-    const s = tirada.at((t - tInicio) / 1000);
-    aplicar(s);
-    if (s.done) terminar();
+function fit() {
+  if (!renderer) return;
+  const w = innerWidth, h = innerHeight;
+  const portrait = w < h;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  // from above, nearly like the drawing, at the distance where the whole wheel fits with its line
+  const vfov = THREE.MathUtils.degToRad(camera.fov);
+  const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
+  const fitAngle = Math.min(vfov, hfov);
+  margin = standIn ? 1.1 : portrait ? 1.08 : 1.06;
+  const d = (WHEEL_RADIUS / Math.sin(fitAngle / 2)) * margin;
+  const elev = THREE.MathUtils.degToRad(portrait && !standIn ? 64 : 60);   // on a phone, higher: the numbers read better
+  camera.position.set(0, d * Math.sin(elev), d * Math.cos(elev));
+  camera.lookAt(0, 0.04, !standIn && portrait ? 0.26 : 0);                // on a phone the wheel goes up, above the controls
+  camera.updateProjectionMatrix();
+  if (outline) {
+    // the line: 1.1 % of the wheel's width on screen (the drawing uses 2.2 % of the icon), never under 1.5 px
+    const wheelPx = (hfov < vfov ? w : h) * Math.sin(fitAngle / 2) / Math.tan(fitAngle / 2) / margin;
+    outline.resize(renderer, Math.max(1.5, 0.011 * wheelPx));
   }
-  renderer.render(escena, camara);
-  cuadros++;
-  if (t - t0 >= 1000) {
-    $('fps').textContent = (cuadros * 1000 / (t - t0)).toFixed(1);
-    $('tris').textContent = renderer.info.render.triangles.toLocaleString('es-MX');
-    cuadros = 0; t0 = t;
+}
+
+// The drawing loop runs only during a spin; a still wheel is drawn once (resize, toggle, end of spin).
+let frames = 0, t0 = 0;
+function startLoop() { if (running || !renderer) return; running = true; frames = 0; t0 = performance.now(); frameId = requestAnimationFrame(frame); }
+function stopLoop() {
+  if (running && frames > 1) $('fps').textContent = (frames * 1000 / (performance.now() - t0)).toFixed(1) + ' en la tirada';
+  running = false; cancelAnimationFrame(frameId);
+}
+function frame(t) {
+  if (!running) return;
+  frameId = requestAnimationFrame(frame);
+  if (spinning()) {
+    const s = spin.at((t - spinStart) / 1000);
+    pose(s);
+    if (s.done) { finishSpin(); return; }
   }
+  renderer.render(scene, camera);
+  frames++;
 }
 </script>
 <script>
-  // Si three.js no llega (sin red o CDN bloqueado), la página se queda en 2D y lo dice.
-  setTimeout(function () { var e = document.getElementById('estado'); if (e.textContent === 'Cargando el 3D…') e.textContent = 'No cargó el 3D: versión 2D'; }, 10000);
+  // If three.js does not arrive (no network or CDN blocked), the page stays in 2D and says so.
+  setTimeout(function () { var e = document.getElementById('status'); if (e.textContent === 'Cargando el 3D…') e.textContent = 'No cargó el 3D: versión 2D'; }, 10000);
 </script>
 </body>
 </html>
