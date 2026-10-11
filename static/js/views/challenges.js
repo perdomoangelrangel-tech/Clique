@@ -6,15 +6,18 @@ import { esc, money, until, dateShort } from '../util.js';
 import { toast } from '../ui.js';
 import { gameSticker } from '../art.js';
 import { emptyState } from './components.js';
+import { t, th, intlLocale } from '../i18n.js';
 
+// i18n: claves ↓
 const ACCT = {
-  weekly: { cls: 'weekly', tag: 'Weekly account', head: 'Pays into your weekly account', note: 'Chips for the week they were earned in: play with them, or they pay off a loan. What is left is reset when the week closes, like everything in the weekly account.' },
-  accumulated: { cls: 'accum', tag: 'Accumulated account', head: 'Pays into your accumulated account', note: 'Money you keep. It never resets, and it is what the Store and the Exchange spend.' },
+  weekly: { cls: 'weekly', tag: 'Cuenta semanal', head: 'Paga a tu cuenta semanal', note: 'Fichas para la semana en que las ganaste: juega con ellas o pagan un préstamo. Lo que sobre se reinicia al cerrar la semana, como todo en la cuenta semanal.', short: 'Semanal' },
+  accumulated: { cls: 'accum', tag: 'Cuenta acumulada', head: 'Paga a tu cuenta acumulada', note: 'Fichas que te quedas. Nunca se reinician, y son las que gastan la Tienda y la Bolsa.', short: 'Acum.' },
 };
+// i18n: fin
 const trim = (v) => String(Number(v).toFixed(2)).replace(/\.?0+$/, '');
-/** What a number means for this goal: plain count, a multiplier, or dollars. */
-const show = (c, v) => (c.kind === 'mult' ? `${trim(v)}\u00d7` : c.kind === 'money' ? money(v) : Number(v).toLocaleString('en-US'));
-const STATUS = { available: 'Not started', in_progress: 'In progress', completed: 'Finished: claim it', claimed: 'Claimed', expired: 'Expired' };
+/** What a number means for this goal: plain count, a multiplier, or chips. */
+const show = (c, v) => (c.kind === 'mult' ? `${trim(v)}\u00d7` : c.kind === 'money' ? money(v) : Number(v).toLocaleString(intlLocale()));
+const STATUS = { available: 'Sin empezar', in_progress: 'En curso', completed: 'Terminado: reclámalo', claimed: 'Reclamado', expired: 'Vencido' };      // i18n: claves
 
 export default {
   async mount(root) {
@@ -24,38 +27,38 @@ export default {
       const a = ACCT[c.account], pct = Math.round((c.progress / c.target) * 100);
       const done = c.status === 'completed', claimed = c.status === 'claimed', expired = c.status === 'expired';
       return `<article class="ch-card card-box ${c.status} ${a.cls}-c" data-id="${esc(c.id)}" aria-label="${esc(c.title)}">
-        <div class="ch-top"><h3>${c.game ? `<span class="ch-game">${gameSticker(c.game, 30)}</span>` : ''}${esc(c.title)}</h3><span class="acct-tag ${a.cls}">${a.tag}</span></div>
+        <div class="ch-top"><h3>${c.game ? `<span class="ch-game">${gameSticker(c.game, 30)}</span>` : ''}${esc(c.title)}</h3><span class="acct-tag ${a.cls}">${t(a.tag)}</span></div>
         <p class="ch-desc">${esc(c.desc)}</p>
-        <div><div class="pbar" role="progressbar" aria-valuemin="0" aria-valuemax="${c.target}" aria-valuenow="${c.progress}" aria-label="${esc(c.title)} progress"><i style="width:${pct}%"></i></div>
-          <div class="ch-nums" style="margin-top:6px"><span><b>${show(c, c.progress)}</b> / ${show(c, c.target)}${c.kind === 'count' ? ' ' + esc(c.unit) : c.kind === 'mult' ? ' in one round' : ' won'}</span><span class="ch-state">${STATUS[c.status]}</span></div></div>
-        <div class="ch-reward"><span class="amt">${money(c.reward)}</span><span>into your <b>${a.tag.toLowerCase()}</b></span>${c.xp ? `<span class="tag">+${c.xp} XP</span>` : ''}</div>
+        <div><div class="pbar" role="progressbar" aria-valuemin="0" aria-valuemax="${c.target}" aria-valuenow="${c.progress}" aria-label="${esc(t('Avance de {reto}', { reto: c.title }))}"><i style="width:${pct}%"></i></div>
+          <div class="ch-nums" style="margin-top:6px"><span><b>${show(c, c.progress)}</b> / ${show(c, c.target)}${c.kind === 'count' ? ' ' + esc(c.unit) : c.kind === 'mult' ? ' ' + t('en una ronda') : ' ' + t('ganados')}</span><span class="ch-state">${t(STATUS[c.status])}</span></div></div>
+        <div class="ch-reward"><span class="amt">${money(c.reward)}</span><span>${th('a tu <b>{cuenta}</b>', { cuenta: t(a.tag).toLowerCase() })}</span>${c.xp ? `<span class="tag">+${c.xp} XP</span>` : ''}</div>
         <p class="ch-rule">${esc(c.rule)}</p>
         <div class="ch-actions">
-          ${claimed ? `<span class="muted" style="font-size:13px">${c.claim && c.claim.auto ? 'Credited automatically when the week closed.' : 'Reward claimed.'}</span>`
-            : expired ? '<span class="muted" style="font-size:13px">Not finished before the week closed, so it expired.</span>'
-            : done && !past ? `<button class="btn btn-primary" data-claim="${esc(c.id)}" ${busy === c.id ? 'disabled' : ''}>Claim ${money(c.reward)}</button>`
+          ${claimed ? `<span class="muted" style="font-size:13px">${c.claim && c.claim.auto ? t('Se abonó solo cuando cerró la semana.') : t('Premio reclamado.')}</span>`
+            : expired ? `<span class="muted" style="font-size:13px">${t('No se terminó antes de que cerrara la semana, así que venció.')}</span>`
+            : done && !past ? `<button class="btn btn-primary" data-claim="${esc(c.id)}" ${busy === c.id ? 'disabled' : ''}>${t('Reclamar {cantidad}', { cantidad: money(c.reward) })}</button>`
             : `<a class="btn btn-secondary btn-sm" href="${esc(c.href)}">${esc(c.cta)}</a>`}
-          ${past ? '' : `<span class="muted num" style="font-size:12px">${until(D.end)} left</span>`}
+          ${past ? '' : `<span class="muted num" style="font-size:12px">${t('quedan {tiempo}', { tiempo: until(D.end) })}</span>`}
         </div></article>`;
     };
 
-    const column = (key, rows) => `<section aria-label="${esc(ACCT[key].head)}"><div class="gl-colhead ${ACCT[key].cls}"><h2>${esc(ACCT[key].tag)}</h2><p><b>${esc(ACCT[key].head)}.</b> ${esc(ACCT[key].note)}</p></div>${rows.map((c) => card(c)).join('')}</section>`;
+    const column = (key, rows) => `<section aria-label="${esc(t(ACCT[key].head))}"><div class="gl-colhead ${ACCT[key].cls}"><h2>${esc(t(ACCT[key].tag))}</h2><p><b>${esc(t(ACCT[key].head))}.</b> ${esc(t(ACCT[key].note))}</p></div>${rows.map((c) => card(c)).join('')}</section>`;
 
     const history = () => {
       if (!D.history.length) return '';
-      return `<div class="ch-hist"><div class="section-head"><div><span class="kicker">Earlier weeks</span><h2 class="page-title" style="font-size:clamp(26px,3vw,38px)">History</h2></div></div>
-        <p class="muted" style="margin:-8px 0 16px;max-width:70ch">A challenge you finished but did not claim was credited for you when its week closed. One you did not finish simply expired.</p>
-        ${D.history.map((h) => `<details><summary><span>Week of ${dateShort(new Date(h.week + 'T12:00:00').getTime())}</span><span class="muted">${h.items.filter((i) => i.status === 'claimed').length} paid · ${h.items.filter((i) => i.status === 'expired').length} expired</span></summary>
-          ${h.items.map((i) => `<div class="hrow"><span class="acct-tag ${ACCT[i.account].cls}">${i.account === 'weekly' ? 'Weekly' : 'Accum.'}</span><span>${esc(i.title)}<br><small class="muted">${show(i, i.progress)} / ${show(i, i.target)}${i.kind === 'count' ? ' ' + esc(i.unit) : ''}</small></span><b class="num">${money(i.reward)}</b><span class="ch-state">${STATUS[i.status]}</span></div>`).join('')}</details>`).join('')}</div>`;
+      return `<div class="ch-hist"><div class="section-head"><div><span class="kicker">${t('Semanas anteriores')}</span><h2 class="page-title" style="font-size:clamp(26px,3vw,38px)">${t('Historial')}</h2></div></div>
+        <p class="muted" style="margin:-8px 0 16px;max-width:70ch">${t('Un reto que terminaste pero no reclamaste se te abonó cuando cerró su semana. Uno que no terminaste simplemente venció.')}</p>
+        ${D.history.map((h) => `<details><summary><span>${t('Semana del {fecha}', { fecha: dateShort(new Date(h.week + 'T12:00:00').getTime()) })}</span><span class="muted">${t('{pagados} pagados · {vencidos} vencidos', { pagados: h.items.filter((i) => i.status === 'claimed').length, vencidos: h.items.filter((i) => i.status === 'expired').length })}</span></summary>
+          ${h.items.map((i) => `<div class="hrow"><span class="acct-tag ${ACCT[i.account].cls}">${t(ACCT[i.account].short)}</span><span>${esc(i.title)}<br><small class="muted">${show(i, i.progress)} / ${show(i, i.target)}${i.kind === 'count' ? ' ' + esc(i.unit) : ''}</small></span><b class="num">${money(i.reward)}</b><span class="ch-state">${t(STATUS[i.status])}</span></div>`).join('')}</details>`).join('')}</div>`;
     };
 
     const draw = () => {
       root.innerHTML = `<div class="page">
-        <div class="section-head"><div><span class="kicker">New every Monday</span><h1 class="page-title">Weekly challenges.</h1>
-          <p class="gl-sub">Eight goals each week. Four pay into your <b>weekly account</b>, four into your <b>accumulated account</b>, and every card says which. Some ask for variety or showing up; some are about one game (play so many hands, reach a multiplier, win some money). None rewards losing, borrowing or betting bigger. ${D.rules.claimRule}</p></div>
-          <div class="stat" style="min-width:150px"><small>This week closes in</small><b class="num">${until(D.end)}</b></div></div>
+        <div class="section-head"><div><span class="kicker">${t('Nuevos cada lunes')}</span><h1 class="page-title">${t('Retos de la semana.')}</h1>
+          <p class="gl-sub">${t('Ocho metas cada semana. Cuatro pagan a tu <b>cuenta semanal</b>, cuatro a tu <b>cuenta acumulada</b>, y cada tarjeta dice cuál. Unas piden variedad o constancia; otras son de un juego (juega tantas manos, llega a un multiplicador, gana algunas fichas). Ninguna premia perder, pedir prestado ni apostar más.')} ${esc(D.rules.claimRule)}</p></div>
+          <div class="stat" style="min-width:150px"><small>${t('Esta semana cierra en')}</small><b class="num">${until(D.end)}</b></div></div>
         <div class="gl-grid2">${column('weekly', D.weekly)}${column('accumulated', D.accumulated)}</div>
-        <p class="muted" style="font-size:13px;max-width:78ch;margin:6px 2px 0">Only real-money actions count (a stake of at least ${money(D.rules.minStake)}). Practice rounds, loans, repayments, transfers and Store purchases never count. Challenge rewards are credits from outside play, so they never move your weekly leaderboard result.</p>
+        <p class="muted" style="font-size:13px;max-width:78ch;margin:6px 2px 0">${t('Solo cuentan las jugadas con fichas de verdad del juego (una apuesta de al menos {cantidad}). Las rondas de práctica, los préstamos, los pagos, los envíos y las compras en la Tienda nunca cuentan. Los premios de retos vienen de fuera del juego, así que nunca mueven tu resultado en el ranking semanal.', { cantidad: money(D.rules.minStake) })}</p>
         ${history()}</div>`;
     };
     draw();
@@ -67,7 +70,8 @@ export default {
       try {
         const r = await post('/api/challenges/claim', { id: busy });
         setUser(r.user);
-        toast(`${money(r.amount)} claimed into your ${r.account} account${r.xp ? ` (+${r.xp} XP)` : ''}.`, 'ok', { ms: 5000 });
+        const into = { cantidad: money(r.amount), cuenta: r.account === 'weekly' ? t('semanal') : t('acumulada'), xp: r.xp };
+        toast(r.xp ? t('Reclamaste {cantidad} a tu cuenta {cuenta} (+{xp} XP).', into) : t('Reclamaste {cantidad} a tu cuenta {cuenta}.', into), 'ok', { ms: 5000 });
       } catch (ex) { toast(ex.message, 'err'); }
       busy = null; await reload();
     });

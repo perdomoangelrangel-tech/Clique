@@ -31,7 +31,7 @@ I18N_CALLS = {"t", "th", "tp"}
 
 # Frases sin t() anotadas por archivo (10-oct, al empezar la ronda 1). Solo pueden bajar: cuando migras un archivo, baja su número.
 BASE = {
-    "art.js": 6, "views/challenges.js": 36, "views/chat.js": 81, "views/friends.js": 43, "views/statement.js": 58,
+    "art.js": 6, "views/chat.js": 81, "views/friends.js": 43, "views/statement.js": 58,
 }
 
 # Lo que se queda igual en cualquier idioma (nombres propios, unidades).
