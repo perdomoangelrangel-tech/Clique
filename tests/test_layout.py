@@ -121,6 +121,14 @@ class LayoutRules(unittest.TestCase):
             self.assertIn(var, js)
             self.assertIn(var, sheets()["tokens.css"])
 
+    def test_the_sample_page_has_a_route_and_no_menu_link(self):
+        app = read("static", "js", "app.js")
+        self.assertIn("[/^\\/diseno$/, () => import('./views/diseno.js')]", app)
+        self.assertIn("location.pathname === '/diseno'", app)            # the address works without a #
+        for name in os.listdir(JS):
+            if name.endswith(".js"):
+                self.assertNotRegex(read("static", "js", name), r"href=[\"'`]#?/diseno", f"{name} links to /diseno: it stays out of the menus")
+
     def test_breakpoints_written_in_scripts_match_the_stylesheets(self):
         self.assertIn("(max-width: 720px)", read("static", "js", "views", "pokertable.js"))
         self.assertIn("(min-width: 821px)", read("static", "js", "views", "chat.js"))

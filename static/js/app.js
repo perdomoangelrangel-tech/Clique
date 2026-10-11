@@ -44,6 +44,7 @@ const ROUTES = [
   [/^\/loans$/, () => import('./views/loans.js')],
   [/^\/transfers$/, () => import('./views/transfers.js')],
   [/^\/ranking$/, () => import('./views/ranking.js')],
+  [/^\/diseno$/, () => import('./views/diseno.js')],              // E4's sample page: reachable at /diseno, on purpose not in any menu
 ];
 
 const TAGLINES = {
@@ -644,7 +645,7 @@ const whereName = (p) => (WHERE.find(([rx]) => rx.test(p)) || [0, 'where you wer
 
 async function route() {
   if (!S.user) return showAuth('login');
-  const raw = location.hash.slice(1) || '/';
+  const raw = location.hash.slice(1) || (location.pathname === '/diseno' ? '/diseno' : '/');      // /diseno is the one address without a #
   const [path, qs] = raw.split('?');
   const query = new URLSearchParams(qs || '');
   const seq = ++routeSeq;
