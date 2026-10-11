@@ -31,9 +31,8 @@ I18N_CALLS = {"t", "th", "tp"}
 
 # Frases sin t() anotadas por archivo (10-oct, al empezar la ronda 1). Solo pueden bajar: cuando migras un archivo, baja su número.
 BASE = {
-    "art.js": 6, "cosmetics.js": 2, "views/challenges.js": 36, "views/chat.js": 81, "views/exchange.js": 112, "views/friends.js": 43,
-    "views/loans.js": 81, "views/portfolio.js": 65, "views/profile.js": 138, "views/spread.js": 15, "views/statement.js": 58,
-    "views/stockchart.js": 3, "views/store.js": 43, "views/transfers.js": 127,
+    "art.js": 6, "views/challenges.js": 36, "views/chat.js": 81, "views/exchange.js": 112, "views/friends.js": 43, "views/loans.js": 81,
+    "views/statement.js": 58, "views/stockchart.js": 3, "views/store.js": 43, "views/transfers.js": 127,
 }
 
 # Lo que se queda igual en cualquier idioma (nombres propios, unidades).
@@ -288,6 +287,8 @@ def is_prose(s):
     if not re.search(r"\s", s):
         # one word: a capitalised word or a shouted label is text; anything with code characters or lower case is an identifier
         return bool(re.fullmatch(r"[A-ZÁÉÍÓÚÑ¿¡][a-záéíóúüñ]+[.!?…]?|[A-ZÁÉÍÓÚÑ]{3,}[.!?]?|[A-ZÁÉÍÓÚÑ][a-záéíóúüñ]+'[a-z]+[.!?]?", s))
+    if "," in s and re.search(r"\b(sans-serif|serif|monospace|cursive|system-ui)\b", s):
+        return False                      # a CSS font stack
     if re.fullmatch(r"(\s*[a-zA-Z-]+\([^()]*\)\s*)+", s):
         return False                      # a CSS value: translate(...) rotate(...), url(...)
     tokens = [t for t in re.split(r"[\s,]+", s) if t]

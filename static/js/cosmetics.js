@@ -1,6 +1,7 @@
 /* Drawing products and previews: the Store and the profile editor both use these, so an item looks the same wherever it appears. */
 import { sticker } from './art.js';
 import { avatarLook, bannerCss } from './looks.js';
+import { t } from './i18n.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const BASE = ['#C6F432', '#FF4B2B', '#EFE6D2', '#2F6B47', '#CFC3A8'];
@@ -21,9 +22,9 @@ export function productArt(item, { name = 'you', size = 72, fonts = {} } = {}) {
     case 'frame':
       return a.style === 'none' ? plainAvatar(name, size, {}) : plainAvatar(name, size, { f: a });
     case 'badge':
-      return a.glyph ? `<span class="pa-badge">${sticker(a.glyph, { size, bg: 'cream' })}</span>` : `<span class="pa-none">none</span>`;
+      return a.glyph ? `<span class="pa-badge">${sticker(a.glyph, { size, bg: 'cream' })}</span>` : `<span class="pa-none">${t('ninguna')}</span>`;
     case 'title':
-      return `<span class="pa-title">${a.text ? esc(a.text) : 'no title'}</span>`;
+      return `<span class="pa-title">${a.text ? esc(a.text) : esc(t('sin título'))}</span>`;
     case 'banner':
       return `<span class="pa-banner" style="${bannerCss(a)}"></span>`;
     case 'accent':

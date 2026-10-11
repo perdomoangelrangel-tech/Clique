@@ -2,9 +2,10 @@
    own and the polls you have bet in. Everything comes from one server answer (/api/portfolio/overview), so it always agrees
    with the header, the Weekly page and the Exchange. */
 import { get } from '../api.js';
-import { esc, money, moneyFull, num, dateShort } from '../util.js';
+import { esc, money, moneyFull, num, dateShort, slipLabel } from '../util.js';
 import { emptyState } from './components.js';
 import { recall, remember } from '../viewstate.js';
+import { t, th, tp, intlLocale, CHIP_SIGN } from '../i18n.js';
 
 // Each kind of money gets a colour and a pattern, so the bar can be read without colour too.
 const LOOK = {
@@ -14,7 +15,17 @@ const LOOK = {
 const pct = (v, total) => (total > 0 ? (v / total) * 100 : 0);
 const fmtPct = (p) => (p >= 10 ? p.toFixed(0) : p.toFixed(1)) + '%';
 const sign = (x) => (x > 0.004 ? 'up' : x < -0.004 ? 'down' : '');
-const price = (p) => '$' + Number(p).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const price = (p) => CHIP_SIGN + Number(p).toLocaleString(intlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// The parts of each account (the server's labels are in English): what to call them and one line about each.
+const PART = {                                                                                                   // i18n: claves ↓
+  cash: ['Fichas libres', 'Listas para apostar o gastar.'],
+  polls: ['En mercados', 'Tus apuestas abiertas, a lo que valen ahora.'],
+  casino: ['En el casino', 'Rondas del casino que no han terminado.'],
+  poker: ['En la mesa de póker', 'Las fichas que tienes sentadas en una mesa.'],
+  stocks: ['En acciones', 'Tus acciones de la Bolsa, a su precio de ahora.'],
+};                                                                                                               // i18n: fin
+const partLabel = (p) => (PART[p.key] ? t(PART[p.key][0]) : p.label);
+const partNote = (p) => (PART[p.key] ? t(PART[p.key][1]) : p.note);
 
 export default {
   async mount(root) {
@@ -23,15 +34,15 @@ export default {
 
     const summary = (kind, A) => {
       const cash = A.parts.find((p) => p.key === 'cash').amount;
-      if (A.total <= 0) return 'There is nothing in this account right now.';
+      if (A.total <= 0) return esc(t('Ahorita no hay nada en esta cuenta.'));
       if (kind === 'weekly') {
         const working = A.parts.filter((p) => p.key !== 'cash' && p.amount > 0);
         return working.length
-          ? `<b>${fmtPct(pct(cash, A.total))}</b> is cash you can spend. The other <b>${fmtPct(100 - pct(cash, A.total))}</b> is working for you: ${working.map((p) => `${money(p.amount)} ${p.label.toLowerCase()}`).join(', ')}.`
-          : 'All of it is cash. Nothing is riding on a poll, a casino round or a poker table.';
+          ? th('<b>{libres}</b> son fichas libres para usar. El otro <b>{resto}</b> está trabajando: {partes}.', { libres: fmtPct(pct(cash, A.total)), resto: fmtPct(100 - pct(cash, A.total)), partes: working.map((p) => `${money(p.amount)} ${partLabel(p).toLowerCase()}`).join(', ') })
+          : esc(t('Todo son fichas libres. No hay nada en mercados, rondas del casino ni mesas de póker.'));
       }
       const shares = A.parts.find((p) => p.key === 'stocks').amount;
-      return shares > 0 ? `<b>${fmtPct(pct(cash, A.total))}</b> is cash for the Store and the Exchange. <b>${fmtPct(pct(shares, A.total))}</b> is in shares.` : 'All of it is cash. You do not own any shares.';
+      return shares > 0 ? th('<b>{libres}</b> son fichas libres para la Tienda y la Bolsa. <b>{acciones}</b> está en acciones.', { libres: fmtPct(pct(cash, A.total)), acciones: fmtPct(pct(shares, A.total)) }) : esc(t('Todo son fichas libres. No tienes acciones.'));
     };
 
     const accountCard = (kind, title, kicker, A, links) => {
@@ -41,64 +52,64 @@ export default {
       return `<section class="pfo-card card-box" aria-label="${esc(title)}">
         <div class="pfo-head"><div><span class="kicker">${kicker}</span><h2>${esc(title)}</h2></div><b class="num pfo-total" title="${moneyFull(A.total)}">${money(A.total)}</b></div>
         <p class="spread-line">${summary(kind, A)}</p>
-        ${visible.length ? `<div class="spread-bar" role="img" aria-label="${esc(visible.map((p) => `${p.label} ${fmtPct(pct(p.amount, A.total))}`).join(', '))}">
-          ${visible.map((p) => `<i class="${looks[p.key][1]}" style="flex:${Math.max(p.amount, A.total * 0.012)};--fill:${looks[p.key][0]}" title="${esc(p.label)}: ${moneyFull(p.amount)}"></i>`).join('')}</div>` : '<div class="spread-bar pfo-none" aria-hidden="true"></div>'}
+        ${visible.length ? `<div class="spread-bar" role="img" aria-label="${esc(visible.map((p) => `${partLabel(p)} ${fmtPct(pct(p.amount, A.total))}`).join(', '))}">
+          ${visible.map((p) => `<i class="${looks[p.key][1]}" style="flex:${Math.max(p.amount, A.total * 0.012)};--fill:${looks[p.key][0]}" title="${esc(partLabel(p))}: ${moneyFull(p.amount)}"></i>`).join('')}</div>` : '<div class="spread-bar pfo-none" aria-hidden="true"></div>'}
         <div class="pfo-legend">${rows.map((p) => `<div class="pfo-row"><i class="sw ${looks[p.key][1]}" style="--fill:${looks[p.key][0]}"></i>
-          <div class="pfo-what"><b>${esc(p.label)}</b><small>${esc(p.note)}</small></div>
+          <div class="pfo-what"><b>${esc(partLabel(p))}</b><small>${esc(partNote(p))}</small></div>
           <b class="num" title="${moneyFull(p.amount)}">${money(p.amount)}</b><span class="num pfo-share">${fmtPct(pct(p.amount, A.total))}</span></div>`).join('')}</div>
         <p class="pfo-links">${links}</p></section>`;
     };
 
     const stocksBlock = () => {
       const S_ = D.stocks;
-      if (!S_) return `<div class="card-box pad"><p class="muted" style="margin:0">The Exchange is not open at the moment, so your shares can't be shown. They are safe.</p></div>`;
-      if (!S_.positions.length) return emptyState({ art: 'chartdown', tone: 'cream', tight: true, kicker: 'No shares', title: 'You do not own any shares.', text: 'Buy a few shares of a pretend company with your accumulated account and they will show up here.', actions: '<a class="btn btn-primary" href="#/exchange">See the Exchange</a>' });
-      return `<div class="stats pfo-stats"><div class="stat"><small>Shares worth</small><b class="num">${money(S_.value)}</b></div><div class="stat"><small>What you paid</small><b class="num">${money(S_.invested)}</b></div>
-          <div class="stat"><small>Unrealized gain/loss</small><b class="num ${sign(S_.unrealized)}">${money(S_.unrealized, { plus: true })}</b></div><div class="stat"><small>Realized gain/loss</small><b class="num ${sign(S_.realized)}">${money(S_.realized, { plus: true })}</b></div></div>
-        <div class="card-box tbl-wrap" style="margin-top:14px"><table class="tbl pfo-tbl sh"><thead><tr><th>Company</th><th class="r">Shares</th><th class="r hide-sm">Avg cost</th><th class="r hide-sm">Price</th><th class="r">Worth</th><th class="r">Gain / loss</th></tr></thead><tbody>
+      if (!S_) return `<div class="card-box pad"><p class="muted" style="margin:0">${t('La Bolsa está cerrada en este momento, así que no podemos mostrar tus acciones. Están a salvo.')}</p></div>`;
+      if (!S_.positions.length) return emptyState({ art: 'chartdown', tone: 'cream', tight: true, kicker: t('Sin acciones'), title: esc(t('No tienes acciones.')), text: esc(t('Compra unas acciones de una empresa de mentira con tu cuenta acumulada y aparecerán aquí.')), actions: `<a class="btn btn-primary" href="#/exchange">${t('Ver la Bolsa')}</a>` });
+      return `<div class="stats pfo-stats"><div class="stat"><small>${t('Valen tus acciones')}</small><b class="num">${money(S_.value)}</b></div><div class="stat"><small>${t('Lo que pagaste')}</small><b class="num">${money(S_.invested)}</b></div>
+          <div class="stat"><small>${t('Ganancia o pérdida sin realizar')}</small><b class="num ${sign(S_.unrealized)}">${money(S_.unrealized, { plus: true })}</b></div><div class="stat"><small>${t('Ganancia o pérdida realizada')}</small><b class="num ${sign(S_.realized)}">${money(S_.realized, { plus: true })}</b></div></div>
+        <div class="card-box tbl-wrap" style="margin-top:14px"><table class="tbl pfo-tbl sh"><thead><tr><th>${t('Empresa')}</th><th class="r">${t('Acciones')}</th><th class="r hide-sm">${t('Costo prom.')}</th><th class="r hide-sm">${t('Precio')}</th><th class="r">${t('Valen')}</th><th class="r">${t('Ganancia o pérdida')}</th></tr></thead><tbody>
           ${S_.positions.map((p) => `<tr data-sym="${esc(p.symbol)}" tabindex="0" role="link" aria-label="${esc(p.name)}" style="cursor:pointer"><td class="c"><b class="mono sym">${esc(p.symbol)}</b> ${esc(p.name)}</td><td class="r num n">${num(p.shares, 0)}</td><td class="r num hide-sm">${price(p.avgCost)}</td><td class="r num hide-sm">${price(p.price)}</td><td class="r num w">${money(p.value)}</td>
             <td class="r num g ${sign(p.unrealized)}">${money(p.unrealized, { plus: true })} <small>(${num(p.unrealizedPct, 1)}%)</small></td></tr>`).join('')}</tbody></table></div>`;
     };
 
     const pollsBlock = () => {
       const P = D.polls, closed = tab === 'closed', rows = closed ? P.closed : P.open;
-      const tabs = `<div class="tabs" id="ptabs" style="margin-top:0">${[['open', `Open (${P.open.length})`], ['closed', `Settled (${P.closed.length})`]].map(([k, l]) => `<button data-t="${k}" class="${tab === k ? 'active' : ''}">${l}</button>`).join('')}</div>`;
+      const tabs = `<div class="tabs" id="ptabs" style="margin-top:0">${[['open', t('Abiertos ({n})', { n: P.open.length })], ['closed', t('Resueltos ({n})', { n: P.closed.length })]].map(([k, l]) => `<button data-t="${k}" class="${tab === k ? 'active' : ''}">${esc(l)}</button>`).join('')}</div>`;
       if (!rows.length) {
-        return tabs + emptyState({ art: closed ? 'paper' : 'slip', tone: 'cream', tight: true, kicker: closed ? 'Nothing settled' : 'No open bets',
-          title: closed ? 'No settled polls yet.' : 'You have not bet in any open poll.',
-          text: closed ? 'Polls you bet in show up here once they have a result.' : 'Pick a poll and put a little on it. Your bets show up here, with what they are worth right now.',
-          actions: closed ? '' : '<a class="btn btn-primary" href="#/">Browse the polls</a>' });
+        return tabs + emptyState({ art: closed ? 'paper' : 'slip', tone: 'cream', tight: true, kicker: closed ? t('Nada resuelto') : t('Sin apuestas abiertas'),
+          title: esc(closed ? t('Todavía no hay mercados resueltos.') : t('No has apostado en ningún mercado abierto.')),
+          text: esc(closed ? t('Los mercados donde apostaste aparecen aquí cuando tienen resultado.') : t('Elige un mercado y ponle algo. Tus apuestas aparecen aquí, con lo que valen ahora mismo.')),
+          actions: closed ? '' : `<a class="btn btn-primary" href="#/">${t('Ver los mercados')}</a>` });
       }
-      const sum = closed ? '' : `<p class="muted" style="margin:0 0 12px">You have <b class="num">${money(P.openInvested)}</b> in open polls, worth <b class="num">${money(P.openValue)}</b> if you cashed out right now (<span class="num ${sign(P.openPnl)}">${money(P.openPnl, { plus: true })}</span>).</p>`;
-      return tabs + sum + `<div class="card-box tbl-wrap"><table class="tbl pfo-tbl pl"><thead><tr><th>Poll</th><th>Your bet</th><th class="r hide-sm">Put in</th><th class="r">${closed ? 'Paid' : 'Worth now'}</th><th class="r">Gain / loss</th>${closed ? '' : '<th class="r hide-sm">Closes</th>'}</tr></thead><tbody>
+      const sum = closed ? '' : `<p class="muted" style="margin:0 0 12px">${th('Tienes <b class="num">{puesto}</b> en mercados abiertos, que valen <b class="num">{valor}</b> si los vendieras ahora mismo ({resultado}).', { puesto: money(P.openInvested), valor: money(P.openValue), resultado: money(P.openPnl, { plus: true }) })}</p>`;
+      return tabs + sum + `<div class="card-box tbl-wrap"><table class="tbl pfo-tbl pl"><thead><tr><th>${t('Mercado')}</th><th>${t('Tu apuesta')}</th><th class="r hide-sm">${t('Puso')}</th><th class="r">${closed ? t('Cobró') : t('Vale hoy')}</th><th class="r">${t('Ganancia o pérdida')}</th>${closed ? '' : `<th class="r hide-sm">${t('Cierra')}</th>`}</tr></thead><tbody>
         ${rows.map((r) => `<tr data-m="${esc(r.market)}" tabindex="0" role="link" aria-label="${esc(r.question)}" style="cursor:pointer"><td class="q"><b>${esc(r.question)}</b></td>
-          <td class="t"><span class="tag ${r.side === 'yes' ? 'good' : 'bad'}">${esc(r.label)}</span></td><td class="r num hide-sm">${money(r.invested)}</td><td class="r num w">${money(r.value ?? 0)}</td>
-          <td class="r num g ${r.refunded ? '' : sign(r.pnl || 0)}">${r.refunded ? 'refund' : money(r.pnl || 0, { plus: true })}</td>
-          ${closed ? '' : `<td class="r hide-sm muted">${r.status === 'closed' ? 'waiting for a result' : r.closes ? dateShort(r.closes) : 'no closing date'}</td>`}</tr>`).join('')}</tbody></table></div>`;
+          <td class="t"><span class="tag ${r.side === 'yes' ? 'good' : 'bad'}">${esc(slipLabel(r.label))}</span></td><td class="r num hide-sm">${money(r.invested)}</td><td class="r num w">${money(r.value ?? 0)}</td>
+          <td class="r num g ${r.refunded ? '' : sign(r.pnl || 0)}">${r.refunded ? t('devuelto') : money(r.pnl || 0, { plus: true })}</td>
+          ${closed ? '' : `<td class="r hide-sm muted">${r.status === 'closed' ? t('esperando resultado') : r.closes ? dateShort(r.closes) : t('sin fecha de cierre')}</td>`}</tr>`).join('')}</tbody></table></div>`;
     };
 
     const draw = () => {
       root.innerHTML = `<div class="page">
-        <div class="section-head"><div><span class="kicker">Where your money is</span><h1 class="page-title">Your portfolio.</h1></div></div>
-        <div class="stats pfo-tiles"><div class="stat"><small>Everything you own</small><b class="num" title="${moneyFull(D.total)}">${money(D.total)}</b></div>
-          <div class="stat"><small>Weekly account</small><b class="num" title="${moneyFull(D.weekly.total)}">${money(D.weekly.total)}</b></div>
-          <div class="stat"><small>Accumulated account</small><b class="num" title="${moneyFull(D.accumulated.total)}">${money(D.accumulated.total)}</b></div></div>
+        <div class="section-head"><div><span class="kicker">${t('Dónde están tus fichas')}</span><h1 class="page-title">${t('Tu portafolio.')}</h1></div></div>
+        <div class="stats pfo-tiles"><div class="stat"><small>${t('Todo lo que tienes')}</small><b class="num" title="${moneyFull(D.total)}">${money(D.total)}</b></div>
+          <div class="stat"><small>${t('Cuenta semanal')}</small><b class="num" title="${moneyFull(D.weekly.total)}">${money(D.weekly.total)}</b></div>
+          <div class="stat"><small>${t('Cuenta acumulada')}</small><b class="num" title="${moneyFull(D.accumulated.total)}">${money(D.accumulated.total)}</b></div></div>
         <div class="pfo-grid">
-          ${accountCard('weekly', 'Your weekly money', 'This week\'s chips', D.weekly, `Set back to your weekly amount every Monday. <a href="#/weekly">The Weekly</a> · <a href="#/games">Casino</a> · <a href="#/">Polls</a>`)}
-          ${accountCard('accumulated', 'Your accumulated money', 'What you keep', D.accumulated, `Weekly rewards land here. <a href="#/store">Store</a> · <a href="#/exchange">Exchange</a> · <a href="#/statement">Statement</a>`)}
+          ${accountCard('weekly', t('Tus fichas semanales'), t('Las fichas de esta semana'), D.weekly, `${t('Vuelven a tu cantidad semanal cada lunes.')} <a href="#/weekly">${t('La Semana')}</a> · <a href="#/games">${t('Casino')}</a> · <a href="#/">${t('Mercados')}</a>`)}
+          ${accountCard('accumulated', t('Tus fichas acumuladas'), t('Lo que conservas'), D.accumulated, `${t('Aquí llegan los premios semanales.')} <a href="#/store">${t('Tienda')}</a> · <a href="#/exchange">${t('Bolsa')}</a> · <a href="#/statement">${t('Estado de cuenta')}</a>`)}
         </div>
-        <div class="section-head" style="margin-top:44px"><div><span class="kicker">On the Exchange</span><h2 class="page-title" style="font-size:clamp(28px,3.4vw,44px)">Your shares</h2></div></div>
+        <div class="section-head" style="margin-top:44px"><div><span class="kicker">${t('En la Bolsa')}</span><h2 class="page-title" style="font-size:clamp(28px,3.4vw,44px)">${t('Tus acciones')}</h2></div></div>
         ${stocksBlock()}
-        <div class="section-head" style="margin-top:44px"><div><span class="kicker">Paid from the weekly account</span><h2 class="page-title" style="font-size:clamp(28px,3.4vw,44px)">Polls you have bet in</h2></div></div>
+        <div class="section-head" style="margin-top:44px"><div><span class="kicker">${t('Pagado con la cuenta semanal')}</span><h2 class="page-title" style="font-size:clamp(28px,3.4vw,44px)">${t('Mercados donde apostaste')}</h2></div></div>
         ${pollsBlock()}
-        <p class="muted" style="margin:26px 2px 0;font-size:13px;max-width:72ch">Open poll bets and shares are valued at what you could get for them right now, not what you paid. Practice money is never counted here.</p></div>`;
+        <p class="muted" style="margin:26px 2px 0;font-size:13px;max-width:72ch">${t('Las apuestas abiertas y las acciones valen lo que podrías obtener por ellas ahora mismo, no lo que pagaste. Las fichas de práctica nunca cuentan aquí.')}</p></div>`;
     };
     draw();
 
     const reload = async () => { try { const next = await get('/api/portfolio/overview'); if (dead) return; D = next; draw(); } catch { /* keep what is on screen */ } };
     root.addEventListener('click', (e) => {
-      const t = e.target.closest('#ptabs button');
-      if (t) { tab = t.dataset.t; remember('portfolio', { tab }); draw(); return; }
+      const tb = e.target.closest('#ptabs button');
+      if (tb) { tab = tb.dataset.t; remember('portfolio', { tab }); draw(); return; }
       const sym = e.target.closest('[data-sym]'); if (sym) { location.hash = `#/exchange/${sym.dataset.sym}`; return; }
       const m = e.target.closest('[data-m]'); if (m) location.hash = `#/market/${m.dataset.m}`;
     });
