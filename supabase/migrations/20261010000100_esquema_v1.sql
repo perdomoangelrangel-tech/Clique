@@ -206,8 +206,8 @@ create table public.week_rewards (
     amount          bigint not null check (amount > 0),              -- centavos
     position        integer not null,
     paid            boolean not null default false,
-    transaction_id  bigint references public.ledger_transactions (id),
+    transaction_id  bigint references public.ledger_transactions (id),   -- el pago; null si aún no se paga, o si se importó
+                                                                        -- del archivo cuando su renglón ya estaba compactado
     primary key (circle_id, week, user_id),
-    foreign key (circle_id, week) references public.week_closes (circle_id, week) on delete cascade,
-    constraint week_rewards_paid_has_tx check (not paid or transaction_id is not null)
+    foreign key (circle_id, week) references public.week_closes (circle_id, week) on delete cascade
 );
