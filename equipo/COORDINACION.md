@@ -101,7 +101,7 @@ local o una rama de base de datos de Supabase que pide E2 y crea E0.
 - **Windows.** Cuatro pruebas de la app original fallan en Windows y pasan en Linux. Están en la
   bitácora de OT-001 (`equipo/historia/ronda-0/bitacoras/OT-001.md`) y E1 las arregla en la ronda 1.
   El CI corre en Linux y en Windows.
-- **El repositorio es público** mientras el dueño no lo cambie: nada de credenciales, datos reales
+- **El repositorio pasa a privado (D13)**, pero sigue público mientras el dueño no lo cambie en GitHub: nada de credenciales, datos reales
   ni capturas con datos de personas.
 - **Los `.blend` van en Git LFS** y solo los sube E6. La nube de E0 no alcanza el almacenamiento de
   LFS, así que E6 trabaja sobre `_ramas/e6-arte3d` en la computadora del dueño (a través de la app de

@@ -17,10 +17,15 @@ contradice una decisión, se para y se anota en la bitácora; nunca se elige un 
 | **D8** | **El navegador nunca decide resultados** de juegos ni de mercados. Las animaciones solo muestran lo que el servidor ya decidió. | 09-oct | ADR-005 |
 | **D9** | **Supabase de producción: leer sí, escribir nunca** desde una sesión de agente. Las migraciones las aplica E0 con el sí del dueño, en una ventana de migración. | 10-oct | `COORDINACION.md` |
 | **D10** | **No se abre al público** sin verificación de edad (18+), aviso de privacidad y la revisión de un abogado. Antes de cobrar, dictamen legal. | 10-oct | Plan maestro, Fase 4 |
+| **D11** | **Los juegos se ven como los dibujos 2D, pero en 3D** ("me gusta más la estética de la versión 2D; el chiste sería hacer la versión 2D pero en 3D"). Las 14 imágenes de juego y los juegos en vivo usan el estilo del dibujo: formas redondeadas, colores planos de la paleta en dos tonos y contorno de tinta. Ahí lima y bermellón son colores de los objetos. La ruleta en vivo es funcional: lleva sus números y se simplifica si hace falta. El club privado de cartas (D4) sigue para el armazón, los fondos y los íconos de la app. | 11-oct | `equipo/contratos/arte3d.md` §13; para los juegos sustituye la receta de luz de mesa |
+| **D12** | **La monetización no está decidida y se conservan sus piezas:** la compra de fichas (apagada, D3) y el pase de temporada siguen en el plan. El modelo lo decide el dueño después del dictamen legal (D10). Guía: el documento del dueño "Clique: un casino que no es casino" (las fichas no valen dinero; se cobra por estilo y acceso, nunca por probabilidades; los premios son de estatus). | 11-oct | Conversación con E0 |
+| **D13** | **El repositorio pasa a privado.** Lo cambia el dueño en GitHub (Settings → General → Danger Zone → Change visibility → Private): el proxy de los agentes no lo permite. Mientras siga público, nada de secretos ni datos reales. Con el repositorio privado, los minutos de GitHub Actions cuentan (E1). | 11-oct | Conversación con E0 |
+| **D14** | **La app es para escritorio y para celular.** El celular de referencia es el iPhone del dueño: Safari dibuja a 60 cuadros por segundo como máximo, y la meta es 60 sin caídas. Un modelo en vivo no pasa de 8 mil triángulos (la ruleta quedó en 7,206). | 11-oct | `equipo/contratos/arte3d.md` §6 |
 
 ## Preguntas abiertas para el dueño
 
 | Fecha | Pregunta | Quién la necesita |
 |---|---|---|
-| 10-oct | El repositorio está **público** en GitHub y el plan decía privado. ¿Lo pasamos a privado? (Configuración → Danger Zone → Change visibility) | Todos: mientras sea público, nada de datos reales ni de negocio sensible |
 | 10-oct | Cuentas: ¿pasamos el registro a Supabase Auth (correo verificado, Google, Apple) en la ronda 2? | E2, E5 |
+| 11-oct | Los 14 juegos en el estilo del dibujo (`docs/arte/juegos-3d.webp`, hoja 2D contra 3D) ya están en la app: ¿les das el visto bueno o cambias alguno? | E6 |
+| 11-oct | Textos que suenan a dinero real: el signo $ de las fichas, "Cash out", "Add funds", préstamos y envíos. E5 propone "fichas" o un ícono de ficha, "Plantarte", "Agregar fichas", "Préstamos de fichas" y "Enviar fichas" (`equipo/contratos/textos.md` §5, en la rama e5-frontend) | E5, E4 |

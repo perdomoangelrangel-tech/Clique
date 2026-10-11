@@ -1,5 +1,15 @@
 # Orden 1 · E5 · Frontend · la app en español de México, navegación de celular, instalable y sin HTML inseguro · 10-oct
 
+> **Adenda · 11-oct (E0).** El dueño decidió D11 y D14: los juegos se ven como los dibujos pero en 3D, y la app es
+> para escritorio y celular (iPhone, 60 cuadros). Sigue con tus entregables 1 a 7 y suma este:
+>
+> | # | Qué | Cómo se comprueba | Hecho cuando |
+> |---|---|---|---|
+> | 8 | **La ruleta en vivo en la pantalla de la ruleta.** Lleva `static/3d/ruleta.glb` con `docs/arte/ruleta-animacion.mjs` (`planSpin`) y `docs/arte/estilo-toon.mjs` (`applyToon`, `addOutlines`) tal cual (cópialos a `static/js/` o pide a E6 que los ponga ahí). Arranca en 2D con `static/3d/ruleta-dibujo-2d.webp` y pasa a 3D cuando cargó; se queda en 2D sin WebGL o con menos movimiento. **El número lo manda el servidor (D8)** y la animación cae en él. El número que cayó se ve **grande fuera de la rueda** (en 390 px los del anillo miden unos 6 px). Solo dibuja durante la tirada. three.js y el decodificador de meshopt desde `static/vendor/`, no de un CDN. Las rutas de `static/casino-icons/` llevan `?v=` (los 14 dibujos cambiaron con el mismo nombre) | `python -m unittest tests.test_layout` con un caso de la ruleta en vivo, y en Chrome a 1366×768 y 390×844: "el servidor dijo N · cayó en N" con tres números | en verde, y el dueño la ve en su iPhone a 60 cuadros |
+>
+> Referencia completa: `docs/arte/prueba-ruleta.html` y `equipo/contratos/arte3d.md` §12 y §13. Las preguntas de textos
+> que suenan a dinero real ya están en DECISIONES como preguntas abiertas para el dueño.
+
 ## Objetivo (una frase)
 Que toda la interfaz hable español de México con un sistema de traducciones medido, que en el celular se navegue con una barra inferior y el botón de apostar siempre se vea, que la app se pueda instalar, y que ningún dato de una persona se pinte con `innerHTML`.
 

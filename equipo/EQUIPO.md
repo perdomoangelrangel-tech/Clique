@@ -82,6 +82,6 @@ La línea de la bitácora, siempre así:
 3. Agregar dependencias sin que su orden lo permita por escrito.
 4. Inventar datos de ejemplo en pantalla: lo vacío se dice vacío.
 5. Escribir en el Supabase de producción (D9).
-6. Escribir credenciales, claves o contraseñas en el repositorio. Por ahora es **público**.
+6. Escribir credenciales, claves o contraseñas en el repositorio. Sigue **público** hasta que el dueño lo pase a privado (D13).
 7. Encender cobros, la venta de fichas o cualquier cosa que mueva dinero real (D3).
 8. Mover saldos fuera del libro (D2) o decidir un resultado en el navegador (D8).

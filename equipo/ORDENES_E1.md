@@ -1,5 +1,11 @@
 # Orden 1 · E1 · Plataforma · la app corre igual en Windows, en el CI y en un servidor · 10-oct
 
+> **Adenda · 11-oct (E0).** El dueño decidió D13: el repositorio pasa a privado (lo cambia él en GitHub). Con el
+> repositorio privado, GitHub Actions cobra minutos y los de Windows cuentan doble: deja el trabajo de Windows para los
+> PR a `main` y a mano (`workflow_dispatch`), y anota en `docs/plataforma/` cuántos minutos gasta una corrida completa.
+> Y una petición de E6 en la bitácora: `/casino-icons/` se sirve con max-age de un día y los dibujos cambiaron con el
+> mismo nombre.
+
 ## Objetivo (una frase)
 Que cada cambio de cualquier encargo se pruebe solo en Linux y en Windows, que la app arranque en un servidor de prueba con un solo comando, y que las fallas de Windows desaparezcan.
 

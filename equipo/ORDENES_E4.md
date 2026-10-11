@@ -1,5 +1,12 @@
 # Orden 1 · E4 · Diseño · tokens v2 y el club privado de cartas en el armazón de la app · 10-oct
 
+> **Adenda · 11-oct (E0).** El dueño decidió D11: los juegos del casino se ven como los dibujos 2D pero en 3D (colores
+> planos de la paleta en dos tonos, contorno de tinta). Tu armazón sigue con la estética del club (D4). **Aún no hay
+> commits en `e4-diseno`: empieza por tu entregable 1**, que E5 espera (barra inferior y botón de apostar en celular,
+> peticiones en la bitácora). Súmale a ese entregable los tonos de sombra del estilo del dibujo como tokens (petición
+> de E6 del 11-oct en la bitácora): papel `#CFC3A8`, lima `#9CC320`, bermellón `#D2361B`, bermellón suave `#F2664A` y
+> `#D24E36`, oro `#FBB635` y `#D9952A` (`equipo/contratos/arte3d.md` §13).
+
 ## Objetivo (una frase)
 Que la app tenga una sola fuente de color con la paleta v2 y contraste probado, y que su armazón (fondo, encabezado, navegación, tarjetas, botones, campos) se vea como los cuadros aprobados: boleto de papel sobre mesa de fieltro, con latón y luz cálida.
 

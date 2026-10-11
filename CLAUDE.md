@@ -44,7 +44,7 @@ DEPLOY.md, Dockerfile    cómo se despliega
 5. **Prueba primero, vista en rojo.** La suite completa pasa antes de entregar: `python -m unittest discover -s tests -t .`
 6. **Todo texto visible en español de México** por el sistema de idioma (D5); colores y tamaños solo con tokens (D4).
 7. **Supabase de producción: leer sí, escribir nunca** (D9).
-8. **Sin secretos en git.** El repositorio es público mientras el dueño no lo cambie.
+8. **Sin secretos en git.** El repositorio pasa a privado (D13), pero sigue público hasta que el dueño lo cambie en GitHub.
 9. **Ante una contradicción o una decisión difícil de revertir, para y pregunta** en tu bitácora, y avisa al dueño.
 10. **Escribe tu línea en la bitácora** por cada entregable: `[E<n>] fecha · HECHO · PENDIENTE · BLOQUEADO POR · COMANDO`.
 
